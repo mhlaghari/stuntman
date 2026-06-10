@@ -1,0 +1,13 @@
+{
+  "name": "stuntman",
+  "description": "Claude doesn't do its own stunts. Plan with Claude, execute with a near-free model (DeepSeek, Groq, Ollama…), review with Claude — your subscription tokens go only where intelligence matters.",
+  "version": "0.1.0",
+  "author": {
+    "name": "mhlaghari",
+    "email": "mhlaghari@gmail.com"
+  },
+  "homepage": "https://github.com/mhlaghari/stuntman",
+  "repository": "https://github.com/mhlaghari/stuntman",
+  "license": "MIT",
+  "keywords": ["delegation", "orchestration", "deepseek", "proxy", "cost-saving", "multi-model"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "stuntman",
+  "owner": {
+    "name": "mhlaghari",
+    "email": "mhlaghari@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "stuntman",
+      "source": "./",
+      "description": "Claude doesn't do its own stunts. Plan with Claude, execute with a near-free model, review with Claude."
+    }
+  ]
+}

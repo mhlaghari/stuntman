@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# stuntman worker — a headless Claude Code instance whose brain is a cheap model.
+#
+# Runs Claude Code against a local Anthropic-compatible proxy instead of the
+# real API, with an isolated CLAUDE_CONFIG_DIR so it never touches your
+# subscription's login or session state.
+#
+# Usage:  stunt -p "spec..." --output-format json --dangerously-skip-permissions
+# Env:    STUNTMAN_MODEL       pin a model id from the proxy's /v1/models (optional)
+#         STUNTMAN_CONFIG_DIR  worker config dir   (default: ~/.claude-stuntman)
+#         STUNTMAN_BASE_URL    proxy URL, fallback mode only (default: http://localhost:8082)
+#         STUNTMAN_AUTH_TOKEN  proxy token, fallback mode only (default: freecc)
+set -e
+
+export CLAUDE_CONFIG_DIR="${STUNTMAN_CONFIG_DIR:-$HOME/.claude-stuntman}"
+mkdir -p "$CLAUDE_CONFIG_DIR"
+
+if [ -n "${STUNTMAN_MODEL:-}" ]; then
+  set -- --model "$STUNTMAN_MODEL" "$@"
+fi
+
+# Preferred: the free-claude-code launcher (injects proxy env, preflights the server).
+if command -v fcc-claude >/dev/null 2>&1; then
+  exec fcc-claude "$@"
+fi
+
+# Fallback: any Anthropic-compatible proxy via plain env vars.
+export ANTHROPIC_BASE_URL="${STUNTMAN_BASE_URL:-http://localhost:8082}"
+export ANTHROPIC_AUTH_TOKEN="${STUNTMAN_AUTH_TOKEN:-freecc}"
+unset ANTHROPIC_API_KEY
+export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
+exec claude "$@"
