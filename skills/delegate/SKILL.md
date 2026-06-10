@@ -57,8 +57,10 @@ From the **project root**:
 ```
 
 - Use a generous Bash timeout (600000); workers can be slow.
-- Output is one JSON line: `{"backend", "session_id", "result", "is_error"}`.
-  Capture `session_id` (needed for iteration).
+- Output is one JSON line:
+  `{"backend", "session_id", "result", "is_error", "usage", "cost_usd"}`.
+  Capture `session_id` (needed for iteration) and keep `usage`/`cost_usd`
+  from every exec/resume call for the final report.
 - If the repo is dirty, snapshot the baseline first
   (`git status --porcelain > /tmp/stunt-baseline.txt`, plus `git diff` of files
   you expect the worker to touch) so review covers only worker changes.
@@ -88,6 +90,15 @@ Maximum 2 feedback rounds. If still broken after that, the task qualifies as
 End with: what was delegated, which backend/model executed, what review
 found, iterations needed, and verification results. Be explicit about
 anything you had to fix yourself.
+
+Always include a cost line, summing `usage`/`cost_usd` across all worker
+calls (exec + resumes):
+
+> Worker: 14,162 tokens (8,166 out) · $0.0002 · Claude spent: planning + review only
+
+If the user wants their own (orchestrator) side measured too, point them at
+`/cost` for the session or the per-message `usage` blocks in the session
+transcript under `~/.claude/projects/<project>/`.
 
 ## Notes
 

@@ -51,16 +51,26 @@ normalize_claude() {
 import json, sys
 lines = [l for l in sys.stdin.read().splitlines() if l.strip()]
 d = json.loads(lines[-1])
+u = d.get("usage") or {}
 print(json.dumps({"backend": "claude", "session_id": d.get("session_id"),
-                  "result": d.get("result", ""), "is_error": bool(d.get("is_error"))}))
+                  "result": d.get("result", ""), "is_error": bool(d.get("is_error")),
+                  "usage": {"input_tokens": u.get("input_tokens", 0),
+                            "output_tokens": u.get("output_tokens", 0),
+                            "cache_read_tokens": u.get("cache_read_input_tokens", 0),
+                            "cache_write_tokens": u.get("cache_creation_input_tokens", 0)},
+                  "cost_usd": round(d.get("total_cost_usd") or 0, 6),
+                  "duration_s": round((d.get("duration_ms") or 0) / 1000)}))
 '
 }
 
-# opencode run --format json → JSONL event stream; result is the last text part
+# opencode run --format json → JSONL event stream; result is the last text part,
+# usage is summed across step-finish events
 normalize_opencode() {
   python3 -c '
 import json, sys
 sid, texts, err = None, [], False
+tin = tout = cread = cwrite = 0
+cost = 0.0
 for line in sys.stdin:
     line = line.strip()
     if not line.startswith("{"):
@@ -73,10 +83,19 @@ for line in sys.stdin:
     part = d.get("part") or {}
     if part.get("type") == "text":
         texts.append(part.get("text", ""))
+    if part.get("type") == "step-finish":
+        t = part.get("tokens") or {}
+        tin += t.get("input", 0); tout += t.get("output", 0) + t.get("reasoning", 0)
+        c = t.get("cache") or {}
+        cread += c.get("read", 0); cwrite += c.get("write", 0)
+        cost += part.get("cost") or 0
     if d.get("type") == "error" or part.get("type") == "error":
         err = True
 print(json.dumps({"backend": "opencode", "session_id": sid,
-                  "result": texts[-1] if texts else "", "is_error": err}))
+                  "result": texts[-1] if texts else "", "is_error": err,
+                  "usage": {"input_tokens": tin, "output_tokens": tout,
+                            "cache_read_tokens": cread, "cache_write_tokens": cwrite},
+                  "cost_usd": round(cost, 6)}))
 '
 }
 
