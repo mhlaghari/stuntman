@@ -1,6 +1,6 @@
 # 🎬 stuntman
 
-**Claude doesn't do its own stunts.**
+**Claude doesn't do its own stunts.** · [Website](https://mhlaghari.github.io/stuntman/)
 
 Claude Code plans the scene and reviews the take. A near-free model — DeepSeek,
 Gemini, Groq, a local Ollama, whatever — takes the hits. Your expensive
@@ -63,6 +63,42 @@ project's backlog, explored the code, and wrote the spec. DeepSeek executed a
 3-file change (new feature flag wired through two modules, plus a test) in
 **65 seconds**. Claude's review found zero issues, the full test suite passed,
 lint clean. Total Anthropic tokens spent on implementation: **zero**.
+
+## The benchmark: Opus DIY vs. the stunt double
+
+Same task, two paths: build a landing page for this repo (dark cinematic
+design, 4-step workflow section, stats, install commands — a real frontend
+brief). Path A: Opus does everything itself. Path B: Opus writes the spec,
+DeepSeek executes, Opus reviews. Identical brief, measured identically from
+`--output-format json` usage.
+
+| | Opus DIY | stuntman |
+|---|---|---|
+| Claude output tokens | **50,955** | **9,737** (8,782 plan + 955 review) |
+| API-equivalent Claude cost | **~$4.92** | **~$0.65** |
+| Wall-clock | **18 min — never finished** | **~3 min** (63s execution) |
+| Review verdict | n/a (it was the builder) | PASS, zero iterations |
+| Result | the slightly nicer page | ~90% of the page, $0 on implementation |
+
+That "never finished" is real: after building the page in ~7 minutes, Opus
+spent 11 more minutes verifying its own work in a browser — and deadlocked
+clicking its own copy button (`navigator.clipboard.writeText` blocks forever
+in a permissionless headless browser). The page was already done. That
+self-verification spiral is exactly the expensive-model behavior you're
+paying for by the token — and exactly what the harness moves off your bill.
+
+**5.2× the Claude tokens, 7.6× the cost, 6× the wall-clock — for a margin
+best described as taste.** And the punchline: the Opus page was the better
+artifact, so it's [this repo's actual website](https://mhlaghari.github.io/stuntman/)
+— built by the benchmark that proves you usually don't need it.
+
+| DeepSeek (63s, $0 Claude tokens) | Opus (18 min, ~$4.92) |
+|---|---|
+| ![DeepSeek's page](docs/assets/benchmark-deepseek.jpeg) | ![Opus's page](docs/assets/benchmark-opus.jpeg) |
+
+*(Screenshots taken with reveal animations force-disabled; the gray wash on
+DeepSeek's hero is the screenshot hack blowing its 4%-opacity film grain to
+100% — the real page is clean.)*
 
 ## Install
 
