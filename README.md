@@ -6,6 +6,8 @@ Claude Code plans the scene and reviews the take. A near-free model — DeepSeek
 Gemini, Groq, a local Ollama, whatever — takes the hits. Your expensive
 subscription tokens go only where intelligence actually matters.
 
+![stuntman demo](docs/assets/demo.gif)
+
 ```
   PLAN                EXECUTE               REVIEW              ITERATE
   Claude (sub) ──▶    stunt double ──▶      Claude (sub) ──▶    feedback ↩
