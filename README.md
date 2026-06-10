@@ -107,11 +107,23 @@ DeepSeek's hero is the screenshot hack blowing its 4%-opacity film grain to
 Prerequisites:
 
 1. [Claude Code](https://claude.com/claude-code) with a subscription (the orchestrator).
-2. [free-claude-code](https://github.com/Alishahryar1/free-claude-code) (the proxy):
+2. A worker backend — pick one:
+
+   **Route A — Claude Code worker via [free-claude-code](https://github.com/Alishahryar1/free-claude-code)**
+   (same agentic harness as the orchestrator, any of fcc's 17 backends):
    ```bash
    uv tool install free-claude-code
-   fcc-config   # pick your backend + paste your key (DeepSeek, OpenRouter, Groq, Ollama…)
+   fcc-init     # pick your backend + paste your key (DeepSeek, OpenRouter, Groq, Ollama…)
    fcc-server   # leave it running (localhost:8082)
+   ```
+
+   **Route B — [opencode](https://opencode.ai) worker** (no proxy at all — opencode talks
+   to DeepSeek/Groq/Ollama and 75+ providers natively):
+   ```bash
+   brew install sst/tap/opencode
+   opencode auth login          # or export a provider key, e.g. DEEPSEEK_API_KEY
+   export STUNTMAN_WORKER=opencode
+   export STUNTMAN_MODEL=deepseek/deepseek-v4-flash   # any provider/model opencode knows
    ```
 
 ### Option A — Claude Code plugin (recommended)
@@ -151,12 +163,21 @@ What happens:
 
 ## Choosing your stunt double
 
-The proxy decides which model the worker uses (`fcc-config`). To pin a
-specific model per delegation, set:
+Two knobs: `STUNTMAN_WORKER` picks the backend (`claude` via the local proxy —
+the default — or `opencode`), `STUNTMAN_MODEL` pins the model:
 
 ```bash
-export STUNTMAN_MODEL="anthropic/deepseek/deepseek-v4-flash"   # any id from /v1/models
+# Route A (proxy): any id from the proxy's /v1/models
+export STUNTMAN_MODEL="anthropic/deepseek/deepseek-v4-flash"
+
+# Route B (opencode): provider/model, no proxy required
+export STUNTMAN_WORKER=opencode
+export STUNTMAN_MODEL="deepseek/deepseek-v4-flash"
 ```
+
+Route A's worker is a full headless Claude Code (same tools and agentic loop
+as the orchestrator). Route B trades that harness fidelity for zero proxy
+setup — opencode authenticates to providers directly.
 
 Good stunt doubles, roughly in order of bang-per-buck:
 
@@ -203,6 +224,12 @@ or Claude takes over.
 **Can I use a different proxy?**
 Anything that speaks the Anthropic Messages API works. Edit `bin/stunt` and
 point `ANTHROPIC_BASE_URL` wherever you like.
+
+**Do I need the proxy at all?**
+Not with the opencode backend (`STUNTMAN_WORKER=opencode`) — opencode talks
+to DeepSeek, Groq, Ollama, and 75+ providers natively. The proxy route's
+advantage is that the worker is a full headless Claude Code instance (same
+tools and editing loop as the orchestrator).
 
 ## Credits
 

@@ -30,11 +30,23 @@ free** — via nothing more exotic than its own Bash tool.
 
 ## The worker: `bin/stunt`
 
+The wrapper exposes two verbs with one normalized JSON output shape
+(`{"backend", "session_id", "result", "is_error"}`), dispatching to a backend
+chosen by `STUNTMAN_WORKER`:
+
 ```
-stunt = claude
+stunt exec "<spec>"                  # run the worker on a spec
+stunt resume <session_id> "<text>"   # review feedback into the same session
+
+backend claude (default):
+        claude -p --output-format json --dangerously-skip-permissions
         + proxy env (via fcc-claude, or ANTHROPIC_BASE_URL directly)
         + CLAUDE_CONFIG_DIR=~/.claude-stuntman
         + optional --model pin (STUNTMAN_MODEL)
+
+backend opencode:
+        opencode run --format json [--model provider/model] [--session id]
+        no proxy — opencode authenticates to providers natively
 ```
 
 The isolated `CLAUDE_CONFIG_DIR` matters: without it, the worker shares

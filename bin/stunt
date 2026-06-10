@@ -1,32 +1,109 @@
 #!/usr/bin/env bash
-# stuntman worker — a headless Claude Code instance whose brain is a cheap model.
+# stuntman worker — a pluggable stunt double.
 #
-# Runs Claude Code against a local Anthropic-compatible proxy instead of the
-# real API, with an isolated CLAUDE_CONFIG_DIR so it never touches your
-# subscription's login or session state.
+# Verbs (what the /delegate skill calls):
+#   stunt exec "<spec>"                 run the worker on a spec
+#   stunt resume <session_id> "<text>"  send review feedback into the same worker session
 #
-# Usage:  stunt -p "spec..." --output-format json --dangerously-skip-permissions
-# Env:    STUNTMAN_MODEL       pin a model id from the proxy's /v1/models (optional)
-#         STUNTMAN_CONFIG_DIR  worker config dir   (default: ~/.claude-stuntman)
-#         STUNTMAN_BASE_URL    proxy URL, fallback mode only (default: http://localhost:8082)
-#         STUNTMAN_AUTH_TOKEN  proxy token, fallback mode only (default: freecc)
+# Both print one normalized JSON line: {"backend", "session_id", "result", "is_error"}
+#
+# Backends (STUNTMAN_WORKER):
+#   claude    (default) headless Claude Code via a local Anthropic-compatible proxy
+#             (free-claude-code on :8082) with an isolated CLAUDE_CONFIG_DIR
+#   opencode  `opencode run` — talks to DeepSeek/Groq/Ollama/75+ providers natively,
+#             no proxy needed (auth via `opencode auth login` or provider env keys)
+#
+# Env:
+#   STUNTMAN_WORKER      claude | opencode             (default: claude)
+#   STUNTMAN_MODEL       claude: id from the proxy's /v1/models; opencode: provider/model
+#   STUNTMAN_CONFIG_DIR  claude worker config dir      (default: ~/.claude-stuntman)
+#   STUNTMAN_BASE_URL    claude fallback proxy URL     (default: http://localhost:8082)
+#   STUNTMAN_AUTH_TOKEN  claude fallback proxy token   (default: freecc)
+#
+# Anything else (first arg starting with "-", or no args) passes straight through to
+# the claude backend for manual/interactive use, e.g.:  stunt -p "task" --output-format json
 set -e
 
-export CLAUDE_CONFIG_DIR="${STUNTMAN_CONFIG_DIR:-$HOME/.claude-stuntman}"
-mkdir -p "$CLAUDE_CONFIG_DIR"
+BACKEND="${STUNTMAN_WORKER:-claude}"
 
-if [ -n "${STUNTMAN_MODEL:-}" ]; then
-  set -- --model "$STUNTMAN_MODEL" "$@"
-fi
+claude_invoke() {
+  export CLAUDE_CONFIG_DIR="${STUNTMAN_CONFIG_DIR:-$HOME/.claude-stuntman}"
+  mkdir -p "$CLAUDE_CONFIG_DIR"
+  if [ -n "${STUNTMAN_MODEL:-}" ]; then
+    set -- --model "$STUNTMAN_MODEL" "$@"
+  fi
+  # Preferred: the free-claude-code launcher (injects proxy env, preflights the server).
+  if command -v fcc-claude >/dev/null 2>&1; then
+    fcc-claude "$@"
+  else
+    # Fallback: any Anthropic-compatible proxy via plain env vars.
+    export ANTHROPIC_BASE_URL="${STUNTMAN_BASE_URL:-http://localhost:8082}"
+    export ANTHROPIC_AUTH_TOKEN="${STUNTMAN_AUTH_TOKEN:-freecc}"
+    unset ANTHROPIC_API_KEY
+    export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
+    claude "$@"
+  fi
+}
 
-# Preferred: the free-claude-code launcher (injects proxy env, preflights the server).
-if command -v fcc-claude >/dev/null 2>&1; then
-  exec fcc-claude "$@"
-fi
+# claude -p --output-format json → single JSON object on the last line
+normalize_claude() {
+  python3 -c '
+import json, sys
+lines = [l for l in sys.stdin.read().splitlines() if l.strip()]
+d = json.loads(lines[-1])
+print(json.dumps({"backend": "claude", "session_id": d.get("session_id"),
+                  "result": d.get("result", ""), "is_error": bool(d.get("is_error"))}))
+'
+}
 
-# Fallback: any Anthropic-compatible proxy via plain env vars.
-export ANTHROPIC_BASE_URL="${STUNTMAN_BASE_URL:-http://localhost:8082}"
-export ANTHROPIC_AUTH_TOKEN="${STUNTMAN_AUTH_TOKEN:-freecc}"
-unset ANTHROPIC_API_KEY
-export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
-exec claude "$@"
+# opencode run --format json → JSONL event stream; result is the last text part
+normalize_opencode() {
+  python3 -c '
+import json, sys
+sid, texts, err = None, [], False
+for line in sys.stdin:
+    line = line.strip()
+    if not line.startswith("{"):
+        continue
+    try:
+        d = json.loads(line)
+    except ValueError:
+        continue
+    sid = d.get("sessionID") or sid
+    part = d.get("part") or {}
+    if part.get("type") == "text":
+        texts.append(part.get("text", ""))
+    if d.get("type") == "error" or part.get("type") == "error":
+        err = True
+print(json.dumps({"backend": "opencode", "session_id": sid,
+                  "result": texts[-1] if texts else "", "is_error": err}))
+'
+}
+
+case "${1:-}" in
+  exec)
+    SPEC="${2:?usage: stunt exec \"<spec>\"}"
+    if [ "$BACKEND" = "opencode" ]; then
+      MODEL_ARGS=()
+      [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(--model "$STUNTMAN_MODEL")
+      opencode run "$SPEC" "${MODEL_ARGS[@]}" --format json | normalize_opencode
+    else
+      claude_invoke -p "$SPEC" --output-format json --dangerously-skip-permissions | normalize_claude
+    fi
+    ;;
+  resume)
+    SID="${2:?usage: stunt resume <session_id> \"<feedback>\"}"
+    FEEDBACK="${3:?usage: stunt resume <session_id> \"<feedback>\"}"
+    if [ "$BACKEND" = "opencode" ]; then
+      MODEL_ARGS=()
+      [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(--model "$STUNTMAN_MODEL")
+      opencode run "$FEEDBACK" --session "$SID" "${MODEL_ARGS[@]}" --format json | normalize_opencode
+    else
+      claude_invoke -p --resume "$SID" "$FEEDBACK" --output-format json --dangerously-skip-permissions | normalize_claude
+    fi
+    ;;
+  *)
+    # Pass-through for manual/interactive use (claude backend only).
+    claude_invoke "$@"
+    ;;
+esac
