@@ -13,12 +13,14 @@ new session (or one after `/clear`) picks up with zero re-explaining.
 
 1. **Read the memory docs, in order:**
    - `HANDOFF.md` — the session baton: what the last session changed, the next
-     step, gotchas. This is the primary "where we are."
+     step, gotchas. The primary "where we are."
    - `STATUS.md` — the board: built / in progress / planned.
+   - `SPEC.md` — the contract: what this is and where it's going. Build to it.
+   - `STRATEGY.md` — the honest why / direction. Read before any big call.
    - `README.md` — what the project is and how to run it.
-   - Anything the `CLAUDE.md` "read this first" list points to that's relevant to
-     the next step (specs, design notes). Don't read the whole repo — read what
-     the next step needs.
+
+   Read what the next step needs, not the whole repo. (A lightly-scaffolded
+   project may not have `SPEC.md` / `STRATEGY.md` — skip what's absent.)
 
    If `HANDOFF.md` / `STATUS.md` don't exist, the project isn't scaffolded yet —
    tell the user to run `/scaffold` first, and stop.

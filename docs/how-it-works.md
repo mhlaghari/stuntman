@@ -166,9 +166,11 @@ one-time setup; `/handoff` is the per-session resume.
 - it inserts a marked contract (`<!-- stuntman:scaffold:start … end -->`) into
   `CLAUDE.md` — created if absent, appended if present, skipped if already there
   (it also recognizes the pre-0.5 `stuntman:handoff` marker);
-- it creates `HANDOFF.md` (the session baton — what changed, next step, gotchas)
-  and `STATUS.md` (the board — built / in progress / planned), each only if
-  missing.
+- it creates the four **living docs** it references, each only if missing:
+  `HANDOFF.md` (the baton — what changed, next step, gotchas), `STATUS.md` (the
+  board — built / in progress / planned), `SPEC.md` (the contract — vision,
+  principles, scope), and `STRATEGY.md` (the honest assessment + direction). Each
+  self-declares as a living doc with a changelog.
 
 The mechanism is just that `CLAUDE.md` auto-loads into every session. The
 contract says two things: *read `HANDOFF.md` / `STATUS.md` first, assume zero
@@ -181,9 +183,13 @@ update the docs before stopping. `/scaffold` (the `skills/scaffold`
 instructions) runs `bin/scaffold` and then populates the stubs from the
 project's real state.
 
-Enforcement is instruction-only on purpose — no Stop hook, no external memory
-system. The leverage is entirely in *where* the contract is written: the
-always-loaded file.
+Two enforcement layers. The contract lives in the always-loaded `CLAUDE.md`, so
+the read-first / update-before-stop steps are always in context (the soft layer).
+A **Stop hook** (`hooks/handoff-guard.sh`, shipped with the plugin) backs it up:
+in scaffolded projects only, if a turn changed code but left `HANDOFF.md` /
+`STATUS.md` untouched, it blocks the stop once with a reminder. It respects
+`stop_hook_active` (no loops), only acts where a `HANDOFF.md` exists, and fails
+open — so it never traps you or touches non-scaffolded projects.
 
 ## Failure modes & mitigations
 

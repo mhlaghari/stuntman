@@ -21,25 +21,30 @@ Idempotent and non-destructive. It:
   `CLAUDE.md` — created if absent, appended if present, skipped if already there
   (recognizes the pre-0.5 `stuntman:handoff` marker too). Never rewrites
   existing content.
-- creates `HANDOFF.md` (session baton) and `STATUS.md` (status board), each only
-  if missing.
+- creates the living docs it references — `HANDOFF.md` (the session baton),
+  `STATUS.md` (the board), `SPEC.md` (the contract), `STRATEGY.md` (the honest
+  why) — each only if missing. Each self-declares as a living doc.
 
 ## What to do
 
 1. **Confirm the project root** — run from the repo root (git root:
    `git rev-parse --show-toplevel`).
 2. **Run the scaffolder** and show the user its output.
-3. **Populate the docs from reality.** The stubs are placeholders — fill them in
-   now so the system is useful immediately, by examining the project (its
+3. **Populate the docs from reality.** The stubs are living-doc skeletons — fill
+   them in now so the system is useful immediately, by examining the project (its
    `README.md`, structure, recent `git log`):
-   - **`STATUS.md`** — the board: **Built** (what ships and works), **In
-     progress** (active work), **Planned** (next, not started).
-   - **`HANDOFF.md`** — the baton: **What changed this session**, the **Next
-     step**, **Gotchas**, and a dated one-line summary. Write both for a reader
-     with **zero memory** of this session — no "as discussed".
-   - `README.md` is part of the maintained set too: the contract says to refresh
-     it when the project's surface changes. Scaffold doesn't *create* one (that's
-     a project-init job) — if it's missing, say so.
+   - **`SPEC.md`** — the contract: a one-paragraph **Vision**, the load-bearing
+     **Principles**, **Scope** (in / out), **Open decisions**. Draft from what the
+     project clearly is; flag guesses for the user.
+   - **`STRATEGY.md`** — the honest **Bottom line**, **Assessment**, **Direction**.
+     The critical version, not a pitch. If you can't assess honestly yet, say what
+     you'd need to.
+   - **`STATUS.md`** — the board: **Built** / **In progress** / **Planned** / **Blockers**.
+   - **`HANDOFF.md`** — the baton: **What changed this session**, the **Next step**,
+     **Gotchas**, dated.
+   Write all of them for a reader with **zero memory** of this session, and set
+   each doc's date / changelog. `README.md` is maintained too (refresh when the
+   surface changes); scaffold doesn't *create* one — if it's missing, say so.
 4. **Report**: the system is active. Every future session now reads
    `HANDOFF.md` / `STATUS.md` first (the instruction lives in `CLAUDE.md`, which
    auto-loads) and updates them before stopping. To resume any time, the user
@@ -47,12 +52,13 @@ Idempotent and non-destructive. It:
 
 ## Notes
 
-- Enforcement is **instruction-only**: `CLAUDE.md` auto-loads, so the
-  read-first / update-before-stop steps are always in context. No hooks, no
-  settings changes.
+- The contract is **instruction-driven** (`CLAUDE.md` auto-loads, so read-first /
+  update-before-stop is always in context), and a **Stop hook** (ships with the
+  plugin) backs it up: in scaffolded projects only, if the session changed code
+  but didn't update `HANDOFF.md` / `STATUS.md`, it nudges once before the turn
+  ends. It fails open and never touches non-scaffolded projects.
 - **Self-contained**: no dependency on an external `/checkpoint` skill or memory
-  system — just `CLAUDE.md` + `HANDOFF.md` + `STATUS.md`. (If the user already
-  runs a `/checkpoint` that maintains `STATUS.md`, it stays compatible — same
-  file, same purpose.)
+  system — just `CLAUDE.md` + the living docs. (If the user already runs a
+  `/checkpoint` that maintains `STATUS.md`, it stays compatible — same file.)
 - Pairs with `/relay`: when a long run pauses at the 5-hour cap, `HANDOFF.md` is
   the human-readable state the next session resumes from.

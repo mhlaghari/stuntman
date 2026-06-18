@@ -1,50 +1,60 @@
 #!/usr/bin/env bash
-# stuntman scaffold — set up the project-memory system.
+# stuntman scaffold — set up the project-memory system (living documents).
 #
-# Idempotently, and without clobbering anything:
-#   - writes a contract block into CLAUDE.md (creates it if absent): a
-#     "read this first" list + a "before you stop" process contract,
-#   - creates HANDOFF.md (the session baton) and STATUS.md (the status board),
-#     each only if it doesn't already exist.
+# Idempotently, and without clobbering anything, it:
+#   - writes a contract into CLAUDE.md (a read-first list + before-you-stop rules),
+#   - creates the living docs it references, each only if it doesn't exist:
+#       HANDOFF.md    the session baton  (what changed, next step, gotchas)
+#       STATUS.md     the board          (built / in progress / planned)
+#       SPEC.md       the contract       (what it is, principles, where it's going)
+#       STRATEGY.md   the honest why     (assessment, direction)
 #
-# CLAUDE.md auto-loads every session, so the contract is always in context:
-# each session reads HANDOFF.md / STATUS.md first and rewrites them before
-# stopping. Resume any time with /handoff (or "execute handoff").
+# CLAUDE.md auto-loads every session, so the contract is always in context: each
+# session reads the docs first and keeps them current. Resume with /handoff.
 #
 # Usage: scaffold [project_dir]    (default: current directory)
 set -e
 
 DIR="${1:-$PWD}"
 CLAUDE_MD="$DIR/CLAUDE.md"
-HANDOFF_MD="$DIR/HANDOFF.md"
-STATUS_MD="$DIR/STATUS.md"
 START="<!-- stuntman:scaffold:start -->"
-# also recognize the pre-0.5 marker so re-running never double-adds the block
-OLD_START="<!-- stuntman:handoff:start -->"
+OLD_START="<!-- stuntman:handoff:start -->"   # pre-0.5 marker
 
-# Emitted via a function (quoted heredoc) so backticks in the body are literal.
+# CLAUDE.md contract — quoted heredoc so backticks in the body stay literal.
 emit_block() {
 cat <<'EOF'
 <!-- stuntman:scaffold:start -->
 ## Project memory protocol
 
+These are **living documents** — read them first, keep them current.
+
 **Read this first — start of every session** (or just run `/handoff`):
-1. `HANDOFF.md` — what the last session changed, what's next, and the gotchas.
-   Assume you have zero memory of prior sessions; this is your memory of them.
-2. `STATUS.md` — the running status board: what's built, in progress, and planned.
-3. `README.md` — what the project is and how to run it.
-4. Any doc those reference (specs, design notes) before building in that area.
+1. `HANDOFF.md` — the session baton: what the last session changed, the next step, gotchas. Assume zero memory of prior sessions.
+2. `STATUS.md` — the board: built / in progress / planned.
+3. `SPEC.md` — the contract: what this is, the load-bearing principles, where it's going. Build to it.
+4. `STRATEGY.md` — the honest why / direction. Read before any big call.
+5. `README.md` — what the project is and how to run it.
 
 **Before you stop — end of every session:**
-- Update `HANDOFF.md`: what changed, what's next, and any gotcha that cost time.
-  Write it for someone with zero memory of this session.
-- Update `STATUS.md`: refresh the board to match reality.
-- Update `README.md` if the project's surface changed (features, install, usage).
+- Always update `HANDOFF.md` (what changed, next step, gotchas) and `STATUS.md` (refresh the board).
+- Update `SPEC.md`, `STRATEGY.md`, or `README.md` whenever the change touched what they cover — and add a dated changelog line.
 - Never commit without explicit user authorization.
 
-A task isn't "done" until `HANDOFF.md` and `STATUS.md` reflect it (and `README.md`, if it changed).
+A task isn't "done" until the docs its change touched reflect it.
 <!-- stuntman:scaffold:end -->
 EOF
+}
+
+# write stdin to <path> only if it doesn't already exist (else consume + skip)
+make() {
+  local path="$1" label="$2"
+  if [ -f "$path" ]; then
+    cat >/dev/null
+    echo "• $label already exists — left untouched"
+  else
+    cat > "$path"
+    echo "• created $label"
+  fi
 }
 
 # 1. CLAUDE.md contract — idempotent, append-only, never rewrites existing content
@@ -58,21 +68,19 @@ else
   echo "• created CLAUDE.md with the scaffold contract"
 fi
 
-# 2. HANDOFF.md — the session baton (created only if missing)
-if [ -f "$HANDOFF_MD" ]; then
-  echo "• HANDOFF.md already exists — left untouched"
-else
-  cat > "$HANDOFF_MD" <<'EOF'
+# 2. HANDOFF.md — the session baton
+make "$DIR/HANDOFF.md" "HANDOFF.md" <<'EOF'
 # HANDOFF
 
-> The session baton. The current agent updates this before stopping; the next
-> agent reads it first. Write for a reader with zero memory of this session.
+_The session baton — a **living doc**. The current agent updates it before
+stopping; the next reads it first. Write for a reader with zero memory of this
+session._
 
 ## What changed this session
 _What you did, concretely._
 
 ## Next step
-_The single most important thing to do next, then the rest in priority order._
+_The single most important next action, then the rest in priority order._
 
 ## Gotchas
 _Anything that cost time — traps, non-obvious constraints._
@@ -80,17 +88,13 @@ _Anything that cost time — traps, non-obvious constraints._
 ## Last updated
 _Session date + one-line summary._
 EOF
-  echo "• created HANDOFF.md"
-fi
 
-# 3. STATUS.md — the project status board (created only if missing)
-if [ -f "$STATUS_MD" ]; then
-  echo "• STATUS.md already exists — left untouched"
-else
-  cat > "$STATUS_MD" <<'EOF'
+# 3. STATUS.md — the board
+make "$DIR/STATUS.md" "STATUS.md" <<'EOF'
 # STATUS
 
-> Where the project stands right now. Refreshed each session alongside HANDOFF.md.
+_The board — a **living doc**. Where the project stands right now; refresh it
+every session._
 
 ## Built
 _Shipped and working._
@@ -101,11 +105,60 @@ _Being worked on now._
 ## Planned
 _Next up, not started._
 
+## Blockers
+_Anything stuck, and on what._
+
 ## Last updated
 _Session date._
 EOF
-  echo "• created STATUS.md"
-fi
+
+# 4. SPEC.md — the contract
+make "$DIR/SPEC.md" "SPEC.md" <<'EOF'
+# SPEC
+
+_The product contract — a **living doc**. What this is and where it's going
+(`CLAUDE.md` covers the current code; this covers the destination). Every session
+reads this first; keep it current._
+
+## Vision
+_One paragraph: what this is, and the end state you're building toward._
+
+## Principles (load-bearing — do not violate)
+_The non-negotiables, numbered — the rules a session must never break._
+
+## Scope
+- **In:** _what this is._
+- **Out (for now):** _what's deliberately deferred._
+
+## Open decisions
+_Unresolved choices — each with the options and the current lean._
+
+## Changelog
+- _(date)_ — created.
+EOF
+
+# 5. STRATEGY.md — the honest why
+make "$DIR/STRATEGY.md" "STRATEGY.md" <<'EOF'
+# STRATEGY
+
+_A **living doc** — the honest version on purpose, not a pitch. Maintain it;
+revisit before any big direction call._
+
+## Bottom line (read this first)
+_The 3–5 sharpest truths about where this stands right now._
+
+## Honest assessment
+_What's working, what isn't, and the real risks — no spin._
+
+## Direction
+_Where to focus and why — the wedge, the bet, the sequencing._
+
+## Open questions / to revisit
+_The calls you're not ready to make yet._
+
+## Changelog
+- _(date)_ — created.
+EOF
 
 echo "✓ project-memory system scaffolded in $DIR"
-echo "  next session: run /handoff (or say \"execute handoff\") to resume."
+echo "  populate the stubs from the project, then resume any time with /handoff."

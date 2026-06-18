@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/handoff-guard.sh",
+            "timeout": 15
+          }
+        ],
+        "description": "In scaffolded projects only: nudge to update HANDOFF.md/STATUS.md before stopping if code changed but the docs didn't. Fails open, never traps.",
+        "id": "stuntman:handoff-guard"
+      }
+    ]
+  }
+}

@@ -221,15 +221,16 @@ context, or starting fresh tomorrow.
 
 **`/scaffold`** — run once. It writes a contract into your `CLAUDE.md` (a "read
 this first" list + a "before you stop" process contract) and creates the docs it
-references, then fills them in from your project's current state:
+references — four **living documents** — then fills them in from your project:
 
-- **`HANDOFF.md`** — the session baton: what changed this session, the next step,
-  the gotchas.
-- **`STATUS.md`** — the status board: built / in progress / planned.
+- **`HANDOFF.md`** — the session baton: what changed, the next step, the gotchas.
+- **`STATUS.md`** — the board: built / in progress / planned.
+- **`SPEC.md`** — the contract: what this is, the load-bearing principles, where it's going.
+- **`STRATEGY.md`** — the honest why / direction.
 
-It's idempotent and never clobbers existing content. The contract then keeps the
-docs current — each session refreshes `HANDOFF.md` and `STATUS.md` (and
-`README.md`, when the project's surface changes) before stopping.
+Each self-declares as a living doc with a changelog. It's idempotent and never
+clobbers existing content. The contract then keeps them current — each session
+refreshes the docs (and `README.md`, when the surface changes) before stopping.
 
 **`/handoff`** (or just say *"execute handoff"*) — run at the start of any
 session. It reads `HANDOFF.md`, `STATUS.md`, `README.md`, and whatever else the
@@ -237,10 +238,10 @@ contract lists, then picks up exactly where the last session left off — zero
 re-explaining, even in a brand-new session after clearing context.
 
 The mechanism: `CLAUDE.md` auto-loads every session, so the read-first /
-update-before-stopping contract is always in context. Instruction-only and
-self-contained — no hooks, no dependency on any external memory system. Together
-the commands make long autonomous runs cheap, rate-limit-proof, and
-context-proof.
+update-before-stopping contract is always in context. A **Stop hook** (plugin
+install) backs it up — in scaffolded projects only, it nudges once if you changed
+code but didn't update the docs. Together the commands make long autonomous runs
+cheap, rate-limit-proof, and context-proof.
 
 ## Why the spec quality matters
 

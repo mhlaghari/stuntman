@@ -1,7 +1,7 @@
 {
   "name": "stuntman",
   "description": "Claude doesn't do its own stunts. Plan with Claude, execute with a near-free model (DeepSeek, Groq, Ollama… via a local proxy or opencode), review with Claude — your subscription tokens go only where intelligence matters.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": {
     "name": "mhlaghari",
     "email": "mhlaghari@gmail.com"

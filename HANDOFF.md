@@ -1,44 +1,42 @@
 # HANDOFF
 
-> The session baton. The current agent updates this before stopping; the next
-> agent reads it first. Write for a reader with zero memory of this session.
+_The session baton — a **living doc**. The current agent updates it before
+stopping; the next reads it first. Write for a reader with zero memory of this
+session._
 
 ## What changed this session
 
-- Split the context-continuity feature into **two** commands (it was a single
-  `/handoff` in v0.4.0):
-  - **`/scaffold`** (`bin/scaffold`, `skills/scaffold`) — one-time setup: writes
-    the contract into `CLAUDE.md` and creates `HANDOFF.md` (baton) + `STATUS.md`
-    (board), then populates them. Marker `stuntman:scaffold` (also recognizes the
-    old `stuntman:handoff` marker so upgrades don't double-add).
-  - **`/handoff`** (`skills/handoff`, no `bin/`) — repurposed to the *resume*
-    action: read `HANDOFF.md` / `STATUS.md` / `README.md`, orient, continue.
-- Renamed `bin/handoff` → `bin/scaffold` (git mv) and expanded it (adds STATUS.md
-  + a fuller contract). Tested: create-all / idempotent / old-marker / non-clobber.
-- Updated `install.sh`, `plugin.json` (→ v0.5.0), `README.md`,
-  `docs/how-it-works.md`, and the landing-page cards.
-- Added `README.md` to the maintained-docs contract — sessions refresh it too
-  when the project's surface changes (not just `HANDOFF.md` + `STATUS.md`).
-- Re-scaffolded this repo to the new system (this `CLAUDE.md` + `STATUS.md` + this file).
+- Expanded `/scaffold` from the v0.5 pair (HANDOFF + STATUS) into a **full
+  living-document system**:
+  - `bin/scaffold` now also creates **`SPEC.md`** (the contract) and
+    **`STRATEGY.md`** (the honest why), each a self-declaring living doc with a
+    changelog. The `CLAUDE.md` contract reads + maintains all of them.
+    Idempotent / non-clobber tested.
+  - `skills/scaffold` populates SPEC + STRATEGY too; `skills/handoff` reads them.
+- Added a **Stop hook** (`hooks/handoff-guard.sh` + `hooks/hooks.json`):
+  scaffolded-only nudge to update `HANDOFF.md`/`STATUS.md` before stopping when
+  code changed but the docs didn't. Tested across 5 scenarios; fails open.
+- `plugin.json` → **v0.6.0**. Re-scaffolded this repo (`CLAUDE.md` + `SPEC.md` +
+  `STRATEGY.md` + `STATUS.md`, all populated). Updated README / how-it-works /
+  landing for the living-doc set + the hook.
 
 ## Next step
 
-- **Commit + push v0.5.0** (not yet committed as of this writing), then verify
-  GitHub Pages rebuilds and the landing cards show `/scaffold` + `/handoff`.
-- Then work the `STATUS.md` "Planned" list (marketplace.json copy, live `/relay`
-  test, smoke tests).
+- Commit + push v0.6.0, then verify GitHub Pages rebuilds.
+- Then work the `STATUS.md` "Planned" list: marketplace.json copy, smoke-test CI,
+  a real `/relay` capped→reset test.
 
 ## Gotchas
 
-- `bin/scaffold` skips the `CLAUDE.md` block if **either** `stuntman:scaffold` or
-  the pre-0.5 `stuntman:handoff` marker is present — prevents double blocks on upgrade.
-- `ScheduleWakeup` clamps to ≤ 1 h, so `/relay` auto-resumes hands-free only when
-  reset is < ~55 min out; longer gaps are ping-triggered.
-- `bin/*` emit Markdown via a function + quoted heredoc — backticks inside
-  `$(cat <<'EOF')` break bash's paren matcher.
-- GateGuard hook (everything-claude-code) gates every Edit/Write and blocks `rm`
-  (use `mv`); present its requested facts then retry.
+- The Stop hook must respect `stop_hook_active` (no loops) and **fail open**; it
+  only acts when `HANDOFF.md` exists (scaffolded). It detects "code changed but
+  docs not touched" via `git status --porcelain` — once HANDOFF/STATUS show as
+  modified it goes quiet, so it nudges roughly once per work burst, not per turn.
+- Plugin hooks **auto-load from `hooks/hooks.json`** (no `plugin.json` pointer
+  needed; mirrors everything-claude-code). Command uses `${CLAUDE_PLUGIN_ROOT}`.
+- `bin/scaffold` writes docs via a `make` helper + quoted heredocs (backticks safe).
+- GateGuard (everything-claude-code) gates every Edit/Write and blocks `rm`.
 
 ## Last updated
 
-2026-06-19 — shipped the `/scaffold` + `/handoff` split (v0.5.0).
+2026-06-19 — living-document system + Stop hook (v0.6.0).

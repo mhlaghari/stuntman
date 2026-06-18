@@ -36,4 +36,7 @@ if ! command -v fcc-server >/dev/null 2>&1; then
 fi
 
 echo
+echo "Note: /scaffold's doc-update Stop hook ships with the plugin install only,"
+echo "      not this script. Everything else works the same either way."
+echo
 echo "Done. In Claude Code, try:  /delegate <task>   ·   /loop relay <task>   ·   /scaffold   ·   /handoff"
