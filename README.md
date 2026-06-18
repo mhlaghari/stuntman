@@ -212,6 +212,26 @@ Claude call, safe to poll even while you're capped). Then:
 The probe is useful on its own, too — `window` prints your live 5-hour and
 weekly utilization plus reset times as one JSON line.
 
+## Handing off across sessions
+
+`/delegate` saves cost and `/relay` survives the rate limit; `/handoff` survives
+the **context** boundary. Run it once in a project:
+
+```
+/handoff
+```
+
+It idempotently adds a short contract to your `CLAUDE.md` (and drops a
+`HANDOFF.md` stub) — never clobbering existing content. From then on, because
+`CLAUDE.md` auto-loads every session, each session **reads `HANDOFF.md` first**
+(assume zero memory) and **rewrites it before stopping** (what changed, what's
+next, gotchas). To pick up exactly where you left off — even in a brand-new
+session after clearing context — you just say **"execute handoff."**
+
+Enforcement is instruction-only and self-contained: no hooks, no `STATUS.md`, no
+dependency on any external memory system. Together the three commands make long
+autonomous runs cheap, rate-limit-proof, and context-proof.
+
 ## Why the spec quality matters
 
 This is the one non-obvious lesson: **the harness works because the spec

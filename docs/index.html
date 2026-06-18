@@ -166,9 +166,9 @@
     transform:translateY(-50%) rotate(45deg);z-index:6;
   }
   @media(max-width:860px){.step:not(:last-child)::after{display:none}}
-  /* relay section: 3-up, collapses on small screens */
-  #relay .steps{grid-template-columns:repeat(3,1fr)}
-  @media(max-width:860px){#relay .steps{grid-template-columns:1fr}}
+  /* relay + handoff sections: 3-up, collapse on small screens */
+  #relay .steps,#handoff .steps{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:860px){#relay .steps,#handoff .steps{grid-template-columns:1fr}}
 
   /* ---------- STAT STRIP ---------- */
   #results{background:#0b0b0d;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
@@ -375,6 +375,45 @@
         <h3>Resume</h3>
         <p>The window reopens and Claude wakes where it left off — reviews the night's footage, rolls the next take. Auto when the reset is close; one ping when it's not.</p>
         <span class="who">Claude · subscription</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="handoff" style="background:#0b0b0d;border-top:1px solid var(--line-2)">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Continuity · next call</div>
+      <h2 class="sec">Picks up on the next take</h2>
+      <p class="sec-sub">Hit the context limit, or just start fresh tomorrow? The project keeps its own notes — the next session reads them first and rolls, with zero re-explaining.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal" data-role="claude" data-d="0" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
+        <div class="num">01</div>
+        <div class="ico" style="color:var(--amber)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></svg>
+        </div>
+        <h3>Scaffold once</h3>
+        <p>One <span class="mono">/handoff</span> writes a short contract into your <span class="mono">CLAUDE.md</span> and drops a <span class="mono">HANDOFF.md</span> — idempotent, never clobbers. Done forever.</p>
+        <span class="who">one-time setup</span>
+      </div>
+      <div class="step reveal" data-role="claude" data-d="1" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
+        <div class="num">02</div>
+        <div class="ico" style="color:var(--amber)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h7M8 21v-7h8v7"/></svg>
+        </div>
+        <h3>Wrap the take</h3>
+        <p>Before each session ends, the agent rewrites <span class="mono">HANDOFF.md</span> — what changed, what's next, the gotchas that cost time. The project becomes its own memory.</p>
+        <span class="who">every session</span>
+      </div>
+      <div class="step reveal" data-role="claude" data-d="2" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
+        <div class="num">03</div>
+        <div class="ico" style="color:var(--amber)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>
+        </div>
+        <h3>Cold open</h3>
+        <p>New session, cleared context, tomorrow morning — it reads <span class="mono">HANDOFF.md</span> first. You just say <b>"execute handoff"</b> and it rolls.</p>
+        <span class="who">zero re-explaining</span>
       </div>
     </div>
   </div>

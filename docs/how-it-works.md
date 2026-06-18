@@ -1,8 +1,8 @@
 # How stuntman works
 
-The core harness is two small files and one idea — plus a small rate-limit
-relay layered on top. This doc is the idea, in enough detail to modify or
-rebuild it.
+The core harness is two small files and one idea — plus a rate-limit relay and
+a session-handoff loop layered on top. This doc is the idea, in enough detail to
+modify or rebuild it.
 
 ## The core trick: Claude Code driving Claude Code
 
@@ -154,6 +154,27 @@ No `/v1/messages` call, so it's safe to poll even mid-blackout.
 The asymmetry is the whole point: the rate limit is Anthropic's, so the part
 that keeps moving during the cap is precisely the part that doesn't run on
 Anthropic.
+
+## Handing off across sessions: `bin/handoff` + `skills/handoff`
+
+`/relay` spans the rate-limit gap; `/handoff` spans the *context* gap — a fresh
+session, or one after `/clear`.
+
+`bin/handoff` is a one-shot scaffolder. Idempotently, and without clobbering:
+
+- it inserts a marked block (`<!-- stuntman:handoff:start … end -->`) into the
+  project's `CLAUDE.md` — created if absent, appended if present, skipped if
+  already there;
+- it drops a `HANDOFF.md` stub if one doesn't exist.
+
+The mechanism is just that `CLAUDE.md` auto-loads into every session. The block
+says two things: *read `HANDOFF.md` first, assume zero memory* and *rewrite
+`HANDOFF.md` before you stop*. So the project carries its own running memory, and
+"execute handoff" resumes any session with no re-explaining.
+
+Enforcement is instruction-only on purpose — no Stop hook, no `STATUS.md`, no
+external memory system. The whole feature is a short contract plus a stub; the
+leverage is entirely in *where* it's written — the always-loaded file.
 
 ## Failure modes & mitigations
 
