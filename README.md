@@ -141,8 +141,9 @@ Inside Claude Code:
 git clone https://github.com/mhlaghari/stuntman && cd stuntman && ./install.sh
 ```
 
-Copies the `/delegate` and `/relay` skills to `~/.claude/skills/` and the
-`stunt` worker plus the `window` usage probe to `~/.local/bin/`.
+Copies the `/delegate`, `/relay`, `/scaffold`, and `/handoff` skills to
+`~/.claude/skills/` and the `stunt` worker, `window` probe, and `scaffold` tool
+to `~/.local/bin/`.
 
 ## Usage
 
@@ -212,25 +213,34 @@ Claude call, safe to poll even while you're capped). Then:
 The probe is useful on its own, too — `window` prints your live 5-hour and
 weekly utilization plus reset times as one JSON line.
 
-## Handing off across sessions
+## Scaffolding project memory
 
-`/delegate` saves cost and `/relay` survives the rate limit; `/handoff` survives
-the **context** boundary. Run it once in a project:
+`/delegate` saves cost and `/relay` survives the rate limit; **`/scaffold`** and
+**`/handoff`** make a project survive the **context** boundary — clearing
+context, or starting fresh tomorrow.
 
-```
-/handoff
-```
+**`/scaffold`** — run once. It writes a contract into your `CLAUDE.md` (a "read
+this first" list + a "before you stop" process contract) and creates the docs it
+references, then fills them in from your project's current state:
 
-It idempotently adds a short contract to your `CLAUDE.md` (and drops a
-`HANDOFF.md` stub) — never clobbering existing content. From then on, because
-`CLAUDE.md` auto-loads every session, each session **reads `HANDOFF.md` first**
-(assume zero memory) and **rewrites it before stopping** (what changed, what's
-next, gotchas). To pick up exactly where you left off — even in a brand-new
-session after clearing context — you just say **"execute handoff."**
+- **`HANDOFF.md`** — the session baton: what changed this session, the next step,
+  the gotchas.
+- **`STATUS.md`** — the status board: built / in progress / planned.
 
-Enforcement is instruction-only and self-contained: no hooks, no `STATUS.md`, no
-dependency on any external memory system. Together the three commands make long
-autonomous runs cheap, rate-limit-proof, and context-proof.
+It's idempotent and never clobbers existing content. The contract then keeps the
+docs current — each session refreshes `HANDOFF.md` and `STATUS.md` (and
+`README.md`, when the project's surface changes) before stopping.
+
+**`/handoff`** (or just say *"execute handoff"*) — run at the start of any
+session. It reads `HANDOFF.md`, `STATUS.md`, `README.md`, and whatever else the
+contract lists, then picks up exactly where the last session left off — zero
+re-explaining, even in a brand-new session after clearing context.
+
+The mechanism: `CLAUDE.md` auto-loads every session, so the read-first /
+update-before-stopping contract is always in context. Instruction-only and
+self-contained — no hooks, no dependency on any external memory system. Together
+the commands make long autonomous runs cheap, rate-limit-proof, and
+context-proof.
 
 ## Why the spec quality matters
 

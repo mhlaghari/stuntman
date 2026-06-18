@@ -394,7 +394,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></svg>
         </div>
         <h3>Scaffold once</h3>
-        <p>One <span class="mono">/handoff</span> writes a short contract into your <span class="mono">CLAUDE.md</span> and drops a <span class="mono">HANDOFF.md</span> — idempotent, never clobbers. Done forever.</p>
+        <p>One <span class="mono">/scaffold</span> writes a contract into your <span class="mono">CLAUDE.md</span> and creates <span class="mono">HANDOFF.md</span> + <span class="mono">STATUS.md</span> — idempotent, never clobbers.</p>
         <span class="who">one-time setup</span>
       </div>
       <div class="step reveal" data-role="claude" data-d="1" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
@@ -403,7 +403,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h7M8 21v-7h8v7"/></svg>
         </div>
         <h3>Wrap the take</h3>
-        <p>Before each session ends, the agent rewrites <span class="mono">HANDOFF.md</span> — what changed, what's next, the gotchas that cost time. The project becomes its own memory.</p>
+        <p>Before each session ends, the agent refreshes <span class="mono">HANDOFF.md</span>, <span class="mono">STATUS.md</span>, and the <span class="mono">README</span> — what changed, what's next, the gotchas. The project becomes its own memory.</p>
         <span class="who">every session</span>
       </div>
       <div class="step reveal" data-role="claude" data-d="2" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
@@ -412,7 +412,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>
         </div>
         <h3>Cold open</h3>
-        <p>New session, cleared context, tomorrow morning — it reads <span class="mono">HANDOFF.md</span> first. You just say <b>"execute handoff"</b> and it rolls.</p>
+        <p>New session, cleared context, tomorrow morning — <span class="mono">/handoff</span> reads the docs first. You just say <b>"execute handoff"</b> and it rolls.</p>
         <span class="who">zero re-explaining</span>
       </div>
     </div>

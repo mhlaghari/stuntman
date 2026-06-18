@@ -1,8 +1,8 @@
 # How stuntman works
 
 The core harness is two small files and one idea — plus a rate-limit relay and
-a session-handoff loop layered on top. This doc is the idea, in enough detail to
-modify or rebuild it.
+a scaffold/handoff project-memory loop layered on top. This doc is the idea, in
+enough detail to modify or rebuild it.
 
 ## The core trick: Claude Code driving Claude Code
 
@@ -155,26 +155,35 @@ The asymmetry is the whole point: the rate limit is Anthropic's, so the part
 that keeps moving during the cap is precisely the part that doesn't run on
 Anthropic.
 
-## Handing off across sessions: `bin/handoff` + `skills/handoff`
+## Project memory across sessions: `bin/scaffold` + `/scaffold` & `/handoff`
 
-`/relay` spans the rate-limit gap; `/handoff` spans the *context* gap — a fresh
-session, or one after `/clear`.
+`/relay` spans the rate-limit gap; the `scaffold`/`handoff` pair spans the
+*context* gap — a fresh session, or one after `/clear`. `/scaffold` is the
+one-time setup; `/handoff` is the per-session resume.
 
-`bin/handoff` is a one-shot scaffolder. Idempotently, and without clobbering:
+`bin/scaffold` is the deterministic setup. Idempotently, and without clobbering:
 
-- it inserts a marked block (`<!-- stuntman:handoff:start … end -->`) into the
-  project's `CLAUDE.md` — created if absent, appended if present, skipped if
-  already there;
-- it drops a `HANDOFF.md` stub if one doesn't exist.
+- it inserts a marked contract (`<!-- stuntman:scaffold:start … end -->`) into
+  `CLAUDE.md` — created if absent, appended if present, skipped if already there
+  (it also recognizes the pre-0.5 `stuntman:handoff` marker);
+- it creates `HANDOFF.md` (the session baton — what changed, next step, gotchas)
+  and `STATUS.md` (the board — built / in progress / planned), each only if
+  missing.
 
-The mechanism is just that `CLAUDE.md` auto-loads into every session. The block
-says two things: *read `HANDOFF.md` first, assume zero memory* and *rewrite
-`HANDOFF.md` before you stop*. So the project carries its own running memory, and
-"execute handoff" resumes any session with no re-explaining.
+The mechanism is just that `CLAUDE.md` auto-loads into every session. The
+contract says two things: *read `HANDOFF.md` / `STATUS.md` first, assume zero
+memory* and *update them (and `README.md`, if it changed) before you stop*. So
+the project carries its own running memory.
 
-Enforcement is instruction-only on purpose — no Stop hook, no `STATUS.md`, no
-external memory system. The whole feature is a short contract plus a stub; the
-leverage is entirely in *where* it's written — the always-loaded file.
+`/handoff` (the `skills/handoff` instructions) is the runtime half: read those
+docs + `README.md` + whatever the contract lists, orient, and continue — then
+update the docs before stopping. `/scaffold` (the `skills/scaffold`
+instructions) runs `bin/scaffold` and then populates the stubs from the
+project's real state.
+
+Enforcement is instruction-only on purpose — no Stop hook, no external memory
+system. The leverage is entirely in *where* the contract is written: the
+always-loaded file.
 
 ## Failure modes & mitigations
 

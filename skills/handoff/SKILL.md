@@ -1,53 +1,44 @@
 ---
 name: handoff
-description: Scaffold a self-resuming session-handoff loop into the current project, so every Claude session reads HANDOFF.md first and rewrites it before stopping — then "execute handoff" resumes any session with zero re-explaining. Idempotently adds a marked block to CLAUDE.md and a HANDOFF.md stub. The context-continuity companion to /delegate (saves cost) and /relay (survives the rate limit). Use when the user invokes /handoff, says "scaffold the handoff loop", "set up auto-handoff", or "make this project resume itself across sessions".
+description: Resume work in a scaffolded project by reading its memory docs first, then continuing where the last session left off. Reads HANDOFF.md (the session baton), STATUS.md (the status board), README.md, and anything else the CLAUDE.md "read this first" list points to, gives a short read-back of where things stand, then picks up the next step. The runtime half of /scaffold. Use when the user invokes /handoff, says "execute handoff", "resume", "pick up where we left off", or "continue from the handoff".
 ---
 
-# stuntman: handoff — context that survives the session boundary
+# stuntman: handoff — resume from the project's memory
 
-`/delegate` saves cost, `/relay` survives the rate limit; this survives the
-**context** boundary. It installs a tiny contract so the project carries its own
-memory: each session reads `HANDOFF.md` first, and rewrites it before stopping.
-
-## The scaffolder
-
-```bash
-HANDOFF="$(command -v handoff || echo "${CLAUDE_PLUGIN_ROOT}/bin/handoff")"
-"$HANDOFF"          # scaffolds the current project (cwd)
-```
-
-Idempotent and non-destructive:
-- inserts a marked block (`<!-- stuntman:handoff:start … end -->`) into
-  `CLAUDE.md` — creating the file if absent, appending if present, skipping if
-  the block is already there. It never rewrites existing content.
-- drops a `HANDOFF.md` stub only if one doesn't already exist.
+`/scaffold` sets up the project-memory docs; `/handoff` is how you resume from
+them. It reads the project's running state, orients, and continues — so a brand-
+new session (or one after `/clear`) picks up with zero re-explaining.
 
 ## What to do
 
-1. **Confirm the project root** — run from the repo root, where `CLAUDE.md`
-   belongs. If unsure, use the git root (`git rev-parse --show-toplevel`).
-2. **Run the scaffolder** and show the user its output.
-3. **If it reports the block is already there**, the loop is installed — so
-   instead, offer to **update `HANDOFF.md` now** from this session's work
-   (current state, what's next, gotchas). That's the living part of the loop.
-4. **Report**: the loop is active for every future session. To resume any time,
-   the user just says **"execute handoff"** — the next agent reads `HANDOFF.md`
-   first, because that instruction now lives in `CLAUDE.md`, which auto-loads.
+1. **Read the memory docs, in order:**
+   - `HANDOFF.md` — the session baton: what the last session changed, the next
+     step, gotchas. This is the primary "where we are."
+   - `STATUS.md` — the board: built / in progress / planned.
+   - `README.md` — what the project is and how to run it.
+   - Anything the `CLAUDE.md` "read this first" list points to that's relevant to
+     the next step (specs, design notes). Don't read the whole repo — read what
+     the next step needs.
 
-## Writing a good HANDOFF.md
+   If `HANDOFF.md` / `STATUS.md` don't exist, the project isn't scaffolded yet —
+   tell the user to run `/scaffold` first, and stop.
 
-When you (or a future session) update it, write for a reader with **zero memory
-of this session**: what works right now, the immediate next steps in priority
-order, and any gotcha that cost time. No references to "as discussed" — it must
-stand alone.
+2. **Orient and confirm.** Give a short read-back: where the project stands and
+   the next step you picked up from `HANDOFF.md`. Surface anything stale or
+   contradictory between the docs and the actual code/tree.
+
+3. **Continue the work** from that next step — unless the user redirects you.
+
+4. **Before you stop**, honor the contract in `CLAUDE.md`: update `HANDOFF.md`
+   (what changed, next step, gotchas), `STATUS.md` (refresh the board), and
+   `README.md` (if the project's surface changed) — written for a reader with
+   zero memory of this session. Never commit without explicit authorization.
 
 ## Notes
 
-- Enforcement is **instruction-only** by design: `CLAUDE.md` auto-loads every
-  session, so the read-first / write-before-stop steps are always in context.
-  Claude follows them; nothing hard-forces it. That keeps it low-friction —
-  no hooks, no settings.json changes.
-- **Self-contained**: no dependency on `/checkpoint`, `STATUS.md`, or any
-  external memory system. Just `CLAUDE.md` + `HANDOFF.md`.
-- Pairs with `/relay`: when a long run pauses at the 5-hour cap, the same
-  `HANDOFF.md` is the human-readable state the next session picks up from.
+- This is the runtime half of the pair: `/scaffold` writes the system,
+  `/handoff` runs it. The read-first / update-before-stopping instructions also
+  live in `CLAUDE.md` (which auto-loads), so the loop holds even if a session
+  never explicitly runs `/handoff` — this command just makes the resume
+  deliberate.
+- Trust the working tree over the docs when they disagree — then fix the docs.
