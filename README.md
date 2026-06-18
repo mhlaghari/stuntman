@@ -141,8 +141,8 @@ Inside Claude Code:
 git clone https://github.com/mhlaghari/stuntman && cd stuntman && ./install.sh
 ```
 
-Copies the `/delegate` skill to `~/.claude/skills/` and the `stunt` worker
-wrapper to `~/.local/bin/`.
+Copies the `/delegate` and `/relay` skills to `~/.claude/skills/` and the
+`stunt` worker plus the `window` usage probe to `~/.local/bin/`.
 
 ## Usage
 
@@ -189,6 +189,29 @@ Good stunt doubles, roughly in order of bang-per-buck:
 | Gemini Flash | Cheap, large context |
 | Ollama / LM Studio | Literally free, fully local |
 
+## Working across the 5-hour limit
+
+Long autonomous runs eventually hit Claude's 5-hour usage window. `/relay`
+spans it automatically. It reads your window — how much is used and the exact
+reset time — from the same endpoint `/usage` uses, at **zero token cost** (no
+Claude call, safe to poll even while you're capped). Then:
+
+- **While you have headroom**, Claude does its normal plan/review work.
+- **When the window caps**, the stunt double keeps going — it bills your own
+  near-free key, not Anthropic, so the 5-hour limit never touches it — and a
+  handoff is saved to `.stuntman/relay-state.json`.
+- **When the window reopens**, the Claude side resumes: hands-free if the reset
+  is under ~55 min away (it schedules its own wakeup), or on your next ping for
+  longer gaps (a scheduled wakeup is clamped to one hour, and Claude can't wake
+  itself mid-blackout).
+
+```
+/loop relay this backlog across the limit
+```
+
+The probe is useful on its own, too — `window` prints your live 5-hour and
+weekly utilization plus reset times as one JSON line.
+
 ## Why the spec quality matters
 
 This is the one non-obvious lesson: **the harness works because the spec
@@ -230,6 +253,11 @@ Not with the opencode backend (`STUNTMAN_WORKER=opencode`) — opencode talks
 to DeepSeek, Groq, Ollama, and 75+ providers natively. The proxy route's
 advantage is that the worker is a full headless Claude Code instance (same
 tools and editing loop as the orchestrator).
+
+**Does the `window` probe cost tokens or eat my limit?**
+No. It reads the same OAuth usage endpoint `/usage` reads, with the credentials
+Claude Code already stores. No `/v1/messages` call — so it's free to poll, even
+while you're rate-limited.
 
 ## Credits
 

@@ -1,7 +1,8 @@
 # How stuntman works
 
-The whole harness is two small files and one idea. This doc is the idea,
-in enough detail to modify or rebuild it.
+The core harness is two small files and one idea — plus a small rate-limit
+relay layered on top. This doc is the idea, in enough detail to modify or
+rebuild it.
 
 ## The core trick: Claude Code driving Claude Code
 
@@ -122,6 +123,37 @@ than looping a weak model forever.
 
 Execution is where agentic coding burns tokens — tool loops, file dumps,
 retries. That is exactly the part that moves off your subscription.
+
+## Working across the 5-hour limit: `bin/window` + `skills/relay`
+
+The plan → execute → review loop can outlast Claude's 5-hour usage window.
+`relay` spans it.
+
+`bin/window` reads that window at no token cost: it pulls the OAuth token
+Claude Code already stores (macOS Keychain, or `~/.claude/.credentials.json`)
+and GETs the same `oauth/usage` endpoint `/usage` uses. One JSON line:
+
+```
+{"five_hour_pct":62.0,"resets_at":"…","seconds_until_reset":9056,
+ "blocked":false,"seven_day_pct":11.0,…}
+```
+
+No `/v1/messages` call, so it's safe to poll even mid-blackout.
+
+`skills/relay/SKILL.md` is the loop logic the orchestrator follows:
+
+1. **Detect.** Probe the window each iteration.
+2. **Hand off at the cap.** At ≥90% utilization, save a handoff to
+   `.stuntman/relay-state.json` and keep the stunt double executing in the
+   background — the worker runs on your own key, untouched by Anthropic's limit.
+3. **Resume at reset.** If the reset is ≤~55 min out, `ScheduleWakeup` fires
+   Claude just after it and the loop continues hands-free. Longer gaps fall
+   back to a ping-triggered resume — `ScheduleWakeup` is clamped to one hour,
+   and Claude can't wake itself mid-blackout (the wakeup would 429).
+
+The asymmetry is the whole point: the rate limit is Anthropic's, so the part
+that keeps moving during the cap is precisely the part that doesn't run on
+Anthropic.
 
 ## Failure modes & mitigations
 

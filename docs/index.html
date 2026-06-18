@@ -166,6 +166,9 @@
     transform:translateY(-50%) rotate(45deg);z-index:6;
   }
   @media(max-width:860px){.step:not(:last-child)::after{display:none}}
+  /* relay section: 3-up, collapses on small screens */
+  #relay .steps{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:860px){#relay .steps{grid-template-columns:1fr}}
 
   /* ---------- STAT STRIP ---------- */
   #results{background:#0b0b0d;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
@@ -335,6 +338,45 @@
       </div>
     </div>
     <div class="real-tag reveal" data-d="2">// not a benchmark — <b>an actual stuntman run</b>, captured end to end.</div>
+  </div>
+</section>
+
+<section id="relay" style="background:#0b0b0d">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Overtime · second unit</div>
+      <h2 class="sec">Rolls right through your rate limit</h2>
+      <p class="sec-sub">Hit the 5-hour wall mid-scene? The stunt double keeps shooting on its own dime — and Claude picks up the moment the window reopens. Hands-free.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal" data-role="claude" data-d="0" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
+        <div class="num">01</div>
+        <div class="ico" style="color:var(--amber)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+        </div>
+        <h3>Detect</h3>
+        <p>stuntman reads your 5-hour window — how much is spent, the exact reset — off the same meter <span class="mono">/usage</span> uses. Zero tokens, no API call.</p>
+        <span class="who">window probe</span>
+      </div>
+      <div class="step reveal" data-role="worker" data-d="1" style="--bd:rgba(47,214,196,.45);--gl:rgba(47,214,196,.16)">
+        <div class="num">02</div>
+        <div class="ico" style="color:var(--teal)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.4 6.6L22 12l-6.6 2.4L13 21l-2.4-6.6L4 12l6.6-2.4z"/></svg>
+        </div>
+        <h3>Keep rolling</h3>
+        <p>The stunt double isn't on Anthropic's clock. While the limit cools down, it keeps executing the spec'd work in the background — your key, not your cap.</p>
+        <span class="who">DeepSeek / Groq / Ollama</span>
+      </div>
+      <div class="step reveal" data-role="claude" data-d="2" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
+        <div class="num">03</div>
+        <div class="ico" style="color:var(--amber)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>
+        </div>
+        <h3>Resume</h3>
+        <p>The window reopens and Claude wakes where it left off — reviews the night's footage, rolls the next take. Auto when the reset is close; one ping when it's not.</p>
+        <span class="who">Claude · subscription</span>
+      </div>
+    </div>
   </div>
 </section>
 

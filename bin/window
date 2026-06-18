@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# stuntman window — read Claude's 5-hour (and weekly) usage window.
+#
+# Prints one normalized JSON line:
+#   {"five_hour_pct", "resets_at", "seconds_until_reset", "blocked",
+#    "severity", "seven_day_pct", "seven_day_resets_at"}
+#
+# Zero token cost: queries the same OAuth usage endpoint that /usage uses,
+# with the credentials Claude Code already stores. It makes NO Claude call,
+# so it's safe to poll even while you're rate-limited.
+#
+# Verbs:
+#   window            print the usage JSON (default)
+#   window --seconds  print only seconds_until_reset (0 if the window is open)
+#
+# Token source (first hit wins):
+#   - macOS Keychain:  security find-generic-password -s "Claude Code-credentials"
+#   - ~/.claude/.credentials.json  (Linux / non-keychain installs)
+set -e
+
+USAGE_URL="https://api.anthropic.com/api/oauth/usage"
+
+read_token() {
+  if command -v security >/dev/null 2>&1; then
+    blob="$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)"
+    if [ -n "$blob" ]; then
+      printf '%s' "$blob" | python3 -c "import json,sys;print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])" 2>/dev/null && return 0
+    fi
+  fi
+  if [ -f "$HOME/.claude/.credentials.json" ]; then
+    python3 -c "import json;print(json.load(open('$HOME/.claude/.credentials.json'))['claudeAiOauth']['accessToken'])" 2>/dev/null && return 0
+  fi
+  return 1
+}
+
+TOKEN="$(read_token || true)"
+if [ -z "$TOKEN" ]; then
+  echo '{"error":"no_credentials","hint":"Claude Code OAuth token not found in Keychain or ~/.claude/.credentials.json"}'
+  exit 1
+fi
+
+RESP="$(curl -s -m 10 "$USAGE_URL" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "anthropic-beta: oauth-2025-04-20" \
+  -H "anthropic-version: 2023-06-01")" || { echo '{"error":"request_failed"}'; exit 1; }
+
+python3 - "$RESP" "${1:-}" <<'PY'
+import json, sys
+from datetime import datetime, timezone
+
+raw = sys.argv[1]
+mode = sys.argv[2] if len(sys.argv) > 2 else ""
+
+try:
+    d = json.loads(raw)
+except ValueError:
+    print(json.dumps({"error": "bad_response", "body": raw[:200]})); sys.exit(1)
+
+if "five_hour" not in d:
+    # expired/invalid token, or the endpoint shape changed
+    print(json.dumps({"error": "unauthorized", "body": d})); sys.exit(1)
+
+fh = d.get("five_hour") or {}
+sd = d.get("seven_day") or {}
+
+def secs_until(ts):
+    if not ts:
+        return 0
+    t = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    return max(0, int((t - datetime.now(timezone.utc)).total_seconds()))
+
+pct = float(fh.get("utilization") or 0.0)
+resets_at = fh.get("resets_at")
+secs = secs_until(resets_at)
+
+severity = "normal"
+for lim in d.get("limits") or []:
+    if lim.get("kind") == "session":
+        severity = lim.get("severity") or severity
+        break
+
+blocked = pct >= 100.0 or severity in ("critical", "blocked", "exhausted")
+
+if mode == "--seconds":
+    print(secs); sys.exit(0)
+
+print(json.dumps({
+    "five_hour_pct": round(pct, 1),
+    "resets_at": resets_at,
+    "seconds_until_reset": secs,
+    "blocked": blocked,
+    "severity": severity,
+    "seven_day_pct": round(float(sd.get("utilization") or 0.0), 1),
+    "seven_day_resets_at": sd.get("resets_at"),
+}))
+PY
