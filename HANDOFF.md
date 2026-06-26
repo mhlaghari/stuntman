@@ -6,25 +6,30 @@ session._
 
 ## What changed this session
 
-- Expanded `/scaffold` from the v0.5 pair (HANDOFF + STATUS) into a **full
-  living-document system**:
-  - `bin/scaffold` now also creates **`SPEC.md`** (the contract) and
-    **`STRATEGY.md`** (the honest why), each a self-declaring living doc with a
-    changelog. The `CLAUDE.md` contract reads + maintains all of them.
-    Idempotent / non-clobber tested.
-  - `skills/scaffold` populates SPEC + STRATEGY too; `skills/handoff` reads them.
-- Added a **Stop hook** (`hooks/handoff-guard.sh` + `hooks/hooks.json`):
-  scaffolded-only nudge to update `HANDOFF.md`/`STATUS.md` before stopping when
-  code changed but the docs didn't. Tested across 5 scenarios; fails open.
-- `plugin.json` → **v0.6.0**. Re-scaffolded this repo (`CLAUDE.md` + `SPEC.md` +
-  `STRATEGY.md` + `STATUS.md`, all populated). Updated README / how-it-works /
-  landing for the living-doc set + the hook.
+- Added a **5th command, `/wiki`** — scaffolds an LLM-wiki "second brain" + graphify
+  for the current folder, in one shot. New files:
+  - `bin/wiki` — deterministic, idempotent scaffolder. Auto-detects **single project
+    vs folder of projects** (≥2 project-like subdirs → folder mode). Lays a vault at
+    `<folder>-wiki/`: `CLAUDE.md` schema, `wiki/{projects,concepts,patterns,lessons-learned,references}`,
+    `index.md` / `_PROJECTS_MOC.md` / `hot.md` / `Projects-Dashboard.md` (Dataview),
+    `.obsidian/{app,graph,core-plugins}.json` (graph colored by status/type). Prints
+    `VAULT=`, `MODE=`, and the detected `PROJECTS:` list. Smoke-tested: single, folder
+    (3 projects), and idempotent re-run (skips all 8 files).
+  - `skills/wiki/SKILL.md` — orchestrates: run scaffolder → ensure graphify (`graphifyy`)
+    → populate notes from READMEs/code (parallel `general-purpose` subagents for many
+    projects, then author cross-links centrally) → build the graph (invoke `/graphify`
+    on `<vault>/wiki`, fallback to the pipeline) → wire the graphify MCP at user scope
+    (`claude mcp add <vault-name> -- <interp> -m graphify.serve …`) → report.
+- `plugin.json` keywords extended (second-brain / wiki / graphify / knowledge-graph).
+- Bumped to **v0.7.0**; updated `README.md`, `docs/how-it-works.md`, and `install.sh`
+  for the 5th command. This mirrors what was built by hand for `laghari-vault` — now
+  portable + generic.
 
 ## Next step
 
-- Commit + push v0.6.0, then verify GitHub Pages rebuilds.
-- Then work the `STATUS.md` "Planned" list: marketplace.json copy, smoke-test CI,
-  a real `/relay` capped→reset test.
+- Add a styled `/wiki` card to the landing page `docs/index.html` (left out of v0.7.0 to
+  avoid shipping a half-styled card in the 3-card grid; README/how-it-works/install.sh are done).
+- Then the `STATUS.md` "Planned" list: marketplace.json copy, smoke-test CI, real `/relay` test.
 
 ## Gotchas
 
@@ -36,7 +41,14 @@ session._
   needed; mirrors everything-claude-code). Command uses `${CLAUDE_PLUGIN_ROOT}`.
 - `bin/scaffold` writes docs via a `make` helper + quoted heredocs (backticks safe).
 - GateGuard (everything-claude-code) gates every Edit/Write and blocks `rm`.
+- `/wiki` is a **soft-depends on graphify** (`pip install graphifyy`) + `mcp` pkg + the
+  `claude` CLI (for MCP wiring). The SKILL prefers invoking the user's `/graphify` skill
+  for the graph step but documents a direct-pipeline fallback so the plugin stays usable
+  standalone. `bin/wiki` itself has **zero deps** (pure bash) — only the populate/graph
+  steps need graphify. Vault is `<folder>-wiki/`; graphify runs over the *notes*, not the
+  project code (right altitude, avoids the node_modules explosion).
 
 ## Last updated
 
+2026-06-26 — v0.7.0: `/wiki` second-brain scaffolder + docs (README/how-it-works/install.sh).
 2026-06-19 — living-document system + Stop hook (v0.6.0).

@@ -1,8 +1,8 @@
 # How stuntman works
 
-The core harness is two small files and one idea — plus a rate-limit relay and
-a scaffold/handoff project-memory loop layered on top. This doc is the idea, in
-enough detail to modify or rebuild it.
+The core harness is two small files and one idea — plus a rate-limit relay, a
+scaffold/handoff project-memory loop, and a `/wiki` second-brain builder layered
+on top. This doc is the idea, in enough detail to modify or rebuild it.
 
 ## The core trick: Claude Code driving Claude Code
 
@@ -190,6 +190,27 @@ in scaffolded projects only, if a turn changed code but left `HANDOFF.md` /
 `STATUS.md` untouched, it blocks the stop once with a reminder. It respects
 `stop_hook_active` (no loops), only acts where a `HANDOFF.md` exists, and fails
 open — so it never traps you or touches non-scaffolded projects.
+
+## A knowledge graph across projects: `bin/wiki` + `/wiki`
+
+`/scaffold` gives one project a memory; **`/wiki`** gives a whole *folder* of
+projects a shared brain. `bin/wiki` is the deterministic, idempotent scaffolder:
+it auto-detects single-project vs folder-of-projects (≥2 project-like subdirs →
+folder mode) and lays down a vault at `<folder>-wiki/` — a `CLAUDE.md` note-schema,
+the `wiki/` tree (`projects/`, `concepts/`, `patterns/`, `lessons-learned/`,
+`references/`), an `index.md` / Map-of-Content / `hot.md` / Dataview dashboard, and
+an `.obsidian/` config with the graph pre-colored by status. It prints `VAULT=`,
+`MODE=`, and the detected project list — and never clobbers existing files.
+
+`skills/wiki/SKILL.md` is the orchestration: run the scaffolder → ensure
+[graphify](https://pypi.org/project/graphifyy/) → write a note per project from its
+README/code (parallel `general-purpose` subagents for many, then author the
+cross-links centrally so they stay consistent) → build the graph over the *notes*
+(not the code — the right altitude, and it avoids ingesting `node_modules`) →
+register the graphify MCP at user scope so the brain is queryable in later
+sessions. The graph clusters projects into communities and surfaces cross-project
+bridges; the MCP makes "did I solve this already?" an automatic lookup. Notes only
+— project code is never modified.
 
 ## Failure modes & mitigations
 

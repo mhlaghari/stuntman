@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+# stuntman: wiki — scaffold an LLM-wiki "second brain" skeleton for a project
+# or a folder of projects, then detect what's inside so the skill can populate it
+# and run graphify. Deterministic + idempotent: never clobbers existing files.
+set -euo pipefail
+shopt -s nullglob
+
+TARGET="${1:-$PWD}"
+TARGET="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "error: no such directory: ${1:-$PWD}" >&2; exit 1; }
+BASENAME="$(basename "$TARGET")"
+VAULT_NAME="${2:-${BASENAME}-wiki}"
+VAULT="$TARGET/$VAULT_NAME"
+
+mkdir -p \
+  "$VAULT/wiki/projects" "$VAULT/wiki/concepts" "$VAULT/wiki/patterns" \
+  "$VAULT/wiki/lessons-learned" "$VAULT/wiki/references" "$VAULT/.obsidian"
+
+# write-if-missing: consumes stdin either way so heredocs always close cleanly
+w() {
+  local p="$1"
+  if [ -f "$p" ]; then cat >/dev/null; echo "  skip  ${p#$TARGET/}";
+  else cat > "$p"; echo "  wrote ${p#$TARGET/}"; fi
+}
+
+echo "== stuntman:wiki scaffolding $VAULT_NAME =="
+
+w "$VAULT/CLAUDE.md" <<'EOF'
+# Knowledge Vault (LLM Wiki)
+
+Second brain for the projects in this folder. Persistent memory across Claude Code
+sessions — one vault, many projects. Cross-project patterns and lessons live here so
+every session starts informed. Scaffolded by stuntman `/wiki`.
+
+## Session protocol
+- **Start:** read this file → `wiki/hot.md` (recent context) → the relevant `wiki/projects/<name>.md`.
+- **End:** update `wiki/hot.md`; capture reusable fixes in `wiki/lessons-learned/` or `wiki/patterns/`
+  (this is what lets OTHER projects find the solution later); update `wiki/index.md` if notes were added;
+  refresh the graph: `graphify update wiki`.
+
+## Structure
+- `wiki/index.md` — master catalog (start here)
+- `wiki/_PROJECTS_MOC.md` — how the projects relate
+- `wiki/projects/` — one note per project
+- `wiki/concepts/` — cross-project concepts
+- `wiki/patterns/` — reusable patterns / playbooks
+- `wiki/lessons-learned/` — mistakes + fixes (cross-project)
+- `wiki/references/` — external repos worth remembering
+- `graphify-out/` — the knowledge graph (graph.html, graph.json, GRAPH_REPORT.md)
+- `graph.canvas` — community layout, opens in Obsidian
+
+## Project note schema
+```
+---
+title: <Human Title>
+folder: <project folder name>
+type: project
+domain: <agent-platform|product-app|data-analytics|ml-research|dev-tooling|web|other>
+status: <active|paused|prototype|reference>
+stack: [<langs + key frameworks>]
+repo: <git remote or none>
+created: <YYYY-MM-DD>
+updated: <YYYY-MM-DD>
+tags: [project, domain/<x>, status/<y>, stack/<z>]
+---
+# <Title>
+> <one-line what-it-is>
+## Summary
+## Architecture
+## Connections   ← 2–4 SELECTIVE [[wikilinks]] only where one project genuinely informs another
+## Notable       ← decisions / lessons / ⚠️ security flags
+```
+
+## Tag taxonomy (controlled vocabulary)
+- type: `project` · `concept` · `pattern` · `lesson` · `reference` · `moc`
+- `domain/<x>`, `status/<active|paused|prototype|reference>`, `stack/<x>`
+- lowercase kebab-case; don't invent new namespaces without updating this list.
+
+## Rules
+- Selective linking only (2–4 high-signal links/note) — avoid the over-linked hairball.
+- One idea per note. Reuse existing concept notes before creating new ones (new concept only if it spans ≥3 projects).
+- Never store secrets, model weights, or datasets here — notes only, never project code.
+EOF
+
+w "$VAULT/wiki/index.md" <<'EOF'
+---
+title: Wiki Index
+updated:
+---
+
+# Wiki Index — Second Brain
+
+Master catalog. Status: 🟢 active · ⏸ paused · 🧪 prototype · 📎 reference
+See also: [[_PROJECTS_MOC]] · [[Projects-Dashboard]] · [[hot]]
+**Graph:** open `graph.canvas` in Obsidian · `graphify-out/graph.html` in a browser · query: `graphify query "..."`
+
+## Projects
+<!-- one line per project, grouped by family. Filled in by /wiki. -->
+
+## Concepts (cross-project)
+
+## Patterns
+
+## Lessons Learned
+
+## References (external)
+EOF
+
+w "$VAULT/wiki/_PROJECTS_MOC.md" <<'EOF'
+---
+title: Projects — Map of Content
+type: moc
+updated:
+tags: [moc, projects]
+---
+
+# Projects — Map of Content
+
+How the projects relate (the families and the bridges between them).
+Flat catalog: [[index]] · live tables: [[Projects-Dashboard]].
+
+<!-- Filled in by /wiki: group projects into families, note shared engines/patterns,
+     and call out the surprising cross-family connections the graph found. -->
+EOF
+
+w "$VAULT/wiki/hot.md" <<'EOF'
+---
+title: Hot Cache — Recent Context
+updated:
+---
+
+# Hot Cache
+
+> Updated at the end of every session. Read at session start for recent context.
+
+## Last Updated
+
+## What just happened
+
+## Watchlist / TODO
+EOF
+
+w "$VAULT/wiki/Projects-Dashboard.md" <<'EOF'
+---
+title: Projects Dashboard
+type: dashboard
+updated:
+tags: [dashboard]
+---
+
+# Projects Dashboard
+
+> Live tables. Requires the **Dataview** plugin (Settings → Community plugins → install "Dataview").
+> Without it these render as code blocks — the hand-maintained [[index]] always works.
+
+## By status
+```dataview
+TABLE domain AS Domain, status AS Status, repo AS Repo
+FROM "wiki/projects"
+SORT status ASC, file.name ASC
+```
+
+## By domain
+```dataview
+TABLE rows.file.link AS Projects
+FROM "wiki/projects"
+GROUP BY domain
+```
+
+## Review queue (prototype / paused)
+```dataview
+TABLE status AS Status, domain AS Domain
+FROM "wiki/projects"
+WHERE status = "prototype" OR status = "paused"
+```
+EOF
+
+w "$VAULT/.obsidian/app.json" <<'EOF'
+{
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "attachments",
+  "showFrontmatter": true
+}
+EOF
+
+w "$VAULT/.obsidian/graph.json" <<'EOF'
+{
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "colorGroups": [
+    { "query": "tag:#status/active", "color": { "a": 1, "rgb": 5025616 } },
+    { "query": "tag:#status/prototype", "color": { "a": 1, "rgb": 16763655 } },
+    { "query": "tag:#status/paused", "color": { "a": 1, "rgb": 10395294 } },
+    { "query": "path:wiki/concepts", "color": { "a": 1, "rgb": 2201331 } },
+    { "query": "path:wiki/patterns", "color": { "a": 1, "rgb": 1810804 } },
+    { "query": "path:wiki/references", "color": { "a": 1, "rgb": 10233520 } }
+  ],
+  "nodeSizeMultiplier": 1.2,
+  "lineSizeMultiplier": 1,
+  "centerStrength": 0.5,
+  "repelStrength": 12,
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "scale": 1
+}
+EOF
+
+w "$VAULT/.obsidian/core-plugins.json" <<'EOF'
+[
+  "file-explorer", "global-search", "switcher", "graph", "backlink",
+  "outgoing-link", "tag-pane", "page-preview", "templates", "note-composer",
+  "command-palette", "outline", "word-count", "file-recovery", "bases", "canvas"
+]
+EOF
+
+# ---- detection: single project vs folder of projects ----
+is_project_dir() {
+  local d="$1"
+  [ -e "$d/README.md" ] || [ -e "$d/package.json" ] || [ -e "$d/pyproject.toml" ] || \
+  [ -e "$d/requirements.txt" ] || [ -e "$d/Cargo.toml" ] || [ -e "$d/go.mod" ] || \
+  [ -d "$d/.git" ] || [ -d "$d/src" ]
+}
+
+PROJECTS=()
+for d in "$TARGET"/*/; do
+  d="${d%/}"; name="$(basename "$d")"
+  [ "$name" = "$VAULT_NAME" ] && continue
+  case "$name" in .*|archieve|archive|node_modules|venv|dist|build|__pycache__) continue;; esac
+  is_project_dir "$d" && PROJECTS+=("$name")
+done
+COUNT=${#PROJECTS[@]}
+
+if [ "$COUNT" -ge 2 ]; then MODE="folder"; else MODE="single"; fi
+
+echo
+echo "VAULT=$VAULT"
+echo "MODE=$MODE"
+if [ "$MODE" = "folder" ]; then
+  echo "PROJECT_COUNT=$COUNT"
+  echo "PROJECTS:"
+  for p in "${PROJECTS[@]}"; do echo "  - $p"; done
+else
+  echo "SELF=$BASENAME   # scaffold a single-project wiki for this project"
+fi
+echo
+echo "Skeleton ready. Next: the /wiki skill populates the notes, runs graphify, and wires the MCP."

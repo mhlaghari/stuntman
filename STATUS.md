@@ -5,7 +5,7 @@ every session._
 
 ## Built
 
-**v0.6.0** — four commands (each a skill + a `bin/` helper where needed), plus a
+**v0.7.0** — five commands (each a skill + a `bin/` helper where needed), plus a
 living-document system and an enforcement hook:
 
 - **`/delegate`** (`skills/delegate`, `bin/stunt`) — plan with Claude, execute
@@ -17,6 +17,10 @@ living-document system and an enforcement hook:
   `STATUS.md` (board), `SPEC.md` (contract), `STRATEGY.md` (honest why).
 - **`/handoff`** (`skills/handoff`) — resume a scaffolded project by reading its
   living docs, then continue.
+- **`/wiki`** (`skills/wiki`, `bin/wiki`) — scaffold an LLM-wiki "second brain" for
+  a folder of projects (or a single project) in one shot: vault skeleton + a note
+  per project from its README/code + a graphify knowledge graph + the graphify MCP
+  wired for cross-project recall. Auto-detects single vs folder mode; idempotent.
 - **Stop hook** (`hooks/handoff-guard.sh` + `hooks/hooks.json`) — in scaffolded
   projects only, nudges once if code changed but `HANDOFF.md`/`STATUS.md` didn't.
   Fails open; never touches non-scaffolded projects.
@@ -45,4 +49,5 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 
 ## Last updated
 
+2026-06-26 — **v0.7.0**: added `/wiki` (LLM-wiki second brain + graphify + MCP); scaffolder smoke-tested (single/folder/idempotent); README / how-it-works / install.sh updated. Landing-page card pending.
 2026-06-19 — shipped the living-document system + Stop hook (v0.6.0).

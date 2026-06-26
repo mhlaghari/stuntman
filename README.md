@@ -141,9 +141,9 @@ Inside Claude Code:
 git clone https://github.com/mhlaghari/stuntman && cd stuntman && ./install.sh
 ```
 
-Copies the `/delegate`, `/relay`, `/scaffold`, and `/handoff` skills to
-`~/.claude/skills/` and the `stunt` worker, `window` probe, and `scaffold` tool
-to `~/.local/bin/`.
+Copies the `/delegate`, `/relay`, `/scaffold`, `/handoff`, and `/wiki` skills to
+`~/.claude/skills/` and the `stunt` worker, `window` probe, `scaffold`, and `wiki`
+tools to `~/.local/bin/`.
 
 ## Usage
 
@@ -242,6 +242,36 @@ update-before-stopping contract is always in context. A **Stop hook** (plugin
 install) backs it up — in scaffolded projects only, it nudges once if you changed
 code but didn't update the docs. Together the commands make long autonomous runs
 cheap, rate-limit-proof, and context-proof.
+
+## A second brain across all your projects
+
+`/delegate`, `/relay`, `/scaffold` work *inside* one project. **`/wiki`** works
+*across* them: run it in a folder and it builds a navigable **second brain** — an
+Obsidian vault of notes-about-projects plus a
+[graphify](https://pypi.org/project/graphifyy/) knowledge graph — so a future
+session can ask *"did I already solve this?"* and find the answer in another project.
+
+```
+cd ~/code      # a folder of projects (or a single project)
+/wiki
+```
+
+One shot, auto-detecting scope:
+
+- **Scaffolds** the vault at `<folder>-wiki/` — a `CLAUDE.md` note-schema,
+  `wiki/{projects,concepts,patterns,lessons-learned}`, an `index.md` catalog, a
+  Map of Content, and an `.obsidian/` config (graph pre-colored by status).
+- **Writes a note per project** from its README/code — what it is, its stack, the
+  load-bearing decisions and lessons — with selective `[[wikilinks]]` between
+  related projects.
+- **Builds a graphify graph** (interactive `graph.html`, queryable `graph.json`, an
+  Obsidian `graph.canvas`) that clusters projects into families and surfaces
+  cross-project connections you'd never think to look for.
+- **Wires the graphify MCP** at user scope, so Claude can query the brain live in
+  *every* future session — cross-project recall becomes automatic.
+
+Idempotent (safe to re-run as projects evolve) and **notes only** — your project
+code is never touched.
 
 ## Why the spec quality matters
 
