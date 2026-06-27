@@ -24,11 +24,16 @@ session._
 - Bumped to **v0.7.0**; updated `README.md`, `docs/how-it-works.md`, and `install.sh`
   for the 5th command. This mirrors what was built by hand for `laghari-vault` — now
   portable + generic.
+- **Commands overview** added (follow-up): a 5-command table at the top of `README.md`
+  and a new `#commands` section on the landing page (`docs/index.html`). Every slash
+  command is now visible at a glance — previously `/delegate` and `/relay` weren't even
+  named on the site.
 
 ## Next step
 
-- Add a styled `/wiki` card to the landing page `docs/index.html` (left out of v0.7.0 to
-  avoid shipping a half-styled card in the 3-card grid; README/how-it-works/install.sh are done).
+- (Polish only) the landing `#handoff` 3-card grid still shows scaffold/handoff; the new
+  `#commands` section already lists all five incl. `/wiki`, so the page is complete — a
+  dedicated `/wiki` story card is now optional.
 - Then the `STATUS.md` "Planned" list: marketplace.json copy, smoke-test CI, real `/relay` test.
 
 ## Gotchas

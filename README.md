@@ -19,6 +19,20 @@ subscription tokens go only where intelligence actually matters.
                                                                 takes over
 ```
 
+## Commands
+
+From a normal (subscription) Claude Code session, in any project:
+
+| Command | What it does | Spans |
+|---|---|---|
+| **`/delegate <task>`** | Claude plans + reviews; a near-free model executes the spec through a local proxy. | cost |
+| **`/relay <task>`** | Keeps the cheap worker going across Claude's 5-hour usage limit; Claude resumes at reset. | the rate limit |
+| **`/scaffold`** | Stands up a project's self-resuming memory — a `CLAUDE.md` contract + four living docs (HANDOFF · STATUS · SPEC · STRATEGY). | the context boundary |
+| **`/handoff`** | Reads those docs and continues exactly where the last session stopped. | new sessions / `/clear` |
+| **`/wiki`** | Builds a "second brain" across a folder of projects — an Obsidian vault + a graphify knowledge graph + a live MCP for cross-project recall. | every project |
+
+Each is detailed in its own section below.
+
 ## The pain point
 
 You pay for a Claude subscription. And then you watch Opus burn through your
