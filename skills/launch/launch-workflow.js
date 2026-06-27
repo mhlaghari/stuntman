@@ -1,6 +1,8 @@
 // stuntman /launch — product-launch-strategy workflow (parameterized, reusable for ANY product).
 // Driven entirely by `args` so the same script serves every product. See SKILL.md for how the
 // skill assembles `args`. Run with: Workflow({ scriptPath: ".../launch-workflow.js", args })
+// NOTE: the Workflow runtime hands `args` to the script as a JSON STRING — this script JSON.parses
+// it into ARGS below. Do not assume `args` is already an object (it isn't).
 //
 // args = {
 //   product:        "Acme",                         // short product name (for labels/title)
@@ -24,15 +26,26 @@ export const meta = {
   ],
 }
 
-const PRODUCT = (args && args.product) || 'the product'
-const DATE = (args && args.date) || 'today'
-const PRODUCT_BRIEF = (args && args.productBrief) || '(no product brief provided)'
-const LAUNCH_BRIEF = (args && args.launchBrief) || '(no launch brief provided)'
-const DIFFERENTIATORS = (args && args.differentiators) || '(no differentiators provided)'
-const COMPETITORS = (args && args.competitors) || []
-const HTML_OUT = (args && args.htmlOut) || (PRODUCT.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-launch-plan.html')
+// The Workflow runtime delivers `args` as a JSON STRING (not a parsed object) — parse it.
+const ARGS = (typeof args === 'string')
+  ? (() => { try { return JSON.parse(args) } catch (e) { return {} } })()
+  : (args || {})
 
-const THEMES = (args && args.themes && args.themes.length) ? args.themes : [
+// Fail fast rather than silently emit a generic plan grounded in whatever repo the run sits in
+// (the args-not-reaching-the-script failure mode a smoke test caught on 2026-06-27).
+if (!ARGS.productBrief && !(ARGS.competitors && ARGS.competitors.length)) {
+  throw new Error('launch-workflow: args has no productBrief/competitors after JSON.parse — refusing to generate a generic plan. Ensure the /launch skill passed a populated args object.')
+}
+
+const PRODUCT = ARGS.product || 'the product'
+const DATE = ARGS.date || 'today'
+const PRODUCT_BRIEF = ARGS.productBrief || '(no product brief provided)'
+const LAUNCH_BRIEF = ARGS.launchBrief || '(no launch brief provided)'
+const DIFFERENTIATORS = ARGS.differentiators || '(no differentiators provided)'
+const COMPETITORS = ARGS.competitors || []
+const HTML_OUT = ARGS.htmlOut || (PRODUCT.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-launch-plan.html')
+
+const THEMES = (ARGS.themes && ARGS.themes.length) ? ARGS.themes : [
   { label: 'market-sizing', prompt: `Research the MARKET for the category that ${PRODUCT} competes in, as of ${DATE}, for a go-to-market plan. Use web tools (firecrawl_search / WebSearch / WebFetch) for CURRENT data with source URLs. Cover: market size (TAM/SAM) + growth rate with a cited source; the current trends shaping the category; buyer segments and which is growing fastest; what "good" looks like to users now (the table-stakes feature set); and any data on willingness-to-pay for ${PRODUCT}'s core differentiator. Return a concise markdown brief titled "## Market & Trends Research" with cited facts and a short "implications for ${PRODUCT}" closer. Product context: ${DIFFERENTIATORS}` },
   { label: 'category-tailwinds', prompt: `Research the TAILWINDS and RISKS (regulatory, legal, trust, cultural) that bear on ${PRODUCT}'s differentiation wedge, as of ${DATE}. Use web tools with source URLs. Find specific, citable events — incidents, lawsuits, regulations, public controversies — that make ${PRODUCT}'s wedge more (or less) valuable right now, with dates + links. Then assess honestly whether ${PRODUCT}'s core differentiator is a real WILLINGNESS-TO-PAY driver or mostly a stated preference. Return a markdown brief titled "## Tailwinds & Risks Research" with cited, specific examples (these become launch-messaging ammunition) and a blunt verdict. Wedge / differentiators: ${DIFFERENTIATORS}` },
   { label: 'launch-channels', prompt: `Research the best LAUNCH CHANNELS for this specific launch, as of ${DATE}. Launch brief: ${LAUNCH_BRIEF}. Use web tools with source URLs. Cover: Product Hunt (what a top-5 finish takes now — realistic benchmarks, timing, the assets that win, a recent comparable example); Hacker News "Show HN" norms and failure modes for this kind of product; the SPECIFIC named communities/subreddits/forums where this beachhead gathers; relevant newsletters/influencers worth pitching; indie + category directories. Return a markdown brief titled "## Launch Channels Research" with specifically named channels, realistic benchmarks, and concrete tactics a founder on this budget can execute.` },
