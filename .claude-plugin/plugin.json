@@ -1,7 +1,7 @@
 {
   "name": "stuntman",
   "description": "Claude doesn't do its own stunts. Plan with Claude, execute with a near-free model (DeepSeek, Groq, Ollama… via a local proxy or opencode), review with Claude — your subscription tokens go only where intelligence matters.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "author": {
     "name": "mhlaghari",
     "email": "mhlaghari@gmail.com"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/mhlaghari/stuntman",
   "repository": "https://github.com/mhlaghari/stuntman",
   "license": "MIT",
-  "keywords": ["delegation", "orchestration", "deepseek", "proxy", "cost-saving", "multi-model", "rate-limit", "handoff", "scaffold", "wiki", "second-brain", "graphify", "knowledge-graph"]
+  "keywords": ["delegation", "orchestration", "deepseek", "proxy", "cost-saving", "multi-model", "rate-limit", "handoff", "scaffold", "wiki", "second-brain", "graphify", "knowledge-graph", "launch", "go-to-market", "competitive-research", "product-strategy"]
 }

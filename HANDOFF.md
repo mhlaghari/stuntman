@@ -6,34 +6,32 @@ session._
 
 ## What changed this session
 
-- Added a **5th command, `/wiki`** — scaffolds an LLM-wiki "second brain" + graphify
-  for the current folder, in one shot. New files:
-  - `bin/wiki` — deterministic, idempotent scaffolder. Auto-detects **single project
-    vs folder of projects** (≥2 project-like subdirs → folder mode). Lays a vault at
-    `<folder>-wiki/`: `CLAUDE.md` schema, `wiki/{projects,concepts,patterns,lessons-learned,references}`,
-    `index.md` / `_PROJECTS_MOC.md` / `hot.md` / `Projects-Dashboard.md` (Dataview),
-    `.obsidian/{app,graph,core-plugins}.json` (graph colored by status/type). Prints
-    `VAULT=`, `MODE=`, and the detected `PROJECTS:` list. Smoke-tested: single, folder
-    (3 projects), and idempotent re-run (skips all 8 files).
-  - `skills/wiki/SKILL.md` — orchestrates: run scaffolder → ensure graphify (`graphifyy`)
-    → populate notes from READMEs/code (parallel `general-purpose` subagents for many
-    projects, then author cross-links centrally) → build the graph (invoke `/graphify`
-    on `<vault>/wiki`, fallback to the pipeline) → wire the graphify MCP at user scope
-    (`claude mcp add <vault-name> -- <interp> -m graphify.serve …`) → report.
-- `plugin.json` keywords extended (second-brain / wiki / graphify / knowledge-graph).
-- Bumped to **v0.7.0**; updated `README.md`, `docs/how-it-works.md`, and `install.sh`
-  for the 5th command. This mirrors what was built by hand for `laghari-vault` — now
-  portable + generic.
-- **Commands overview** added (follow-up): a 5-command table at the top of `README.md`
-  and a new `#commands` section on the landing page (`docs/index.html`). Every slash
-  command is now visible at a glance — previously `/delegate` and `/relay` weren't even
-  named on the site.
+- Added a **6th command, `/launch`** — a product-launch strategist. New dir `skills/launch/`:
+  - `launch-workflow.js` — a parameterized multi-agent `Workflow`: Phase 1 fan-out cited
+    competitor + market/tailwinds/channel research → Phase 2 parallel synthesis (assessment,
+    pricing, launch playbook, positioning) → Phase 3 two adversarial critics (feasibility +
+    market-reality) → Phase 4 compile one **Product Success Overview** (returns markdown, writes
+    a styled HTML report). Fully `args`-driven (productBrief / launchBrief / differentiators /
+    competitors / date / htmlOut) so the one script serves any product. Syntax-checked (ESM +
+    top-level await). Born from a real Adversaria launch plan (20 agents, ~1.6M tokens).
+  - `SKILL.md` — orchestrates: ground in the repo docs → ask the 4 GTM decisions
+    (beachhead/monetization/timeline/resources via AskUserQuestion) → build an 8–12 competitor
+    set → resolve the script path (plugin or install.sh route) → run `Workflow` → write
+    `LAUNCH_PLAN.md` (unescape entities) + report the verdict, surfacing any recommended pivot.
+- **v0.8.0**: `plugin.json` bumped + keywords (launch / go-to-market / competitive-research /
+  product-strategy); `install.sh` now copies the whole `skills/launch/` dir (first skill with a
+  sidecar file, not SKILL.md-only); `README.md` command table + new "From a blank page to a launch
+  plan" section; landing page `#commands` → **six cards** ("Six commands, one crew").
+- _Prior this session (v0.7.0):_ added `/wiki` (second-brain scaffolder + graphify + MCP) and the
+  commands-overview table/landing section — see the v0.7.0 entry in `STATUS.md`.
 
 ## Next step
 
-- (Polish only) the landing `#handoff` 3-card grid still shows scaffold/handoff; the new
-  `#commands` section already lists all five incl. `/wiki`, so the page is complete — a
-  dedicated `/wiki` story card is now optional.
+- **Test `/launch` end-to-end from a cold invocation** on a real product — it's syntax-checked and
+  was validated as the inline workflow that produced the Adversaria plan, but the packaged skill
+  (path resolution + args assembly from `SKILL.md`) hasn't been exercised from a fresh `/launch`.
+- (Polish only) the landing `#commands` section now lists all six; the `#handoff` 3-card grid is
+  still scaffold/handoff-only — a dedicated `/wiki` or `/launch` story card is optional.
 - Then the `STATUS.md` "Planned" list: marketplace.json copy, smoke-test CI, real `/relay` test.
 
 ## Gotchas
@@ -52,8 +50,15 @@ session._
   standalone. `bin/wiki` itself has **zero deps** (pure bash) — only the populate/graph
   steps need graphify. Vault is `<folder>-wiki/`; graphify runs over the *notes*, not the
   project code (right altitude, avoids the node_modules explosion).
+- `/launch` ships a **sidecar `launch-workflow.js`** beside `SKILL.md` — the only skill that
+  isn't SKILL.md-only, so `install.sh` copies the whole dir (`cp "$HERE/skills/launch/"* …`).
+  The skill resolves the script via `${CLAUDE_PLUGIN_ROOT}/skills/launch/…` (plugin) or
+  `~/.claude/skills/launch/…` (install.sh route). It's **token-heavy** (real web research,
+  ~15–25 agents) and authorizes its own `Workflow` call. Pass `date` explicitly — workflow
+  scripts can't read the clock (`Date.now()`/`new Date()` are unavailable).
 
 ## Last updated
 
+2026-06-27 — v0.8.0: `/launch` product-launch strategist (`skills/launch/` + parameterized workflow); README + landing page + install.sh + plugin.json.
 2026-06-26 — v0.7.0: `/wiki` second-brain scaffolder + docs (README/how-it-works/install.sh).
 2026-06-19 — living-document system + Stop hook (v0.6.0).

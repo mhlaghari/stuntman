@@ -30,6 +30,7 @@ From a normal (subscription) Claude Code session, in any project:
 | **`/scaffold`** | Stands up a project's self-resuming memory — a `CLAUDE.md` contract + four living docs (HANDOFF · STATUS · SPEC · STRATEGY). | the context boundary |
 | **`/handoff`** | Reads those docs and continues exactly where the last session stopped. | new sessions / `/clear` |
 | **`/wiki`** | Builds a "second brain" across a folder of projects — an Obsidian vault + a graphify knowledge graph + a live MCP for cross-project recall. | every project |
+| **`/launch`** | Fans out a multi-agent workflow — cited competitor research, market sizing, channel ranking, then pricing + positioning + a week-by-week launch playbook, pressure-tested by adversarial critics — into one Product Success Overview (markdown + HTML). | the blank-page launch |
 
 Each is detailed in its own section below.
 
@@ -155,9 +156,9 @@ Inside Claude Code:
 git clone https://github.com/mhlaghari/stuntman && cd stuntman && ./install.sh
 ```
 
-Copies the `/delegate`, `/relay`, `/scaffold`, `/handoff`, and `/wiki` skills to
-`~/.claude/skills/` and the `stunt` worker, `window` probe, `scaffold`, and `wiki`
-tools to `~/.local/bin/`.
+Copies the `/delegate`, `/relay`, `/scaffold`, `/handoff`, `/wiki`, and `/launch`
+skills to `~/.claude/skills/` and the `stunt` worker, `window` probe, `scaffold`,
+and `wiki` tools to `~/.local/bin/`.
 
 ## Usage
 
@@ -286,6 +287,37 @@ One shot, auto-detecting scope:
 
 Idempotent (safe to re-run as projects evolve) and **notes only** — your project
 code is never touched.
+
+## From a blank page to a launch plan
+
+`/delegate` ships the product; **`/launch`** figures out how to sell it. Run it in
+the product's repo and it fans out a multi-agent workflow that does the
+market homework you'd otherwise pay a consultant for:
+
+```
+cd ~/code/my-product
+/launch
+```
+
+It reads your repo for grounding, asks the four decisions that shape a
+go-to-market (beachhead · monetization · timeline · resources), then:
+
+- **Researches every competitor with cited web sources** — current pricing,
+  funding, traction, the real controversies — plus market sizing, the
+  regulatory/trust tailwinds, and ranked launch channels.
+- **Drafts the strategy in parallel** — an honest product assessment, a pricing
+  model anchored to the competitor matrix, positioning + messaging, and a
+  **week-by-week launch playbook** (Product Hunt / Show HN / the specific
+  communities to post in, and who to talk to).
+- **Pressure-tests it** with two adversarial critics (feasibility + market
+  reality) and **folds their objections back into the plan** — so it pushes back
+  on a weak go-to-market instead of flattering it.
+- **Compiles one Product Success Overview** — a `LAUNCH_PLAN.md` plus a styled
+  HTML report — answering: *is the product good, what's the strategy, how do I
+  launch it, do I need beta testers, and how do I price it?*
+
+A token-heavy run (it does real research — ~15–25 agents), so it's for a real
+launch decision, not a quick look.
 
 ## Why the spec quality matters
 

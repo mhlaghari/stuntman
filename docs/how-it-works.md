@@ -1,8 +1,9 @@
 # How stuntman works
 
 The core harness is two small files and one idea — plus a rate-limit relay, a
-scaffold/handoff project-memory loop, and a `/wiki` second-brain builder layered
-on top. This doc is the idea, in enough detail to modify or rebuild it.
+scaffold/handoff project-memory loop, a `/wiki` second-brain builder, and a
+`/launch` product-launch strategist layered on top. This doc is the idea, in
+enough detail to modify or rebuild it.
 
 ## The core trick: Claude Code driving Claude Code
 
@@ -211,6 +212,37 @@ register the graphify MCP at user scope so the brain is queryable in later
 sessions. The graph clusters projects into communities and surfaces cross-project
 bridges; the MCP makes "did I solve this already?" an automatic lookup. Notes only
 — project code is never modified.
+
+## A launch plan from a multi-agent workflow: `/launch`
+
+The other commands save tokens, span limits, and remember context; **`/launch`**
+answers a different question — *now that it's built, how do I sell it?* Where
+`/delegate` fans work out to one cheap worker, `/launch` fans it out to a whole
+research crew via the `Workflow` tool, and the orchestrator only spends Claude
+tokens on the parts that need judgment.
+
+`skills/launch/SKILL.md` is the playbook: ground in the repo's own docs, ask the
+four decisions that actually reshape a go-to-market (beachhead · monetization ·
+timeline · resources), assemble an 8–12 competitor set, then run
+`skills/launch/launch-workflow.js`. That script is a four-phase pipeline:
+
+1. **Research** — a fan-out of subagents, one per competitor plus market-sizing,
+   tailwinds/risks, and launch-channels, each doing *cited* web research (real
+   pricing pages, funding, lawsuits) rather than answering from memory.
+2. **Synthesize** — four strategists in parallel: an honest product assessment, a
+   pricing model anchored to the competitor matrix, positioning + messaging, and a
+   week-by-week launch playbook.
+3. **Pressure-test** — two adversarial critics (feasibility for the founder's real
+   budget/timeline, and market-reality on whether the wedge actually converts)
+   whose objections are *folded back into* the plan, not appended.
+4. **Compile** — one strategist weaves it all into a single Product Success
+   Overview, returned as markdown and written as a styled HTML report.
+
+The whole script is `args`-driven (`productBrief`, `launchBrief`,
+`differentiators`, `competitors`, `date`, `htmlOut`), so the same file plans a
+launch for any product. It's the most token-heavy command — it does genuine
+research — so it's reserved for a real launch decision, and it authorizes its own
+`Workflow` call by being invoked.
 
 ## Failure modes & mitigations
 
