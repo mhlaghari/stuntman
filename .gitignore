@@ -1,0 +1,12 @@
+# Local Claude Code session state (journal, settings) — not part of the plugin.
+.claude/
+
+# stuntman relay state (written by /relay) — runtime, machine-local.
+.stuntman/
+
+# Film Crew bake-off artifacts (screenshots + Playwright output) — not part of the plugin.
+/verify-*.png
+/fix*.png
+/flash-shot.png
+/qwen-opusfixed.png
+/.playwright-mcp/

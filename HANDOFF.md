@@ -6,6 +6,52 @@ session._
 
 ## What changed this session
 
+- **Scaffolded the `film-crew` repo + shipped the router — the v2 build began.** New sibling repo
+  `../film-crew/` (with its own CLAUDE/HANDOFF/STATUS living docs): an `agent-skills`-style scaffold
+  (commit `f803933`) + an OpenAI-compatible **router v1** that routes by roster role — Opus via the
+  `claude` CLI (subscription), others API/local — with BYO-key + `<think>`-strip + strip-params-on-400
+  (commit `a468c0f`), plus **SSE streaming** (token-streamed for HTTP backends; uncommitted). Both hard
+  paths tested end-to-end (Opus-on-subscription + local Ollama). See `../film-crew/HANDOFF.md`.
+- **Validated the v2 direction with a live bake-off** (`../film-crew-bench/`, full writeup in its
+  `RESULTS.md`). Hard spec (a self-contained Milky Way HTML with real physics) run across **Opus**
+  (subscription), **DeepSeek Flash** (fcc), **Qwen3.6-35B-coding** (local Ollama). Findings: (1)
+  **one-shot truncates** on cheap models (output cap → blank files); the **agentic harness**
+  (incremental file write) fixes it — all three then rendered error-free. (2) **verify→fix works**:
+  Flash converged (broken→clean galaxy in 3 rounds); the local 35B oscillated + needed **error-driven**
+  (not visual) feedback. (3) **All three coded REAL physics** (flat rotation curve + density-wave arms,
+  not painted-and-spun). (4) **Economics:** delegate-then-Opus-fix is far cheaper *iff the worker lands
+  close* — a correctness fix cost Opus ~1% of a build; making weak output *good* ≈ a rebuild.
+- **Film Crew design principles locked from the bench:** free **deterministic gate** (render + console
+  errors) for the worker's self-iteration ($0 — Opus never sees those rounds); **Opus enters once** for
+  judgment + a surgical fix; **pick the cheapest worker that lands _close_**, not the cheapest; verify
+  must actually render (never "tags present"); feedback style scales with worker tier (mechanical for
+  weak, subjective for strong); own the cost accounting (provider rates, not stunt's Claude-priced est).
+- **Session = repo audit + a v2 *direction* decision. No product code shipped.** Read the whole repo
+  (6 skills, `bin/stunt` + `bin/window`, the Stop hook, packaging, all four living docs), fetched the
+  real free-claude-code (fcc) docs, and mined the vault (`my-agents`, `multi-agent-debate`,
+  `claude-code-local`, `local-vs-cloud-llm`, `trading-agents`).
+- **Mismatches surfaced** (user's "things feel mismatched"): (1) **scope sprawl** — SPEC says a
+  3-boundary / 4-command tool but the repo ships **6**; `/wiki` + `/launch` remove no boundary;
+  (2) docs disagree on the count (`SPEC.md` still says "the four commands"); (3) the **fcc coupling
+  is half-hearted + brittle** — hardcoded `freecc`/`8082`, `install.sh` says `fcc-config` (doesn't
+  exist — it's `fcc-init`), and raw `STUNTMAN_MODEL` bypasses fcc's tier routing; (4) **core loop
+  unproven** (`/relay` never run live; no tests).
+- **Proposed pivot (deliberate, NOT yet locked):** stuntman v2 = a **standalone multi-model agent
+  crew**, no fcc dependency. Own *simple* router with **two buckets** — *Elite* (Claude / DeepSeek
+  v4 Pro / GLM 5.2 → spec + debate + verify) and *Coding* (Qwen-local / DeepSeek Flash → execute).
+  An **elite council** debates a human-written `spec.md` into an approved plan + design system, then
+  a **cheap/local worker team** executes it (visible, tmux-style) and the elites verify + test.
+- **Reuse + risk from the vault:** fork **`my-agents`** (TS/React/Express/SSE) — it already has
+  BYO-key localStorage config, a model picker, and a live SSE "agent board" (the watch-them-work UI).
+  Load-bearing risk = **real tool execution by cheap/local workers** (`claude-code-local`: naive local
+  setups *narrate* tool calls and run nothing). Fixes the vault already names: real `tool_use`
+  (vllm-mlx), DeepSeek **prompt-based** fncall (not native), OpenAI-compatible endpoints,
+  strip-unknown-body-params-on-400, strip `<think>` leakage.
+- Added `.gitignore` (`.claude/`, `.stuntman/`): the untracked `.claude/` session dir was tripping
+  the Stop hook every turn (false positive). **Commit `.gitignore`** to keep future bare sessions quiet.
+
+### Earlier — v0.7.0–v0.8.1 (prior sessions)
+
 - **v0.8.1 — smoke-tested `/launch` end-to-end and fixed a real bug it surfaced.** Ran `/launch` on a
   second product (MIQ-Agentic). The run produced an *Adversaria* plan written to the wrong folder →
   root cause: the **Workflow runtime hands `args` to the script as a JSON STRING, not an object**, so
@@ -37,6 +83,20 @@ session._
 
 ## Next step
 
+- **The bake-off answered the open build questions** (see `../film-crew-bench/RESULTS.md`): worker =
+  DeepSeek-Flash tier (lands close) + local via Ollama/MLX; harness must be **agentic** (incremental
+  write) with a **real render gate**; Opus reviews **once**. Name = **Film Crew** (new repo; stuntman
+  is a part), modeled on `addyosmani/agent-skills` layout (`crew/` personas + `skills/` workflows +
+  bundled router/server + web board reused from `my-agents`).
+- **Next concrete move:** scaffold the `film-crew` repo skeleton + its `SPEC.md`, encoding the locked
+  principles above. Roles: CEO = human → managers = Opus (subscription, via local `claude` CLI) /
+  DeepSeek v4 Pro / GLM 5.2 (API) → workers = DeepSeek Flash (API) / Qwen (local Ollama|MLX). Flow:
+  human writes `spec.md` → council debates → CEO approves → workers build (visible) → elites verify+test.
+- Still open: reconcile stuntman's **6-vs-4 command scope** (likely move `/wiki` + `/launch` out so
+  stuntman stays the focused crew) — user's call.
+
+### Deferred — pre-pivot polish (only if v1 continues)
+
 - **`/launch` is validated end-to-end** (smoke-tested on MIQ-Agentic, v0.8.1 — 20 agents, correct
   product, right repo). Remaining: run it once via the `install.sh` route (`~/.claude/skills/launch/`)
   to exercise the path-resolution branch, and from a true `/launch` slash invocation (this session
@@ -47,6 +107,9 @@ session._
 
 ## Gotchas
 
+- The Stop hook (`hooks/handoff-guard.sh`) counts **any** untracked/modified non-doc path as "work"
+  — incl. `.claude/`. So a dirty tree with no HANDOFF/STATUS edit nags on every stop. `.gitignore` now
+  covers `.claude/` + `.stuntman/`; touching HANDOFF/STATUS also silences it.
 - The Stop hook must respect `stop_hook_active` (no loops) and **fail open**; it
   only acts when `HANDOFF.md` exists (scaffolded). It detects "code changed but
   docs not touched" via `git status --porcelain` — once HANDOFF/STATUS show as
@@ -75,6 +138,8 @@ session._
 
 ## Last updated
 
+2026-06-29 (late) — **bake-off validated the v2 direction** (`../film-crew-bench/`, see `RESULTS.md`): agentic harness fixes one-shot truncation; verify→fix converges cheap workers; all 3 models coded real physics; economics = free-gate-iterate + Opus-once, "pick the worker that lands close." Film Crew design principles locked.
+2026-06-29 — repo audit + **v2 direction decision** (standalone multi-model agent crew; reuse `my-agents`; council + cheap/local worker team; drop fcc dependency). No code shipped — 3 questions open before building. Added `.gitignore`. See "What changed this session."
 2026-06-27 — v0.8.1: smoke-tested `/launch` on MIQ-Agentic; fixed the args-as-JSON-string bug it caught (`JSON.parse` + fail-fast). Re-ran clean.
 2026-06-27 — v0.8.0: `/launch` product-launch strategist (`skills/launch/` + parameterized workflow); README + landing page + install.sh + plugin.json.
 2026-06-26 — v0.7.0: `/wiki` second-brain scaffolder + docs (README/how-it-works/install.sh).

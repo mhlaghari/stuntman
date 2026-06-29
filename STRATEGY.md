@@ -24,6 +24,10 @@ revisit before any big direction call._
 
 ## Direction
 
+- **v2 = "Film Crew"** (validated 2026-06-29 via the `../film-crew-bench` bake-off): a standalone
+  multi-model agent crew, fcc-independent. The moat shifts from "use a cheap model" to **"a free
+  deterministic gate does the iteration; Opus does judgment once"** — and *pick the cheapest worker
+  that lands close*, not the cheapest worker. See `../film-crew-bench/RESULTS.md`.
 - Prove the loops on real work before adding a fifth command — depth over breadth.
 - Lean into the "survives every boundary" narrative across the README + site.
 - Add a smoke-test CI before the surface grows further.
@@ -35,4 +39,5 @@ revisit before any big direction call._
 - Does the doc system want a tiered (minimal / full) mode for tiny repos?
 
 ## Changelog
+- 2026-06-29 — v2 "Film Crew" direction validated via the bake-off; "free gate iterates, Opus judges once" is the new moat.
 - 2026-06-19 — created. Honest read at v0.6 (four commands + the living-doc system).

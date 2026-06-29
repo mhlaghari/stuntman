@@ -39,5 +39,14 @@ needs intelligence and cheap or automatic mechanisms carry the rest.
   — currently always the full SPEC / STRATEGY / STATUS / HANDOFF set.
 - Whether to ship the Stop hook for the non-plugin (`install.sh`) route too.
 
+## v2 direction — "Film Crew" (validated 2026-06-29)
+
+The destination is a **standalone multi-model agent crew** (see `STRATEGY.md`, `HANDOFF.md`, and
+`../film-crew-bench/RESULTS.md`), validated by a live bake-off. Load-bearing v2 principles: the worker
+self-iterates against a **free deterministic gate** (render + console errors); **Opus enters once** for
+judgment + a surgical fix; **pick the cheapest worker that lands _close_**; verify must actually render
+(never "tags present"); feedback style scales with worker tier; own the cost accounting (provider rates).
+
 ## Changelog
+- 2026-06-29 — v2 "Film Crew" direction validated via the Milky Way bake-off; design principles locked.
 - 2026-06-19 — created. The v0.6 four-command shape + load-bearing principles.

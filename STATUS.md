@@ -38,7 +38,15 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 
 ## In progress
 
-- _(nothing active)_
+- **v2 = "Film Crew" — build started** (new repo `../film-crew/` with its own living docs; **scaffold +
+  router v1 + SSE** shipped, router committed). A standalone multi-model agent crew
+  (new repo; stuntman as a part): CEO = human → managers Opus[subscription] / DeepSeek Pro / GLM[API]
+  → workers DeepSeek Flash[API] / Qwen[local]. Own two-bucket router (**no fcc dependency**); council
+  debates a `spec.md` → CEO approves → workers build (visible) → elites verify + test. **Validated by a
+  live bake-off** (`../film-crew-bench/RESULTS.md`): agentic harness beats one-shot truncation;
+  verify→fix converges cheap workers; economics = free-gate-iterate + Opus-once, "pick the worker that
+  lands close." Reuse `my-agents` (BYO-key server + SSE board). Next: scaffold the `film-crew` skeleton
+  + SPEC, modeled on `addyosmani/agent-skills`. See HANDOFF "Next step".
 
 ## Planned
 
@@ -55,6 +63,11 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-06-29 (later) — **Film Crew build started**: scaffolded the new repo (`../film-crew/`, own living docs) + router v1 (OpenAI-compatible roster routing; Opus via `claude` CLI / others API/local; commits `f803933`, `a468c0f`) + SSE streaming (uncommitted). Tested end-to-end.
+
+2026-06-29 (late) — **bake-off validated v2 / Film Crew** (`../film-crew-bench/RESULTS.md`): one-shot truncates on cheap models; agentic harness + verify→fix fixes it (Flash converged, local 35B oscillated); all 3 coded real physics; economics = free-gate-iterate + Opus-once + "pick the worker that lands close." Design principles locked; ready to scaffold film-crew.
+2026-06-29 — repo audit + **v2 pivot decision** (standalone multi-model agent crew; reuse `my-agents`; council + cheap/local worker team; drop fcc dependency). No code shipped — 3 questions open before building. Added `.gitignore` (`.claude/` was tripping the Stop hook).
 
 2026-06-27 — **v0.8.1**: smoke-tested `/launch` end-to-end on a second product (MIQ-Agentic) — and it caught a real bug. The Workflow runtime delivers `args` to the script as a **JSON string**, so `args.competitors` was `undefined`, the script fell back to defaults, and the brief-less agents grounded on the ambient repo → it produced an *Adversaria* plan in the wrong folder. Fixed in `launch-workflow.js`: `JSON.parse` args + a fail-fast guard if the brief is empty. Re-ran clean: 20 agents, a correct MIQ-Agentic plan written to the MIQ repo. plugin.json 0.8.0→0.8.1.
 
