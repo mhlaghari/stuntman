@@ -6,6 +6,32 @@ session._
 
 ## What changed this session
 
+- **This session (2026-07-03, midday): `/wiki` upgraded with the graph-hygiene + OKF lessons from the
+  laghari-vault rebuild (NOT committed).** Context: the vault's graph was a hairball because nav pages
+  (index/hot/MOC/Dashboard) god-noded everything (Wiki Index alone had 52 edges); fixing it also adopted
+  Google's OKF v0.1 (`type:` + one-line `description:` in every note's frontmatter, `log.md` per §7).
+  Changes: **`bin/wiki`** now scaffolds `$VAULT/.graphifyignore` (nav pages + `_TEMPLATE*` excluded from
+  every graphify build — `detect()` honors it natively incl. `graphify update`) and `wiki/log.md`, and the
+  embedded CLAUDE.md schema gained `description:` + OKF/link-hygiene rules (link kebab-case basenames, not
+  Title Case — broken links = ghost nodes in Obsidian). **`skills/wiki/SKILL.md`**: step 3 requires
+  type/description frontmatter; step 4 explains the .graphifyignore and says never graph nav pages.
+  Smoke-tested on a scratch 2-project folder (folder mode detected, new files written, idempotent).
+  Both copies synced: repo ↔ `~/.claude/plugins/marketplaces/stuntman/` (diff-verified identical).
+  The user-level `/vault` command (`~/.claude/commands/vault.md` — NOT part of stuntman) was rewritten
+  the same way: OKF conventions, people/meetings/ideas awareness, new `ingest` (Adversaria DB → raw →
+  curated pages) and `lint` subcommands. Next: commit these two files (needs user authorization) and
+  consider a version bump to v0.7.1 since `/wiki` behavior changed.
+
+- **Prior (2026-06-29, night): fixed the Film Crew `claude -p` process leak + closed stuntman's
+  scope question.** The code fix lives in `../film-crew/` (committed `e1b9e8c`): Opus now reaches the
+  subscription via the **OAuth token → Anthropic API** (`anthropic-oauth` provider), not `claude -p` —
+  no CLI, no MCP spawns, faster. Also fixed a latent missing-import crash (`homedir`/`execSync`).
+  Smoke-tested: real reply, `$0`/subscription, **zero `claude -p` workers system-wide**. Full detail in
+  `../film-crew/HANDOFF.md`. **Product calls made:** (1) **stuntman keeps all 6 commands** — `/wiki` +
+  `/launch` stay (they're good); the 6-vs-4 question is closed at **6**. (2) Captured a new build
+  candidate — a `/launch`-adjacent ideation command (see Next step).
+- _(Older entries below are from prior sessions — the Film Crew scaffold + bake-off direction. The
+  intervening build sessions are logged in `../film-crew/HANDOFF.md` + `STATUS.md`.)_
 - **Scaffolded the `film-crew` repo + shipped the router — the v2 build began.** New sibling repo
   `../film-crew/` (with its own CLAUDE/HANDOFF/STATUS living docs): an `agent-skills`-style scaffold
   (commit `f803933`) + an OpenAI-compatible **router v1** that routes by roster role — Opus via the
@@ -92,8 +118,17 @@ session._
   principles above. Roles: CEO = human → managers = Opus (subscription, via local `claude` CLI) /
   DeepSeek v4 Pro / GLM 5.2 (API) → workers = DeepSeek Flash (API) / Qwen (local Ollama|MLX). Flow:
   human writes `spec.md` → council debates → CEO approves → workers build (visible) → elites verify+test.
-- Still open: reconcile stuntman's **6-vs-4 command scope** (likely move `/wiki` + `/launch` out so
-  stuntman stays the focused crew) — user's call.
+- **6-vs-4 RESOLVED → keep all 6.** `/wiki` + `/launch` stay; stuntman spans **idea → build → ship**.
+  (`SPEC.md` still says "four commands" — update it to 6 the next time it's touched.)
+- **New build candidate (user idea, not yet scoped): a `/launch`-adjacent command at the IDEA end.**
+  stuntman has build (`/delegate`, `/scaffold`, `/handoff`, `/relay`) and ship (`/launch`) but no
+  "what should I make?" front door. Proposal: an **ideation strategist** — given a domain + the user's
+  own projects (via the graphify vault / `my-agents` graph), propose buildable ideas, each with a
+  one-paragraph plan, and run every idea through an adversarial **"roast"** pass so only ones that
+  survive critique surface. It bookends `/launch` (idea-in vs ship-out) and reuses the proven
+  multi-agent `Workflow` + vault recall. Working names: `/forge` / `/ideate`. The user floated "roast"
+  and "a plan on what to make" — fold both in: roast = the critic stage; plan = the output. **Scope it
+  next session; don't build yet.**
 
 ### Deferred — pre-pivot polish (only if v1 continues)
 
@@ -138,6 +173,7 @@ session._
 
 ## Last updated
 
+2026-06-29 (night) — fixed the Film Crew `claude -p` process leak via an `anthropic-oauth` provider (Opus → OAuth token → Anthropic API, like fcc / Claude Code); committed in film-crew (`e1b9e8c`). **Resolved stuntman 6-vs-4 → keep all 6** (`/wiki` + `/launch` stay). Captured a new build candidate: a `/launch`-adjacent ideation/"roast" command (`/forge`). Session closed.
 2026-06-29 (late) — **bake-off validated the v2 direction** (`../film-crew-bench/`, see `RESULTS.md`): agentic harness fixes one-shot truncation; verify→fix converges cheap workers; all 3 models coded real physics; economics = free-gate-iterate + Opus-once, "pick the worker that lands close." Film Crew design principles locked.
 2026-06-29 — repo audit + **v2 direction decision** (standalone multi-model agent crew; reuse `my-agents`; council + cheap/local worker team; drop fcc dependency). No code shipped — 3 questions open before building. Added `.gitignore`. See "What changed this session."
 2026-06-27 — v0.8.1: smoke-tested `/launch` on MIQ-Agentic; fixed the args-as-JSON-string bug it caught (`JSON.parse` + fail-fast). Re-ran clean.

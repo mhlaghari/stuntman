@@ -21,6 +21,9 @@ living-document system and an enforcement hook:
   a folder of projects (or a single project) in one shot: vault skeleton + a note
   per project from its README/code + a graphify knowledge graph + the graphify MCP
   wired for cross-project recall. Auto-detects single vs folder mode; idempotent.
+  **v0.8.2:** vaults now scaffold with `.graphifyignore` (nav pages excluded from
+  the graph — they god-node everything) + `wiki/log.md`, and notes follow OKF v0.1
+  (`type:` + `description:` frontmatter) — lessons from the laghari-vault rebuild.
 - **`/launch`** (`skills/launch` — `SKILL.md` + `launch-workflow.js`) — product
   launch strategist. Fans out a multi-agent `Workflow` (cited competitor research →
   pricing + positioning + week-by-week playbook → adversarial feasibility/market
@@ -45,11 +48,18 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
   debates a `spec.md` → CEO approves → workers build (visible) → elites verify + test. **Validated by a
   live bake-off** (`../film-crew-bench/RESULTS.md`): agentic harness beats one-shot truncation;
   verify→fix converges cheap workers; economics = free-gate-iterate + Opus-once, "pick the worker that
-  lands close." Reuse `my-agents` (BYO-key server + SSE board). Next: scaffold the `film-crew` skeleton
-  + SPEC, modeled on `addyosmani/agent-skills`. See HANDOFF "Next step".
+  lands close." Reuse `my-agents` (BYO-key server + SSE board). Build is now well advanced — 4-skill
+  orchestrator + web board + BYO-key + render-gate — and **this session the `claude -p` process leak was
+  fixed** via a new `anthropic-oauth` provider (Opus → OAuth token → Anthropic API, no CLI / MCP spawns;
+  committed in film-crew `e1b9e8c`). See `../film-crew/STATUS.md` for the live board.
 
 ## Planned
 
+- **NEW build candidate — a `/launch`-adjacent ideation command** ("what should I make?"): propose
+  buildable ideas grounded in the user's own projects (graphify vault / `my-agents` graph), each with a
+  one-paragraph plan + an adversarial **"roast"** pass so only survivors surface. Bookends `/launch`
+  (idea-in vs ship-out); reuses the proven multi-agent `Workflow`. Working name `/forge` / `/ideate`.
+  Scope next session. _(6-vs-4 resolved → **keep all 6**; `SPEC.md` still says "four commands" — fix when touched.)_
 - `marketplace.json` description still only names the delegate value prop — add
   relay / scaffold / handoff.
 - Exercise `/relay` through a real capped → reset cycle (never run live end-to-end).
@@ -63,6 +73,10 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-07-03 — **v0.8.2**: `/wiki` graph-hygiene + OKF upgrade. `bin/wiki` scaffolds `.graphifyignore` (nav pages excluded from every graphify build — they god-node the graph into a hairball; lesson from the laghari-vault rebuild, Wiki Index alone had 52 edges) + `wiki/log.md` (OKF §7 history); embedded schema + SKILL.md now require OKF v0.1 frontmatter (`type:` + one-line `description:`) and kebab-case link targets (Title-Case links = ghost nodes). Smoke-tested (folder mode, idempotent). plugin.json 0.8.1→0.8.2.
+
+2026-06-29 (night) — **Film Crew `claude -p` leak fixed** (new `anthropic-oauth` provider: Opus → OAuth token → Anthropic API, no CLI / MCP spawns; committed in film-crew `e1b9e8c`). **stuntman 6-vs-4 resolved → keep all 6.** New build candidate captured: a `/launch`-adjacent ideation/"roast" command (`/forge`). Session closed.
 
 2026-06-29 (later) — **Film Crew build started**: scaffolded the new repo (`../film-crew/`, own living docs) + router v1 (OpenAI-compatible roster routing; Opus via `claude` CLI / others API/local; commits `f803933`, `a468c0f`) + SSE streaming (uncommitted). Tested end-to-end.
 

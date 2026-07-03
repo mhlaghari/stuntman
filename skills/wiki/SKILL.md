@@ -36,6 +36,10 @@ Resolve an interpreter that can `import graphify` (uv tool / pipx / venv / syste
 Write notes that a reader with zero memory of the codebase can use. Follow the schema in
 `$VAULT/CLAUDE.md` (frontmatter + Summary / Architecture / Connections / Notable).
 
+Every note's frontmatter needs `type:` and a one-line `description:` (OKF v0.1 — this is what
+makes the vault portable across agent tooling). Wikilinks must target real page basenames
+(kebab-case filenames, not Title Case) — broken links render as ghost nodes in Obsidian.
+
 - **MODE=folder:** one `$VAULT/wiki/projects/<name>.md` per detected project. For more than ~4
   projects, **dispatch parallel `general-purpose` subagents** (one per cluster of 3–5 projects)
   to read each project's README / manifest / structure / key entry files and return a structured
@@ -50,7 +54,10 @@ Write notes that a reader with zero memory of the codebase can use. Follow the s
 
 ### 4. Build the graph
 Run graphify over `$VAULT/wiki` (the notes, not the project code — keeps it fast and at the right
-altitude). Preferred: invoke the **`/graphify`** skill on `$VAULT/wiki`. If that skill isn't present,
+altitude). The scaffold includes a `$VAULT/.graphifyignore` that keeps navigation pages
+(index/hot/log/MOC/Dashboard/templates) OUT of the graph — they link to everything and would
+become the top god nodes, hairballing the whole graph. graphify's `detect()` honors it
+automatically, including on later `graphify update` runs; never hand-add those pages back. Preferred: invoke the **`/graphify`** skill on `$VAULT/wiki`. If that skill isn't present,
 run the pipeline directly with the saved interpreter: detect → semantic-extract the notes via
 `general-purpose` subagents → `build_from_json` → `cluster` → `report.generate` → `export.to_json` /
 `to_html`, and `export.to_canvas` into `$VAULT/graph.canvas`. Output lands in `$VAULT/graphify-out/`

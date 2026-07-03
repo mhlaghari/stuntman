@@ -35,10 +35,11 @@ every session starts informed. Scaffolded by stuntman `/wiki`.
 - **Start:** read this file → `wiki/hot.md` (recent context) → the relevant `wiki/projects/<name>.md`.
 - **End:** update `wiki/hot.md`; capture reusable fixes in `wiki/lessons-learned/` or `wiki/patterns/`
   (this is what lets OTHER projects find the solution later); update `wiki/index.md` if notes were added;
-  refresh the graph: `graphify update wiki`.
+  append a dated entry to `wiki/log.md`; refresh the graph: `graphify update wiki`.
 
 ## Structure
 - `wiki/index.md` — master catalog (start here)
+- `wiki/log.md` — append-only update history (OKF §7 format)
 - `wiki/_PROJECTS_MOC.md` — how the projects relate
 - `wiki/projects/` — one note per project
 - `wiki/concepts/` — cross-project concepts
@@ -47,6 +48,7 @@ every session starts informed. Scaffolded by stuntman `/wiki`.
 - `wiki/references/` — external repos worth remembering
 - `graphify-out/` — the knowledge graph (graph.html, graph.json, GRAPH_REPORT.md)
 - `graph.canvas` — community layout, opens in Obsidian
+- `.graphifyignore` — keeps nav pages OUT of the graph (they god-node everything). Don't remove.
 
 ## Project note schema
 ```
@@ -54,6 +56,7 @@ every session starts informed. Scaffolded by stuntman `/wiki`.
 title: <Human Title>
 folder: <project folder name>
 type: project
+description: "<one line — what it is + what makes it notable>"
 domain: <agent-platform|product-app|data-analytics|ml-research|dev-tooling|web|other>
 status: <active|paused|prototype|reference>
 stack: [<langs + key frameworks>]
@@ -76,9 +79,28 @@ tags: [project, domain/<x>, status/<y>, stack/<z>]
 - lowercase kebab-case; don't invent new namespaces without updating this list.
 
 ## Rules
-- Selective linking only (2–4 high-signal links/note) — avoid the over-linked hairball.
+- Every note's frontmatter needs `type:` + a one-line `description:` (OKF v0.1 — Google's Open Knowledge Format; keeps the vault agent-portable).
+- Selective linking only (2–4 high-signal links/note) — avoid the over-linked hairball. Link real page basenames (kebab-case), not Title Case — broken links become ghost nodes.
 - One idea per note. Reuse existing concept notes before creating new ones (new concept only if it spans ≥3 projects).
 - Never store secrets, model weights, or datasets here — notes only, never project code.
+EOF
+
+w "$VAULT/.graphifyignore" <<'EOF'
+# Navigation/bookkeeping pages — keep OUT of the knowledge graph.
+# They link to everything and become god nodes that hairball the graph.
+wiki/index.md
+wiki/hot.md
+wiki/log.md
+wiki/_PROJECTS_MOC.md
+wiki/Projects-Dashboard.md
+*/_TEMPLATE*.md
+EOF
+
+w "$VAULT/wiki/log.md" <<'EOF'
+# Vault Update Log
+
+Append-only, newest first (OKF §7 format): `## YYYY-MM-DD` date headings with
+`**Update**` / `**Creation**` / `**Ingest**` / `**Lint**` bullets.
 EOF
 
 w "$VAULT/wiki/index.md" <<'EOF'
