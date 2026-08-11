@@ -6,7 +6,32 @@ session._
 
 ## What changed this session
 
-- **This session (2026-07-03, midday): `/wiki` upgraded with the graph-hygiene + OKF lessons from the
+- **This session (2026-08-11, night): added `codex` as a third `/delegate` backend (v0.8.2 → v0.9.0,
+  NOT committed).** Context: user installed OpenAI's official `codex-plugin-cc` Claude Code plugin and
+  asked to wire the same CLI into stuntman's existing plan/execute/review loop. `bin/stunt` now has a
+  `codex_invoke`-equivalent branch (inline, matching the opencode pattern) calling `codex exec --json
+  --skip-git-repo-check -s workspace-write` for the first call and `codex exec resume <thread_id> --json
+  --skip-git-repo-check` for iteration, plus `normalize_codex()` parsing the JSONL event stream
+  (`thread.started` → session id, `item.completed`/`agent_message` → result — **last** one, since codex
+  emits a preamble message before doing work and a final summary after, unlike claude/opencode's
+  single-shot result, `turn.completed.usage` → tokens). No `STUNTMAN_CONFIG_DIR`-style isolation: unlike
+  the `claude` backend (which needs a fake identity for the fcc proxy), codex reuses the user's real
+  `codex login` directly, so worker sessions land in the same `codex resume` history as the user's own —
+  documented as an accepted tradeoff, not a bug. `cost_usd` is hardcoded to `0` (ChatGPT/API flat billing,
+  no metered field in the event stream). **Smoke-tested live end-to-end** (not just syntax-checked):
+  `exec` wrote a haiku to a file, `resume` with review feedback correctly rewrote it (5-7-5, ends in
+  "cut") reusing the same `thread_id` — full plan→execute→review→iterate loop confirmed working with real
+  file edits. Docs updated to match: `skills/delegate/SKILL.md` (preflight check, Notes section, backend
+  list in frontmatter description), `README.md` (Route C install block, `STUNTMAN_WORKER=codex` example,
+  two FAQ answers), `docs/how-it-works.md` (backend table). `plugin.json` → 0.9.0 + `codex`/`openai`
+  keywords. **Not synced to the `Documents/MyProjects/stuntman` working copy** — that path returns EPERM
+  under the current sandbox (see Gotchas); all edits happened directly in the plugin marketplace clone at
+  `~/.claude/plugins/marketplaces/stuntman`, which `git remote -v` confirms tracks
+  `github.com/mhlaghari/stuntman` directly, so this **is** the canonical repo, just accessed via its
+  install path. Next: get explicit commit authorization from the user (CLAUDE.md: never commit without
+  it), then push.
+
+- **Prior (2026-07-03, midday): `/wiki` upgraded with the graph-hygiene + OKF lessons from the
   laghari-vault rebuild (NOT committed).** Context: the vault's graph was a hairball because nav pages
   (index/hot/MOC/Dashboard) god-noded everything (Wiki Index alone had 52 edges); fixing it also adopted
   Google's OKF v0.1 (`type:` + one-line `description:` in every note's frontmatter, `log.md` per §7).
@@ -142,6 +167,17 @@ session._
 
 ## Gotchas
 
+- **`~/Documents/Documents/MyProjects/stuntman` (the "real" working-copy path) returns `EPERM` under the
+  current agent sandbox** — both Read and Bash. The plugin marketplace clone at
+  `~/.claude/plugins/marketplaces/stuntman` is a full, clean, up-to-date checkout of the same
+  `github.com/mhlaghari/stuntman` origin (verified via `git remote -v` + `git status`), so it's a safe
+  stand-in — commits/pushes from there land in the same repo. If a future session needs the Documents
+  path specifically, that's a macOS sandbox/TCC permission grant, not something fixable in-session.
+- `codex exec resume` does **not** accept `-s`/`--sandbox` (errors: "unexpected argument") — the resumed
+  thread inherits whatever sandbox mode the initial `exec` started with. Only pass `-s workspace-write` on
+  the first call.
+- Both `codex exec` and `codex exec resume` need `--skip-git-repo-check` outside a trusted git directory,
+  or they refuse to run ("Not inside a trusted directory").
 - The Stop hook (`hooks/handoff-guard.sh`) counts **any** untracked/modified non-doc path as "work"
   — incl. `.claude/`. So a dirty tree with no HANDOFF/STATUS edit nags on every stop. `.gitignore` now
   covers `.claude/` + `.stuntman/`; touching HANDOFF/STATUS also silences it.
@@ -172,6 +208,11 @@ session._
   exactly how the first MIQ smoke test produced an Adversaria plan in the wrong folder.
 
 ## Last updated
+
+2026-08-11 (night) — added `codex` as a third `/delegate` backend (v0.9.0), wiring OpenAI's Codex CLI
+into the existing plan/execute/review loop alongside claude/opencode. Smoke-tested live end-to-end
+(exec + resume, real file edits, session continuity). Docs + plugin.json updated. Not committed — needs
+user authorization first. Session closed.
 
 2026-06-29 (night) — fixed the Film Crew `claude -p` process leak via an `anthropic-oauth` provider (Opus → OAuth token → Anthropic API, like fcc / Claude Code); committed in film-crew (`e1b9e8c`). **Resolved stuntman 6-vs-4 → keep all 6** (`/wiki` + `/launch` stay). Captured a new build candidate: a `/launch`-adjacent ideation/"roast" command (`/forge`). Session closed.
 2026-06-29 (late) — **bake-off validated the v2 direction** (`../film-crew-bench/`, see `RESULTS.md`): agentic harness fixes one-shot truncation; verify→fix converges cheap workers; all 3 models coded real physics; economics = free-gate-iterate + Opus-once, "pick the worker that lands close." Film Crew design principles locked.

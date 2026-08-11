@@ -49,6 +49,11 @@ backend claude (default):
 backend opencode:
         opencode run --format json [--model provider/model] [--session id]
         no proxy — opencode authenticates to providers natively
+
+backend codex:
+        codex exec --json --skip-git-repo-check -s workspace-write [-m model]
+        codex exec resume <thread_id> --json --skip-git-repo-check [-m model]
+        no proxy, no isolated config — reuses the user's own `codex login`
 ```
 
 The isolated `CLAUDE_CONFIG_DIR` matters: without it, the worker shares

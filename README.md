@@ -141,6 +141,14 @@ Prerequisites:
    export STUNTMAN_MODEL=deepseek/deepseek-v4-flash   # any provider/model opencode knows
    ```
 
+   **Route C — [Codex](https://github.com/openai/codex) worker** (no proxy — OpenAI's own
+   CLI, billed on your ChatGPT subscription or API key):
+   ```bash
+   npm install -g @openai/codex
+   codex login                  # ChatGPT subscription or OpenAI API key
+   export STUNTMAN_WORKER=codex
+   ```
+
 ### Option A — Claude Code plugin (recommended)
 
 Inside Claude Code:
@@ -180,7 +188,7 @@ What happens:
 ## Choosing your stunt double
 
 Two knobs: `STUNTMAN_WORKER` picks the backend (`claude` via the local proxy —
-the default — or `opencode`), `STUNTMAN_MODEL` pins the model:
+the default —, `opencode`, or `codex`), `STUNTMAN_MODEL` pins the model:
 
 ```bash
 # Route A (proxy): any id from the proxy's /v1/models
@@ -189,11 +197,19 @@ export STUNTMAN_MODEL="anthropic/deepseek/deepseek-v4-flash"
 # Route B (opencode): provider/model, no proxy required
 export STUNTMAN_WORKER=opencode
 export STUNTMAN_MODEL="deepseek/deepseek-v4-flash"
+
+# Route C (codex): no proxy, reuses your own `codex login`
+export STUNTMAN_WORKER=codex
+export STUNTMAN_MODEL="gpt-5.4-codex"   # optional — omit to use codex's own default
 ```
 
 Route A's worker is a full headless Claude Code (same tools and agentic loop
 as the orchestrator). Route B trades that harness fidelity for zero proxy
-setup — opencode authenticates to providers directly.
+setup — opencode authenticates to providers directly. Route C is OpenAI's own
+agentic CLI — real tool use and sandboxed file edits, billed outside this
+tool's visibility (its `cost_usd` always reports `0`), so it's the pick when
+you already pay for Codex and want it working inside the same plan/execute/
+review loop as the other two.
 
 Good stunt doubles, roughly in order of bang-per-buck:
 
@@ -356,10 +372,11 @@ Anything that speaks the Anthropic Messages API works. Edit `bin/stunt` and
 point `ANTHROPIC_BASE_URL` wherever you like.
 
 **Do I need the proxy at all?**
-Not with the opencode backend (`STUNTMAN_WORKER=opencode`) — opencode talks
-to DeepSeek, Groq, Ollama, and 75+ providers natively. The proxy route's
-advantage is that the worker is a full headless Claude Code instance (same
-tools and editing loop as the orchestrator).
+Not with the opencode or codex backends — opencode talks to DeepSeek, Groq,
+Ollama, and 75+ providers natively, and codex talks to OpenAI directly via
+your own `codex login`. The proxy route's advantage is that the worker is a
+full headless Claude Code instance (same tools and editing loop as the
+orchestrator).
 
 **Does the `window` probe cost tokens or eat my limit?**
 No. It reads the same OAuth usage endpoint `/usage` reads, with the credentials

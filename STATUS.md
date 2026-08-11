@@ -5,11 +5,14 @@ every session._
 
 ## Built
 
-**v0.8.1** — six commands (each a skill + a `bin/` helper where needed), plus a
+**v0.9.0** — six commands (each a skill + a `bin/` helper where needed), plus a
 living-document system and an enforcement hook:
 
 - **`/delegate`** (`skills/delegate`, `bin/stunt`) — plan with Claude, execute
-  with a cheap worker (Claude-via-proxy or `opencode`), review with Claude.
+  with a cheap worker (Claude-via-proxy, `opencode`, or `codex`), review with
+  Claude. **v0.9.0:** added `codex` as a third backend (OpenAI's Codex CLI,
+  no proxy, reuses the user's own `codex login`) — same plan/execute/review/
+  iterate contract as the other two, smoke-tested live end-to-end.
 - **`/relay`** (`skills/relay`, `bin/window`) — read the 5-hour usage window via
   a zero-token OAuth probe and span the rate-limit gap.
 - **`/scaffold`** (`skills/scaffold`, `bin/scaffold`) — stand up the project-memory
@@ -73,6 +76,16 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-08-11 — **v0.9.0**: `/delegate` gained a third backend, `codex` (OpenAI's Codex CLI). `bin/stunt`
+now dispatches to `codex exec --json --skip-git-repo-check -s workspace-write` / `codex exec resume`,
+normalizing its JSONL event stream (thread.started/item.completed/turn.completed) to the same
+`{backend, session_id, result, is_error, usage, cost_usd}` shape as claude/opencode — `cost_usd` is
+always `0` since Codex bills via flat ChatGPT/API subscription, not a metered rate. No isolated config
+dir needed (unlike the `claude` backend's fcc-proxy identity): codex reuses the user's real `codex
+login`. Smoke-tested live (not just syntax-checked) — exec wrote a file, resume with review feedback
+correctly rewrote it, same session id both times. `skills/delegate/SKILL.md`, `README.md`,
+`docs/how-it-works.md` updated to document the new route. plugin.json 0.8.2→0.9.0.
 
 2026-07-03 — **v0.8.2**: `/wiki` graph-hygiene + OKF upgrade. `bin/wiki` scaffolds `.graphifyignore` (nav pages excluded from every graphify build — they god-node the graph into a hairball; lesson from the laghari-vault rebuild, Wiki Index alone had 52 edges) + `wiki/log.md` (OKF §7 history); embedded schema + SKILL.md now require OKF v0.1 frontmatter (`type:` + one-line `description:`) and kebab-case link targets (Title-Case links = ghost nodes). Smoke-tested (folder mode, idempotent). plugin.json 0.8.1→0.8.2.
 

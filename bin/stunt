@@ -12,10 +12,16 @@
 #             (free-claude-code on :8082) with an isolated CLAUDE_CONFIG_DIR
 #   opencode  `opencode run` — talks to DeepSeek/Groq/Ollama/75+ providers natively,
 #             no proxy needed (auth via `opencode auth login` or provider env keys)
+#   codex     `codex exec` — OpenAI's Codex CLI, no proxy needed. Reuses the user's own
+#             `codex login` (ChatGPT subscription or API key) directly — unlike the claude
+#             backend, there's no separate identity to isolate, so it runs against the
+#             normal ~/.codex config/session store (worker sessions land in the same
+#             `codex resume` history as the user's own interactive sessions).
 #
 # Env:
-#   STUNTMAN_WORKER      claude | opencode             (default: claude)
-#   STUNTMAN_MODEL       claude: id from the proxy's /v1/models; opencode: provider/model
+#   STUNTMAN_WORKER      claude | opencode | codex     (default: claude)
+#   STUNTMAN_MODEL       claude: id from the proxy's /v1/models; opencode: provider/model;
+#                        codex: a model id accepted by `codex exec -m`
 #   STUNTMAN_CONFIG_DIR  claude worker config dir      (default: ~/.claude-stuntman)
 #   STUNTMAN_BASE_URL    claude fallback proxy URL     (default: http://localhost:8082)
 #   STUNTMAN_AUTH_TOKEN  claude fallback proxy token   (default: freecc)
@@ -99,6 +105,47 @@ print(json.dumps({"backend": "opencode", "session_id": sid,
 '
 }
 
+# codex exec --json → JSONL event stream (thread.started / item.completed / turn.completed);
+# result is the LAST agent_message (codex emits a preamble message before doing work, then a
+# final summary — the summary is what review should see). No cost field: Codex bills via the
+# user's own ChatGPT subscription or API key, not a per-call metered rate like DeepSeek/opencode.
+normalize_codex() {
+  python3 -c '
+import json, sys
+tid, texts, done, err = None, [], False, False
+tin = tout = cread = cwrite = 0
+for line in sys.stdin:
+    line = line.strip()
+    if not line.startswith("{"):
+        continue
+    try:
+        d = json.loads(line)
+    except ValueError:
+        continue
+    t = d.get("type", "")
+    if t == "thread.started":
+        tid = d.get("thread_id") or tid
+    elif t == "item.completed":
+        item = d.get("item") or {}
+        if item.get("type") == "agent_message":
+            texts.append(item.get("text", ""))
+    elif t == "turn.completed":
+        done = True
+        u = d.get("usage") or {}
+        tin += u.get("input_tokens", 0)
+        tout += u.get("output_tokens", 0) + u.get("reasoning_output_tokens", 0)
+        cread += u.get("cached_input_tokens", 0)
+        cwrite += u.get("cache_write_input_tokens", 0)
+    elif t in ("turn.failed", "error"):
+        err = True
+print(json.dumps({"backend": "codex", "session_id": tid,
+                  "result": texts[-1] if texts else "", "is_error": err or not done,
+                  "usage": {"input_tokens": tin, "output_tokens": tout,
+                            "cache_read_tokens": cread, "cache_write_tokens": cwrite},
+                  "cost_usd": 0}))
+'
+}
+
 case "${1:-}" in
   exec)
     SPEC="${2:?usage: stunt exec \"<spec>\"}"
@@ -106,6 +153,10 @@ case "${1:-}" in
       MODEL_ARGS=()
       [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(--model "$STUNTMAN_MODEL")
       opencode run "$SPEC" "${MODEL_ARGS[@]}" --format json | normalize_opencode
+    elif [ "$BACKEND" = "codex" ]; then
+      MODEL_ARGS=()
+      [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(-m "$STUNTMAN_MODEL")
+      codex exec --json --skip-git-repo-check -s workspace-write "${MODEL_ARGS[@]}" "$SPEC" < /dev/null | normalize_codex
     else
       claude_invoke -p "$SPEC" --output-format json --dangerously-skip-permissions | normalize_claude
     fi
@@ -117,6 +168,11 @@ case "${1:-}" in
       MODEL_ARGS=()
       [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(--model "$STUNTMAN_MODEL")
       opencode run "$FEEDBACK" --session "$SID" "${MODEL_ARGS[@]}" --format json | normalize_opencode
+    elif [ "$BACKEND" = "codex" ]; then
+      MODEL_ARGS=()
+      [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(-m "$STUNTMAN_MODEL")
+      # resume has no -s/--sandbox flag — it inherits the sandbox mode the thread started with.
+      codex exec resume "$SID" --json --skip-git-repo-check "${MODEL_ARGS[@]}" "$FEEDBACK" < /dev/null | normalize_codex
     else
       claude_invoke -p --resume "$SID" "$FEEDBACK" --output-format json --dangerously-skip-permissions | normalize_claude
     fi

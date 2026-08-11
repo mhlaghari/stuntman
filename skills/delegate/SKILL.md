@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: Delegate implementation work to a cheap-model stunt double (a headless worker — Claude Code via a local proxy, or opencode — running DeepSeek/Groq/Ollama). Claude plans the task, the worker executes it, Claude reviews the diff and iterates. Use when the user invokes /delegate <task>, or says "delegate this" / "have the stunt double do it" / "send this to the worker". Saves expensive subscription tokens for planning and review only.
+description: Delegate implementation work to a stunt double (a headless worker — Claude Code via a local proxy, opencode running DeepSeek/Groq/Ollama, or OpenAI's Codex CLI). Claude plans the task, the worker executes it, Claude reviews the diff and iterates. Use when the user invokes /delegate <task>, or says "delegate this" / "have the stunt double do it" / "send this to the worker" / "have codex do it". Saves expensive subscription tokens for planning and review only.
 ---
 
 # stuntman: plan → execute → review
@@ -16,7 +16,7 @@ STUNT="$(command -v stunt || echo "${CLAUDE_PLUGIN_ROOT}/bin/stunt")"
 ```
 
 Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
-(`claude` via local proxy — the default — or `opencode`).
+(`claude` via local proxy — the default —, `opencode`, or `codex`).
 
 ## Preflight
 
@@ -26,6 +26,9 @@ Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
   wait a few seconds, re-check. If still down, tell the user and stop.
 - Backend `opencode`: check `opencode --version`. If missing, tell the user
   to install it (`brew install sst/tap/opencode`) and stop.
+- Backend `codex`: check `codex --version` and `codex login status`. If the
+  CLI is missing, tell the user to install it (`npm install -g @openai/codex`)
+  and stop. If not logged in, tell the user to run `codex login` and stop.
 
 ## 1. PLAN (you — this is where the expensive tokens earn their keep)
 
@@ -105,8 +108,17 @@ transcript under `~/.claude/projects/<project>/`.
 - Backend `claude` = headless Claude Code + isolated
   `CLAUDE_CONFIG_DIR=~/.claude-stuntman` + a local Anthropic-compatible proxy
   (free-claude-code on :8082). Backend `opencode` talks to its provider
-  directly — no proxy. Neither consumes Anthropic credits. Pin a model with
-  `STUNTMAN_MODEL` (claude: proxy model id; opencode: `provider/model`).
+  directly — no proxy. Backend `codex` runs `codex exec`/`codex exec resume`
+  directly — no proxy, no isolated config; it reuses the user's own
+  `codex login` (ChatGPT subscription or API key), same as running `codex`
+  interactively, so worker sessions land in the same `codex resume` history.
+  None of the three consume Anthropic credits. Pin a model with
+  `STUNTMAN_MODEL` (claude: proxy model id; opencode: `provider/model`;
+  codex: a model id accepted by `codex exec -m`).
 - The worker runs without permission prompts (claude:
-  `--dangerously-skip-permissions`; opencode: its default run policy) — only
-  delegate within trusted project directories.
+  `--dangerously-skip-permissions`; opencode: its default run policy; codex:
+  `-s workspace-write`, sandboxed to the project directory but no per-action
+  approval) — only delegate within trusted project directories.
+- Codex has no metered per-call cost (flat ChatGPT/API billing outside this
+  tool's visibility), so its `cost_usd` is always reported as `0` — mention
+  this in the cost line rather than implying the run was free to run.
