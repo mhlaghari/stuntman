@@ -6,7 +6,17 @@ session._
 
 ## What changed this session
 
-- **This session (2026-08-11, night): added `codex` as a third `/delegate` backend (v0.8.2 → v0.9.0,
+- **This session (2026-08-25): added a vault-staleness nudge to project handoff.** Project pages in
+  the cross-project vault could silently drift far behind shipped code, so `hooks/handoff-guard.sh`
+  now checks the matching `wiki/projects/<project>.md` even on a clean tree and nudges when its
+  `updated:` date trails the latest commit by more than 7 days, with a fail-open once-per-day marker.
+  The hook still emits at most one Stop decision and combines this with its unchanged handoff-docs
+  reminder when both apply. `/handoff` now checks the same freshness signal during read-back and
+  suggests `/vault`. Files touched: `hooks/handoff-guard.sh`, `hooks/hooks.json`,
+  `skills/handoff/SKILL.md`, `README.md`, `.claude-plugin/plugin.json` (v0.9.1), `HANDOFF.md`, and
+  `STATUS.md`.
+
+- **Prior (2026-08-11, night): added `codex` as a third `/delegate` backend (v0.8.2 → v0.9.0,
   NOT committed).** Context: user installed OpenAI's official `codex-plugin-cc` Claude Code plugin and
   asked to wire the same CLI into stuntman's existing plan/execute/review loop. `bin/stunt` now has a
   `codex_invoke`-equivalent branch (inline, matching the opencode pattern) calling `codex exec --json
@@ -44,8 +54,13 @@ session._
   Both copies synced: repo ↔ `~/.claude/plugins/marketplaces/stuntman/` (diff-verified identical).
   The user-level `/vault` command (`~/.claude/commands/vault.md` — NOT part of stuntman) was rewritten
   the same way: OKF conventions, people/meetings/ideas awareness, new `ingest` (Adversaria DB → raw →
-  curated pages) and `lint` subcommands. Next: commit these two files (needs user authorization) and
-  consider a version bump to v0.7.1 since `/wiki` behavior changed.
+  curated pages) and `lint` subcommands. ✅ Shipped as **v0.8.2** (`aada4d6`, pushed; marketplace clone
+  fast-forwarded). **⚠️ Follow-up found 2026-07-04:** the `/wiki` maintenance loop still tells users
+  `graphify update wiki` — but `graphify update` only re-extracts CODE files (silent no-op on md-only
+  vaults; verified live). The laghari-vault now uses its own `scripts/refresh_graph.py` (mechanical
+  wikilink/frontmatter re-extraction of changed pages) — port that into `bin/wiki`'s scaffold + fix the
+  SKILL.md/CLAUDE.md maintenance advice in the next release (v0.8.3 candidate). Lesson note:
+  `laghari-vault/wiki/lessons-learned/graphify-update-md-vaults.md`.
 
 - **Prior (2026-06-29, night): fixed the Film Crew `claude -p` process leak + closed stuntman's
   scope question.** The code fix lives in `../film-crew/` (committed `e1b9e8c`): Opus now reaches the

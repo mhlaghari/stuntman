@@ -10,7 +10,7 @@
             "timeout": 15
           }
         ],
-        "description": "In scaffolded projects only: nudge to update HANDOFF.md/STATUS.md before stopping if code changed but the docs didn't. Fails open, never traps.",
+        "description": "In scaffolded projects only: nudge to update HANDOFF.md/STATUS.md before stopping if code changed but the docs didn't, and flag a stale vault project page (>7 days behind the latest commit, at most once/day). Fails open, never traps.",
         "id": "stuntman:handoff-guard"
       }
     ]

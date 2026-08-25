@@ -25,13 +25,19 @@ new session (or one after `/clear`) picks up with zero re-explaining.
    If `HANDOFF.md` / `STATUS.md` don't exist, the project isn't scaffolded yet —
    tell the user to run `/scaffold` first, and stop.
 
-2. **Orient and confirm.** Give a short read-back: where the project stands and
+2. **Check vault freshness.** If `$STUNTMAN_VAULT` (default
+   `~/Documents/Documents/MyProjects/laghari-vault`) contains
+   `wiki/projects/<project dirname>.md`, compare its `updated:` frontmatter to
+   `git log -1 --format=%cs`. If it is more than 7 days behind, mention that in
+   the read-back and suggest running `/vault` after the session's work.
+
+3. **Orient and confirm.** Give a short read-back: where the project stands and
    the next step you picked up from `HANDOFF.md`. Surface anything stale or
    contradictory between the docs and the actual code/tree.
 
-3. **Continue the work** from that next step — unless the user redirects you.
+4. **Continue the work** from that next step — unless the user redirects you.
 
-4. **Before you stop**, honor the contract in `CLAUDE.md`: update `HANDOFF.md`
+5. **Before you stop**, honor the contract in `CLAUDE.md`: update `HANDOFF.md`
    (what changed, next step, gotchas), `STATUS.md` (refresh the board), and
    `README.md` (if the project's surface changed) — written for a reader with
    zero memory of this session. Never commit without explicit authorization.

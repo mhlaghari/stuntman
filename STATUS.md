@@ -5,7 +5,7 @@ every session._
 
 ## Built
 
-**v0.9.0** — six commands (each a skill + a `bin/` helper where needed), plus a
+**v0.9.1** — six commands (each a skill + a `bin/` helper where needed), plus a
 living-document system and an enforcement hook:
 
 - **`/delegate`** (`skills/delegate`, `bin/stunt`) — plan with Claude, execute
@@ -36,6 +36,8 @@ living-document system and an enforcement hook:
   second product (MIQ-Agentic) — the smoke test caught + fixed an args-as-JSON-string bug (v0.8.1).**
 - **Stop hook** (`hooks/handoff-guard.sh` + `hooks/hooks.json`) — in scaffolded
   projects only, nudges once if code changed but `HANDOFF.md`/`STATUS.md` didn't.
+  **v0.9.1:** also flags a matching vault project page more than 7 days behind
+  the latest commit, including on clean trees, throttled to once per day.
   Fails open; never touches non-scaffolded projects.
 
 Docs: `README.md`, `docs/how-it-works.md`, landing page `docs/index.html`
@@ -76,6 +78,9 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-08-25 — **v0.9.1**: added the fail-open vault-staleness nudge to the Stop hook and `/handoff`
+read-back; project pages over 7 days behind the latest commit now prompt a once-daily `/vault` refresh.
 
 2026-08-11 — **v0.9.0**: `/delegate` gained a third backend, `codex` (OpenAI's Codex CLI). `bin/stunt`
 now dispatches to `codex exec --json --skip-git-repo-check -s workspace-write` / `codex exec resume`,

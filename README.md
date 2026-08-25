@@ -271,8 +271,10 @@ re-explaining, even in a brand-new session after clearing context.
 The mechanism: `CLAUDE.md` auto-loads every session, so the read-first /
 update-before-stopping contract is always in context. A **Stop hook** (plugin
 install) backs it up — in scaffolded projects only, it nudges once if you changed
-code but didn't update the docs. Together the commands make long autonomous runs
-cheap, rate-limit-proof, and context-proof.
+code but didn't update the docs. It also flags a matching vault project page when
+its `updated:` date is more than 7 days behind the latest commit, at most once per
+project per day, and suggests running `/vault`. Together the commands make long
+autonomous runs cheap, rate-limit-proof, and context-proof.
 
 ## A second brain across all your projects
 
