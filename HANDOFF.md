@@ -24,9 +24,10 @@ session._
   `bin/stunt` (exec created a file; resume applied review feedback in the same session,
   `muse-spark-1.2-contributor` default model). Docs: SKILL.md, README (Route E + Grok/Kimi note under
   Route B + FAQ), how-it-works, plugin.json 0.11.0 + muse/meta/grok/kimi keywords. Also this session:
-  the earlier agy work was committed + pushed (`9d97c40`) and the marketplace clone fast-forwarded
-  (it had uncommitted `bin/stunt` drift byte-identical to the pushed commit — discarded via
-  `git checkout` before `git pull --ff-only`; unclear what wrote it, watch for recurrence).
+  the earlier agy work was committed + pushed (`9d97c40`), muse as `8f28ad2`, and the marketplace
+  clone fast-forwarded to both. **Mystery solved:** the clone's repeated uncommitted `bin/stunt` drift
+  was self-inflicted — `~/.local/bin/stunt` is a SYMLINK into the marketplace clone, so "syncing" via
+  `cp` wrote through it into the clone's working tree (see Gotchas).
 
 - **Prior (2026-08-29): added `agy` (Google Antigravity CLI) as a fourth `/delegate` backend
   (v0.9.1 → v0.10.0, NOT committed).** User has an Antigravity subscription and wanted its models usable
@@ -224,6 +225,15 @@ session._
 
 ## Gotchas
 
+- **`~/.local/bin/stunt` is a SYMLINK to `~/.claude/plugins/marketplaces/stuntman/bin/stunt`** (since
+  2026-08-25). Never `cp` a new stunt onto it — that writes through the symlink into the marketplace
+  clone's working tree, dirtying it and blocking `git pull --ff-only`. The correct "sync" is: commit +
+  push from the working copy, then `git -C ~/.claude/plugins/marketplaces/stuntman pull --ff-only`
+  (discard any byte-identical drift with `git checkout -- bin/stunt` first). The PATH copy updates
+  automatically via the symlink.
+- **`muse resume` is TUI-only** — headless continuation is `muse exec --session-id <uuid>`. Muse's
+  exec event stream carries no token usage (usage reports zeros). Approval is disabled per-run
+  (`--approval-mode never`) while muse's OS sandbox stays ON.
 - **agy (Antigravity CLI) works in its own scratch workspace by default** —
   `~/.gemini/antigravity-cli/scratch` — unless `--add-dir "$PWD"` is passed. `bin/stunt` always passes
   it, but any manual `agy -p` invocation without it will "succeed" while writing files to the wrong
