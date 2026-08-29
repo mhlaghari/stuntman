@@ -6,7 +6,27 @@ session._
 
 ## What changed this session
 
-- **This session (2026-08-25): added a vault-staleness nudge to project handoff.** Project pages in
+- **This session (2026-08-29): added `agy` (Google Antigravity CLI) as a fourth `/delegate` backend
+  (v0.9.1 → v0.10.0, NOT committed).** User has an Antigravity subscription and wanted its models usable
+  from the same plan/execute/review loop. `bin/stunt` gained an `agy` branch: exec = `agy -p "<spec>"
+  --output-format json --dangerously-skip-permissions --add-dir "$PWD" --print-timeout 30m [--model id]`,
+  resume = same plus `--conversation <id>`; `normalize_agy()` parses the single JSON line
+  (`conversation_id` → session_id, `response` → result, `status != "SUCCESS"` → is_error;
+  `output_tokens` already includes thinking, `total = input + output`, so no summing). `cost_usd`
+  hardcoded `0` (flat subscription billing, like codex). Two load-bearing discoveries: (1) **without
+  `--add-dir "$PWD"` agy edits its own scratch workspace** (`~/.gemini/antigravity-cli/scratch`), not the
+  project — the wrapper always passes it, and specs should use absolute paths; (2) **`--print-timeout`
+  defaults to 5m**, too short for real tasks — the wrapper passes 30m. **Smoke-tested live end-to-end
+  through `bin/stunt` itself**: exec created a file (model pin `gemini-3.7-flash-high` honored), resume
+  with review feedback rewrote it in the same conversation. The agy roster (`agy models`) spans
+  Gemini 3.x tiers, Claude Sonnet 4.6 / Opus 4.6, and GPT-OSS 120B — one subscription, three model
+  families. Docs updated: `skills/delegate/SKILL.md` (description, backend list, preflight, notes),
+  `README.md` (Route D + choosing section), `docs/how-it-works.md` (backend block),
+  `.claude-plugin/plugin.json` (0.10.0 + antigravity/gemini keywords). Edits made in the
+  **Documents working copy** (no EPERM this session — the old sandbox gotcha didn't bite); the
+  marketplace clone at `~/.claude/plugins/marketplaces/stuntman` needs a pull after commit/push.
+
+- **Prior (2026-08-25): added a vault-staleness nudge to project handoff.** Project pages in
   the cross-project vault could silently drift far behind shipped code, so `hooks/handoff-guard.sh`
   now checks the matching `wiki/projects/<project>.md` even on a clean tree and nudges when its
   `updated:` date trails the latest commit by more than 7 days, with a fail-open once-per-day marker.
@@ -182,6 +202,11 @@ session._
 
 ## Gotchas
 
+- **agy (Antigravity CLI) works in its own scratch workspace by default** —
+  `~/.gemini/antigravity-cli/scratch` — unless `--add-dir "$PWD"` is passed. `bin/stunt` always passes
+  it, but any manual `agy -p` invocation without it will "succeed" while writing files to the wrong
+  place. Give agy specs absolute paths. Also: agy's `--print-timeout` defaults to **5m** (stunt passes
+  30m), and its `output_tokens` already includes `thinking_tokens` (don't sum them — that double-counts).
 - **`~/Documents/Documents/MyProjects/stuntman` (the "real" working-copy path) returns `EPERM` under the
   current agent sandbox** — both Read and Bash. The plugin marketplace clone at
   `~/.claude/plugins/marketplaces/stuntman` is a full, clean, up-to-date checkout of the same
@@ -223,6 +248,12 @@ session._
   exactly how the first MIQ smoke test produced an Adversaria plan in the wrong folder.
 
 ## Last updated
+
+2026-08-29 — added `agy` (Google Antigravity CLI) as a fourth `/delegate` backend (v0.10.0): exec +
+resume wired through `bin/stunt` with `--add-dir "$PWD"` (load-bearing) and a 30m print timeout,
+smoke-tested live end-to-end (file created, review feedback applied in the same conversation, model pin
+honored). Roster spans Gemini 3.x / Claude 4.6 / GPT-OSS on the user's flat subscription. Docs +
+plugin.json updated. Not committed — needs user authorization first.
 
 2026-08-11 (night) — added `codex` as a third `/delegate` backend (v0.9.0), wiring OpenAI's Codex CLI
 into the existing plan/execute/review loop alongside claude/opencode. Smoke-tested live end-to-end

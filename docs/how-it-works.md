@@ -54,6 +54,14 @@ backend codex:
         codex exec --json --skip-git-repo-check -s workspace-write [-m model]
         codex exec resume <thread_id> --json --skip-git-repo-check [-m model]
         no proxy, no isolated config — reuses the user's own `codex login`
+
+backend agy:
+        agy -p --output-format json --dangerously-skip-permissions
+            --add-dir "$PWD" --print-timeout 30m [--model id]
+        agy --conversation <id> -p ... (same flags) for resume
+        no proxy — reuses the user's own Antigravity subscription login;
+        --add-dir is load-bearing (without it agy edits its own scratch
+        workspace, ~/.gemini/antigravity-cli/scratch, not the project)
 ```
 
 The isolated `CLAUDE_CONFIG_DIR` matters: without it, the worker shares

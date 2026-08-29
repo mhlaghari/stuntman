@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: Delegate implementation work to a stunt double (a headless worker — Claude Code via a local proxy, opencode running DeepSeek/Groq/Ollama, or OpenAI's Codex CLI). Claude plans the task, the worker executes it, Claude reviews the diff and iterates. Use when the user invokes /delegate <task>, or says "delegate this" / "have the stunt double do it" / "send this to the worker" / "have codex do it". Saves expensive subscription tokens for planning and review only.
+description: Delegate implementation work to a stunt double (a headless worker — Claude Code via a local proxy, opencode running DeepSeek/Groq/Ollama, OpenAI's Codex CLI, or Google's Antigravity CLI). Claude plans the task, the worker executes it, Claude reviews the diff and iterates. Use when the user invokes /delegate <task>, or says "delegate this" / "have the stunt double do it" / "send this to the worker" / "have codex do it" / "have agy (antigravity) do it". Saves expensive subscription tokens for planning and review only.
 ---
 
 # stuntman: plan → execute → review
@@ -16,7 +16,7 @@ STUNT="$(command -v stunt || echo "${CLAUDE_PLUGIN_ROOT}/bin/stunt")"
 ```
 
 Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
-(`claude` via local proxy — the default —, `opencode`, or `codex`).
+(`claude` via local proxy — the default —, `opencode`, `codex`, or `agy`).
 
 ## Preflight
 
@@ -29,6 +29,9 @@ Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
 - Backend `codex`: check `codex --version` and `codex login status`. If the
   CLI is missing, tell the user to install it (`npm install -g @openai/codex`)
   and stop. If not logged in, tell the user to run `codex login` and stop.
+- Backend `agy`: check `agy --version`. If missing, tell the user to install
+  Google Antigravity (the `agy` CLI ships with it; `agy install` wires the
+  PATH) and stop.
 
 ## 1. PLAN (you — this is where the expensive tokens earn their keep)
 
@@ -112,13 +115,18 @@ transcript under `~/.claude/projects/<project>/`.
   directly — no proxy, no isolated config; it reuses the user's own
   `codex login` (ChatGPT subscription or API key), same as running `codex`
   interactively, so worker sessions land in the same `codex resume` history.
-  None of the three consume Anthropic credits. Pin a model with
+  Backend `agy` runs Google's Antigravity CLI headlessly (`agy -p`), reusing
+  the user's own Antigravity subscription login — its roster (`agy models`)
+  spans Gemini 3.x, Claude Sonnet/Opus, and GPT-OSS. The wrapper passes
+  `--add-dir "$PWD"` (without it agy edits its own scratch workspace, not the
+  project) — so specs for agy should use absolute paths. None of the four
+  consume Anthropic credits from this session. Pin a model with
   `STUNTMAN_MODEL` (claude: proxy model id; opencode: `provider/model`;
-  codex: a model id accepted by `codex exec -m`).
-- The worker runs without permission prompts (claude:
+  codex: a model id accepted by `codex exec -m`; agy: an id from `agy models`).
+- The worker runs without permission prompts (claude and agy:
   `--dangerously-skip-permissions`; opencode: its default run policy; codex:
   `-s workspace-write`, sandboxed to the project directory but no per-action
   approval) — only delegate within trusted project directories.
-- Codex has no metered per-call cost (flat ChatGPT/API billing outside this
-  tool's visibility), so its `cost_usd` is always reported as `0` — mention
-  this in the cost line rather than implying the run was free to run.
+- Codex and agy have no metered per-call cost (flat subscription billing
+  outside this tool's visibility), so their `cost_usd` is always reported as
+  `0` — mention this in the cost line rather than implying the run was free.

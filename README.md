@@ -149,6 +149,14 @@ Prerequisites:
    export STUNTMAN_WORKER=codex
    ```
 
+   **Route D — [Antigravity](https://antigravity.google) worker** (no proxy — Google's own
+   CLI, billed on your Antigravity subscription; its roster spans Gemini 3.x,
+   Claude Sonnet/Opus, and GPT-OSS):
+   ```bash
+   # install Google Antigravity — the `agy` CLI ships with it (`agy install` wires the PATH)
+   export STUNTMAN_WORKER=agy
+   ```
+
 ### Option A — Claude Code plugin (recommended)
 
 Inside Claude Code:
@@ -188,7 +196,7 @@ What happens:
 ## Choosing your stunt double
 
 Two knobs: `STUNTMAN_WORKER` picks the backend (`claude` via the local proxy —
-the default —, `opencode`, or `codex`), `STUNTMAN_MODEL` pins the model:
+the default —, `opencode`, `codex`, or `agy`), `STUNTMAN_MODEL` pins the model:
 
 ```bash
 # Route A (proxy): any id from the proxy's /v1/models
@@ -201,6 +209,10 @@ export STUNTMAN_MODEL="deepseek/deepseek-v4-flash"
 # Route C (codex): no proxy, reuses your own `codex login`
 export STUNTMAN_WORKER=codex
 export STUNTMAN_MODEL="gpt-5.4-codex"   # optional — omit to use codex's own default
+
+# Route D (agy): no proxy, reuses your own Antigravity subscription
+export STUNTMAN_WORKER=agy
+export STUNTMAN_MODEL="gemini-3.7-flash-high"   # optional — any id from `agy models`
 ```
 
 Route A's worker is a full headless Claude Code (same tools and agentic loop
@@ -209,7 +221,10 @@ setup — opencode authenticates to providers directly. Route C is OpenAI's own
 agentic CLI — real tool use and sandboxed file edits, billed outside this
 tool's visibility (its `cost_usd` always reports `0`), so it's the pick when
 you already pay for Codex and want it working inside the same plan/execute/
-review loop as the other two.
+review loop as the other two. Route D is Google's Antigravity CLI — same
+flat-subscription story as Codex (`cost_usd` reports `0`), with the widest
+model roster of the four (Gemini 3.x tiers, Claude Sonnet/Opus, GPT-OSS via
+`agy models`), so one subscription covers three model families.
 
 Good stunt doubles, roughly in order of bang-per-buck:
 

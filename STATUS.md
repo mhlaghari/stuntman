@@ -5,14 +5,17 @@ every session._
 
 ## Built
 
-**v0.9.1** — six commands (each a skill + a `bin/` helper where needed), plus a
+**v0.10.0** — six commands (each a skill + a `bin/` helper where needed), plus a
 living-document system and an enforcement hook:
 
 - **`/delegate`** (`skills/delegate`, `bin/stunt`) — plan with Claude, execute
-  with a cheap worker (Claude-via-proxy, `opencode`, or `codex`), review with
-  Claude. **v0.9.0:** added `codex` as a third backend (OpenAI's Codex CLI,
+  with a cheap worker (Claude-via-proxy, `opencode`, `codex`, or `agy`), review
+  with Claude. **v0.9.0:** added `codex` as a third backend (OpenAI's Codex CLI,
   no proxy, reuses the user's own `codex login`) — same plan/execute/review/
-  iterate contract as the other two, smoke-tested live end-to-end.
+  iterate contract as the other two, smoke-tested live end-to-end. **v0.10.0:**
+  added `agy` (Google's Antigravity CLI) as a fourth backend — no proxy, reuses
+  the user's Antigravity subscription; roster spans Gemini 3.x, Claude
+  Sonnet/Opus 4.6, and GPT-OSS (`agy models`). Smoke-tested live end-to-end.
 - **`/relay`** (`skills/relay`, `bin/window`) — read the 5-hour usage window via
   a zero-token OAuth probe and span the rate-limit gap.
 - **`/scaffold`** (`skills/scaffold`, `bin/scaffold`) — stand up the project-memory
@@ -78,6 +81,17 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-08-29 — **v0.10.0**: `/delegate` gained a fourth backend, `agy` (Google's Antigravity CLI).
+`bin/stunt` dispatches to `agy -p … --output-format json --dangerously-skip-permissions --add-dir
+"$PWD" --print-timeout 30m` (exec) / the same plus `--conversation <id>` (resume), normalizing agy's
+single-line JSON (`conversation_id`/`response`/`status`; `output_tokens` already includes thinking) to
+the shared `{backend, session_id, result, is_error, usage, cost_usd}` shape — `cost_usd` is always `0`
+(flat Antigravity subscription, like codex). Two gotchas baked into the wrapper: `--add-dir "$PWD"` is
+load-bearing (agy otherwise edits `~/.gemini/antigravity-cli/scratch`, not the project) and the default
+5m print timeout is lifted to 30m. Smoke-tested live end-to-end through `bin/stunt` (exec wrote a file
+with model pin `gemini-3.7-flash-high`; resume applied review feedback in the same conversation).
+`skills/delegate/SKILL.md`, `README.md`, `docs/how-it-works.md` updated. plugin.json 0.9.1→0.10.0.
 
 2026-08-25 — **v0.9.1**: added the fail-open vault-staleness nudge to the Stop hook and `/handoff`
 read-back; project pages over 7 days behind the latest commit now prompt a once-daily `/vault` refresh.
