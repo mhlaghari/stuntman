@@ -6,7 +6,28 @@ session._
 
 ## What changed this session
 
-- **This session (2026-08-29, later): added `muse` (Meta's Muse Code CLI) as a fifth `/delegate`
+- **This session (2026-08-29, evening): added `/usages` — the seventh command (v0.12.0).** One
+  zero-token usage/limits board across the stunt doubles, born from the user asking to see all worker
+  usage in one place instead of per-app. **What each backend actually exposes (investigated live):**
+  Claude → live OAuth probe (existing `bin/window`); **Codex → its session files cache a full
+  `rate_limits` object** (`~/.codex/sessions/**/rollout-*.jsonl`, `token_count` events: primary=5h,
+  secondary=weekly/10080min, used_percent + unix resets_at + plan_type) — read the newest file's last
+  snapshot, and **treat a window whose resets_at already passed as ~0%** (the first draft showed a
+  stale 23%/5h from a 13h-old snapshot); DeepSeek → `GET api.deepseek.com/user/balance` with the key
+  from `~/.local/share/opencode/auth.json`; **agy → nothing local** (its `quota_manager.go` refreshes
+  server-side, log shows only `loadCodeAssist`/`fetchAvailableModels`, no quota persisted anywhere in
+  `~/.gemini/antigravity-cli`); **muse → nothing** (grep hits in sessions were project *content*, not
+  telemetry). `bin/usages` verbs: pretty board / `--json` / `--statusline` (worker-only segment —
+  Claude is deliberately absent since Claude Code feeds the statusline its own rate_limits natively;
+  300s cache; fails silent). Statusline wired: `~/.claude/statusline-command.sh` (user-global, NOT in
+  repo) now appends a `🎬` segment — **the segment is passed as a printf argument, never in the format
+  string** (worker text contains literal `%`); original backed up at
+  `~/.claude/statusline-command.sh.bak-pre-stuntman`. New `skills/usages/SKILL.md` (renders the board,
+  explains freshness, points at `/relay` when blocked); install.sh copies skill + bin;
+  `~/.local/bin/usages` symlinked to the marketplace clone (same pattern as `stunt`). README command
+  table now 7 rows. plugin.json 0.12.0 + usage/limits/statusline keywords.
+
+- **Prior (2026-08-29, later): added `muse` (Meta's Muse Code CLI) as a fifth `/delegate`
   backend + documented the Grok/Kimi route (v0.10.0 → v0.11.0, committed with authorization).**
   User asked to "add for opencode too, and grok, and kimi and muse". Findings: **opencode was already
   a backend** (Route B since the start); **grok/kimi have no CLIs installed on this machine**, but both
@@ -280,6 +301,11 @@ session._
   exactly how the first MIQ smoke test produced an Adversaria plan in the wrong folder.
 
 ## Last updated
+
+2026-08-29 (evening) — added `/usages` (v0.12.0): one zero-token usage/limits board across the stunt
+doubles (Claude live, Codex from its session-file `rate_limits` snapshot with expired-window handling,
+DeepSeek balance live, agy/muse honestly n/a) + a cached `--statusline` segment wired into the user's
+statusline script (backup kept). Smoke-tested all three modes live.
 
 2026-08-29 (later) — added `muse` (Meta's Muse Code CLI) as a fifth `/delegate` backend (v0.11.0):
 exec + resume via `muse exec --json --approval-mode never` (+ `--session-id` for resume; `muse resume`

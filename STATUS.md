@@ -5,8 +5,17 @@ every session._
 
 ## Built
 
-**v0.11.0** — six commands (each a skill + a `bin/` helper where needed), plus a
+**v0.12.0** — seven commands (each a skill + a `bin/` helper where needed), plus a
 living-document system and an enforcement hook:
+
+- **`/usages`** (`skills/usages`, `bin/usages`) — **v0.12.0:** one board for
+  every stunt double's usage + limits, all zero-token: Claude 5h/7d live (via
+  `bin/window`), Codex 5h/weekly from its last session snapshot in
+  `~/.codex/sessions/` (expired windows shown as ~0%), DeepSeek balance live
+  (opencode's stored key), agy/muse honestly n/a (neither exposes usage
+  locally — verified). `--json` and a cached `--statusline` mode (300s TTL,
+  fails silent); the user's `~/.claude/statusline-command.sh` now appends the
+  `🎬` worker segment.
 
 - **`/delegate`** (`skills/delegate`, `bin/stunt`) — plan with Claude, execute
   with a cheap worker (Claude-via-proxy, `opencode`, `codex`, `agy`, or
@@ -86,6 +95,18 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-08-29 (evening) — **v0.12.0**: added `/usages`, the seventh command — one zero-token board for
+every stunt double's usage + limits. `bin/usages`: Claude live (reuses `bin/window`), Codex from the
+newest `rate_limits` snapshot in `~/.codex/sessions/` (primary=5h, secondary=weekly, plan type; windows
+whose reset passed since the snapshot report ~0%), DeepSeek balance live via opencode's stored key,
+agy + muse honestly n/a (Antigravity keeps quota server-side — verified `quota_manager` logs but no
+local persistence; Muse's event stream carries no usage). Modes: pretty board / `--json` /
+`--statusline` (compact `CX 23%/5h 4%/wk · DS $0.89` segment, 300s cache at
+`~/.stuntman/usages-cache.txt`, prints nothing on failure). Wired into the user's
+`~/.claude/statusline-command.sh` (🎬 segment appended via printf args — worker %s are data, not
+format; original backed up as `.bak-pre-stuntman`). New `skills/usages/SKILL.md`; install.sh copies
+both; README command table row. plugin.json 0.11.0→0.12.0.
 
 2026-08-29 (later) — **v0.11.0**: `/delegate` gained a fifth backend, `muse` (Meta's Muse Code CLI).
 `bin/stunt` dispatches to `muse exec --json --approval-mode never` (exec) / the same plus

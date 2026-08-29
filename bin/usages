@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# stuntman usages — one board for every stunt double's usage and limits.
+#
+# Sources (all zero-token / zero-cost):
+#   claude    live — the same OAuth usage endpoint /usage reads (via sibling `window`)
+#   codex     the last rate_limits snapshot codex wrote to ~/.codex/sessions/
+#             (5h + weekly windows, plan type; as fresh as the last codex run)
+#   deepseek  live — api.deepseek.com/user/balance with the key opencode stores
+#             (metered billing: the "limit" is the remaining balance)
+#   agy       n/a — Antigravity refreshes quota server-side but never writes it
+#             to local disk (verified against ~/.gemini/antigravity-cli)
+#   muse      n/a — Meta's CLI exposes no usage in its event stream or state dir
+#
+# Verbs:
+#   usages               pretty board (default)
+#   usages --json        one JSON object, all backends
+#   usages --statusline  compact worker segment for a status line, cached
+#                        (~/.stuntman/usages-cache.txt, 300s TTL; prints
+#                        nothing on total failure — safe to embed)
+set -e
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+MODE="${1:-}"
+
+CACHE="$HOME/.stuntman/usages-cache.txt"
+TTL=300
+
+# --statusline: serve from cache when fresh; never let a failure break the line
+if [ "$MODE" = "--statusline" ]; then
+  if [ -f "$CACHE" ]; then
+    age=$(( $(date +%s) - $(stat -f %m "$CACHE" 2>/dev/null || stat -c %Y "$CACHE" 2>/dev/null || echo 0) ))
+    if [ "$age" -lt "$TTL" ]; then cat "$CACHE"; exit 0; fi
+  fi
+fi
+
+# the claude probe only feeds the board/json views — the status line already
+# shows Claude natively, so skip the network call there
+CLAUDE_JSON="{}"
+if [ "$MODE" != "--statusline" ]; then
+  if [ -x "$HERE/window" ]; then
+    CLAUDE_JSON="$("$HERE/window" 2>/dev/null || echo '{}')"
+  elif command -v window >/dev/null 2>&1; then
+    CLAUDE_JSON="$(window 2>/dev/null || echo '{}')"
+  fi
+fi
+
+DEEPSEEK_JSON="{}"
+DS_KEY="$(python3 -c "import json;print(json.load(open('$HOME/.local/share/opencode/auth.json'))['deepseek']['key'])" 2>/dev/null || true)"
+if [ -n "$DS_KEY" ]; then
+  DEEPSEEK_JSON="$(curl -s -m 10 https://api.deepseek.com/user/balance -H "Authorization: Bearer $DS_KEY" 2>/dev/null || echo '{}')"
+fi
+
+CODEX_FILE="$(ls -t "$HOME"/.codex/sessions/*/*/*/rollout-*.jsonl 2>/dev/null | head -1)"
+
+run_board() {
+python3 - "$MODE" "$CLAUDE_JSON" "$DEEPSEEK_JSON" "$CODEX_FILE" <<'PY'
+import json, os, sys
+from datetime import datetime, timezone
+
+mode, claude_raw, ds_raw, codex_file = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+
+def parse(raw):
+    try: return json.loads(raw)
+    except ValueError: return {}
+
+now = datetime.now(timezone.utc)
+
+def fmt_ts(ts):
+    """unix seconds or ISO string -> local 'Sat 2:05pm'."""
+    if not ts: return "?"
+    if isinstance(ts, str):
+        t = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    else:
+        t = datetime.fromtimestamp(ts, tz=timezone.utc)
+    return t.astimezone().strftime("%a %-I:%M%p").replace("AM", "am").replace("PM", "pm")
+
+def age_str(seconds):
+    if seconds < 3600: return f"{seconds // 60}m ago"
+    if seconds < 86400: return f"{seconds // 3600}h ago"
+    return f"{seconds // 86400}d ago"
+
+board = {}
+
+# claude — live via bin/window
+c = parse(claude_raw)
+if "five_hour_pct" in c:
+    board["claude"] = {"available": True, "live": True,
+                       "five_hour_pct": c["five_hour_pct"], "five_hour_resets": c.get("resets_at"),
+                       "seven_day_pct": c.get("seven_day_pct"), "seven_day_resets": c.get("seven_day_resets_at"),
+                       "blocked": c.get("blocked", False)}
+else:
+    board["claude"] = {"available": False, "reason": "window probe failed (no OAuth credentials?)"}
+
+# codex — last rate_limits snapshot in the newest session file
+board["codex"] = {"available": False, "reason": "no session snapshot found — run codex once"}
+if codex_file and os.path.isfile(codex_file):
+    last, ts = None, None
+    with open(codex_file, errors="replace") as f:
+        for line in f:
+            if '"rate_limits"' not in line: continue
+            try: d = json.loads(line)
+            except ValueError: continue
+            rl = (d.get("payload") or {}).get("rate_limits")
+            if rl: last, ts = rl, d.get("timestamp")
+    if last:
+        p, s = last.get("primary") or {}, last.get("secondary") or {}
+        snap_age = None
+        if ts:
+            snap_age = int((now - datetime.fromisoformat(ts.replace("Z", "+00:00"))).total_seconds())
+        # a window whose reset time has passed since the snapshot is back to ~0%
+        def expired(rl):
+            r = rl.get("resets_at")
+            return bool(r) and datetime.fromtimestamp(r, tz=timezone.utc) < now
+        board["codex"] = {"available": True, "live": False, "plan": last.get("plan_type"),
+                          "five_hour_pct": p.get("used_percent"), "five_hour_resets": p.get("resets_at"),
+                          "five_hour_expired": expired(p),
+                          "weekly_pct": s.get("used_percent"), "weekly_resets": s.get("resets_at"),
+                          "weekly_expired": expired(s),
+                          "snapshot_age_s": snap_age}
+
+# deepseek — live balance (metered)
+ds = parse(ds_raw)
+infos = ds.get("balance_infos") or []
+if infos:
+    b = infos[0]
+    board["deepseek"] = {"available": True, "live": True, "metered": True,
+                          "balance": b.get("total_balance"), "currency": b.get("currency"),
+                          "is_available": ds.get("is_available")}
+else:
+    board["deepseek"] = {"available": False, "reason": "no opencode deepseek key, or balance endpoint failed"}
+
+board["agy"]  = {"available": False, "reason": "Antigravity keeps quota server-side; nothing written locally"}
+board["muse"] = {"available": False, "reason": "Muse Code exposes no usage in its CLI event stream or state"}
+
+if mode == "--json":
+    print(json.dumps(board)); sys.exit(0)
+
+if mode == "--statusline":
+    parts = []
+    cx = board["codex"]
+    if cx.get("available"):
+        fh = "~0%/5h" if cx.get("five_hour_expired") else f"{cx['five_hour_pct']:.0f}%/5h"
+        wk = "~0%/wk" if cx.get("weekly_expired") else f"{cx['weekly_pct']:.0f}%/wk"
+        seg = f"CX {fh} {wk}"
+        if cx.get("snapshot_age_s") and cx["snapshot_age_s"] > 86400:
+            seg += "*"  # stale: snapshot older than a day
+        parts.append(seg)
+    d = board["deepseek"]
+    if d.get("available"):
+        parts.append(f"DS ${d['balance']}")
+    print(" · ".join(parts)); sys.exit(0)
+
+# pretty board
+def bar(pct, width=10):
+    if pct is None: return "?" * width
+    filled = min(width, int(pct * width / 100))
+    return "█" * filled + "░" * (width - filled)
+
+cl = board["claude"]
+if cl["available"]:
+    line = f"claude    5h {cl['five_hour_pct']:>3.0f}% {bar(cl['five_hour_pct'])}  resets {fmt_ts(cl['five_hour_resets'])}"
+    line += f"   7d {cl['seven_day_pct']:>3.0f}%"
+    if cl.get("blocked"): line += "  ⛔ BLOCKED"
+    print(line + "   (live)")
+else:
+    print(f"claude    n/a — {cl['reason']}")
+
+cx = board["codex"]
+if cx["available"]:
+    if cx.get("five_hour_expired"):
+        line = f"codex     5h  ~0% {bar(0)}  (window reset since snapshot)"
+    else:
+        line = f"codex     5h {cx['five_hour_pct']:>3.0f}% {bar(cx['five_hour_pct'])}  resets {fmt_ts(cx['five_hour_resets'])}"
+    line += "   wk ~0%" if cx.get("weekly_expired") else f"   wk {cx['weekly_pct']:>3.0f}%"
+    tail = f"plan {cx['plan']}" if cx.get("plan") else ""
+    if cx.get("snapshot_age_s") is not None:
+        tail += f", snapshot {age_str(cx['snapshot_age_s'])}"
+    print(line + f"   ({tail})")
+else:
+    print(f"codex     n/a — {cx['reason']}")
+
+d = board["deepseek"]
+if d["available"]:
+    flag = "" if d.get("is_available") else "  ⛔ account unavailable"
+    print(f"deepseek  balance ${d['balance']} {d['currency']}   (live, metered — balance is the limit){flag}")
+else:
+    print(f"deepseek  n/a — {d['reason']}")
+
+print(f"agy       n/a — {board['agy']['reason']}")
+print(f"muse      n/a — {board['muse']['reason']}")
+PY
+}
+
+if [ "$MODE" = "--statusline" ]; then
+  mkdir -p "$(dirname "$CACHE")"
+  OUT="$(run_board 2>/dev/null || true)"
+  printf '%s\n' "$OUT" > "$CACHE"
+  printf '%s\n' "$OUT"
+else
+  run_board
+fi

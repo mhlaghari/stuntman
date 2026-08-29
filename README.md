@@ -31,6 +31,7 @@ From a normal (subscription) Claude Code session, in any project:
 | **`/handoff`** | Reads those docs and continues exactly where the last session stopped. | new sessions / `/clear` |
 | **`/wiki`** | Builds a "second brain" across a folder of projects — an Obsidian vault + a graphify knowledge graph + a live MCP for cross-project recall. | every project |
 | **`/launch`** | Fans out a multi-agent workflow — cited competitor research, market sizing, channel ranking, then pricing + positioning + a week-by-week launch playbook, pressure-tested by adversarial critics — into one Product Success Overview (markdown + HTML). | the blank-page launch |
+| **`/usages`** | One board for every stunt double's usage + limits — Claude 5h/7d (live), Codex 5h/weekly (last snapshot), DeepSeek balance (live) — plus a cached `--statusline` segment. | all the subscription dashboards |
 
 Each is detailed in its own section below.
 

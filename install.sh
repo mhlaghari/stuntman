@@ -6,18 +6,20 @@ set -e
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-mkdir -p "$HOME/.claude/skills/delegate" "$HOME/.claude/skills/relay" "$HOME/.claude/skills/scaffold" "$HOME/.claude/skills/handoff" "$HOME/.claude/skills/wiki" "$HOME/.claude/skills/launch" "$HOME/.local/bin"
+mkdir -p "$HOME/.claude/skills/delegate" "$HOME/.claude/skills/relay" "$HOME/.claude/skills/scaffold" "$HOME/.claude/skills/handoff" "$HOME/.claude/skills/wiki" "$HOME/.claude/skills/launch" "$HOME/.claude/skills/usages" "$HOME/.local/bin"
 cp "$HERE/skills/delegate/SKILL.md" "$HOME/.claude/skills/delegate/SKILL.md"
 cp "$HERE/skills/relay/SKILL.md" "$HOME/.claude/skills/relay/SKILL.md"
 cp "$HERE/skills/scaffold/SKILL.md" "$HOME/.claude/skills/scaffold/SKILL.md"
 cp "$HERE/skills/handoff/SKILL.md" "$HOME/.claude/skills/handoff/SKILL.md"
 cp "$HERE/skills/wiki/SKILL.md" "$HOME/.claude/skills/wiki/SKILL.md"
+cp "$HERE/skills/usages/SKILL.md" "$HOME/.claude/skills/usages/SKILL.md"
 cp "$HERE/skills/launch/"* "$HOME/.claude/skills/launch/"
 cp "$HERE/bin/stunt" "$HOME/.local/bin/stunt"
 cp "$HERE/bin/window" "$HOME/.local/bin/window"
 cp "$HERE/bin/scaffold" "$HOME/.local/bin/scaffold"
 cp "$HERE/bin/wiki" "$HOME/.local/bin/wiki"
-chmod +x "$HOME/.local/bin/stunt" "$HOME/.local/bin/window" "$HOME/.local/bin/scaffold" "$HOME/.local/bin/wiki"
+cp "$HERE/bin/usages" "$HOME/.local/bin/usages"
+chmod +x "$HOME/.local/bin/stunt" "$HOME/.local/bin/window" "$HOME/.local/bin/scaffold" "$HOME/.local/bin/wiki" "$HOME/.local/bin/usages"
 
 echo "✓ /delegate skill  → ~/.claude/skills/delegate/"
 echo "✓ /relay skill     → ~/.claude/skills/relay/"
@@ -29,6 +31,7 @@ echo "✓ stunt worker     → ~/.local/bin/stunt"
 echo "✓ window probe     → ~/.local/bin/window"
 echo "✓ scaffold tool    → ~/.local/bin/scaffold"
 echo "✓ wiki tool        → ~/.local/bin/wiki"
+echo "✓ usages board     → ~/.local/bin/usages"
 
 case ":$PATH:" in
   *":$HOME/.local/bin:"*) ;;
