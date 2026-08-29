@@ -2,19 +2,20 @@
 
 **Claude doesn't do its own stunts.** · [Website](https://mhlaghari.github.io/stuntman/)
 
-Claude Code plans the scene and reviews the take. A near-free model — DeepSeek,
-Gemini, Groq, a local Ollama, whatever — takes the hits. Your expensive
-subscription tokens go only where intelligence actually matters.
+Claude Code plans the scene and reviews the take. A near-free worker takes the
+hits — DeepSeek, Groq, a local Ollama, **or the flat-rate subscriptions you
+already pay for**: OpenAI's Codex, Google's Antigravity, Meta's Muse Code.
+Your expensive Anthropic tokens go only where intelligence actually matters.
 
 ![stuntman demo](docs/assets/demo.gif)
 
 ```
   PLAN                EXECUTE               REVIEW              ITERATE
   Claude (sub) ──▶    stunt double ──▶      Claude (sub) ──▶    feedback ↩
-  reads the code,     headless Claude       reads the diff,     same worker
-  writes a spec       Code instance,        runs the tests      session resumes,
-  with zero open      any model via         itself — trusts     fixes in place.
-  decisions           a local proxy         nothing             max 2 rounds,
+  reads the code,     any of 5 backends:    reads the diff,     same worker
+  writes a spec       proxy · opencode      runs the tests      session resumes,
+  with zero open      codex · agy · muse    itself — trusts     fixes in place.
+  decisions           (headless, cheap)     nothing             max 2 rounds,
                                                                 then Claude
                                                                 takes over
 ```
@@ -25,7 +26,7 @@ From a normal (subscription) Claude Code session, in any project:
 
 | Command | What it does | Spans |
 |---|---|---|
-| **`/delegate <task>`** | Claude plans + reviews; a near-free model executes the spec through a local proxy. | cost |
+| **`/delegate <task>`** | Claude plans + reviews; a near-free worker executes the spec — five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), Codex, Antigravity (`agy`), Muse. | cost |
 | **`/relay <task>`** | Keeps the cheap worker going across Claude's 5-hour usage limit; Claude resumes at reset. | the rate limit |
 | **`/scaffold`** | Stands up a project's self-resuming memory — a `CLAUDE.md` contract + four living docs (HANDOFF · STATUS · SPEC · STRATEGY). | the context boundary |
 | **`/handoff`** | Reads those docs and continues exactly where the last session stopped. | new sessions / `/clear` |
@@ -73,6 +74,14 @@ managing a very fast, very cheap contractor.
 
 The worker gets its own `CLAUDE_CONFIG_DIR`, so it never touches your
 subscription's login or session state.
+
+The second trick: **every vendor's flat-rate coding CLI is the same worker in
+a different costume.** Codex (`codex exec`), Antigravity (`agy -p`), and Muse
+(`muse exec`) all expose run-headless + resume-by-id + JSON output, so
+`bin/stunt` normalizes all of them to one contract. If you already pay for
+ChatGPT, Antigravity, or Meta, those subscriptions become execution capacity
+for your Claude session — and Antigravity's roster alone spans Gemini 3.x,
+Claude Sonnet/Opus, and GPT-OSS.
 
 ## Field report
 
@@ -184,9 +193,9 @@ Inside Claude Code:
 git clone https://github.com/mhlaghari/stuntman && cd stuntman && ./install.sh
 ```
 
-Copies the `/delegate`, `/relay`, `/scaffold`, `/handoff`, `/wiki`, and `/launch`
-skills to `~/.claude/skills/` and the `stunt` worker, `window` probe, `scaffold`,
-and `wiki` tools to `~/.local/bin/`.
+Copies the `/delegate`, `/relay`, `/scaffold`, `/handoff`, `/wiki`, `/launch`,
+and `/usages` skills to `~/.claude/skills/` and the `stunt` worker, `window`
+probe, `usages` board, `scaffold`, and `wiki` tools to `~/.local/bin/`.
 
 ## Usage
 
@@ -370,6 +379,31 @@ go-to-market (beachhead · monetization · timeline · resources), then:
 
 A token-heavy run (it does real research — ~15–25 agents), so it's for a real
 launch decision, not a quick look.
+
+## One board for every subscription
+
+Five workers means five dashboards you'd otherwise have to go check. `/usages`
+reads them all in one shot, at **zero token cost** — no worker is invoked:
+
+```
+claude    5h  48% ████░░░░░░  resets Sat 4:00pm   7d  14%   (live)
+codex     5h  23% ██░░░░░░░░  resets Sat 2:48am   wk   4%   (plan plus, snapshot 2h ago)
+deepseek  balance $0.89 USD   (live, metered — balance is the limit)
+agy       n/a — Antigravity keeps quota server-side; nothing written locally
+muse      n/a — Muse Code exposes no usage in its CLI event stream or state
+```
+
+- **Claude** comes from the same zero-token OAuth probe `/relay` uses.
+- **Codex** comes from the rate-limit snapshots its own CLI writes to
+  `~/.codex/sessions/` — free to read, as fresh as your last codex run, and a
+  window whose reset already passed is honestly reported as ~0%.
+- **DeepSeek** is the live balance API behind your opencode key.
+- **agy / muse** genuinely expose nothing locally, so they say so — no fake
+  numbers.
+
+`usages --statusline` prints a compact segment (`CX 23%/5h 4%/wk · DS $0.89`),
+cached five minutes and silent on failure, ready to drop into your Claude Code
+status line next to the native Claude window bar.
 
 ## Why the spec quality matters
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stuntman — Claude doesn't do its own stunts.</title>
-<meta name="description" content="Claude Code plans and reviews. A near-free model does the typing through a local proxy. Spend your Claude tokens on thinking, never on typing.">
+<meta name="description" content="Claude Code plans and reviews. A near-free worker does the typing — DeepSeek, Ollama, or your Codex, Antigravity, and Muse subscriptions. Spend your Claude tokens on thinking, never on typing.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23080808'/%3E%3Cpath d='M4 12 28 6' stroke='%23ff8c2b' stroke-width='3'/%3E%3Crect x='4' y='13' width='24' height='15' rx='2' fill='%23161616'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -251,7 +251,7 @@
     <div class="hero-inner">
       <div class="take"><span class="dot"></span> Scene 01 · Take 1 · Rolling</div>
       <h1 class="title">Claude doesn't do<span class="l2">its own stunts.</span></h1>
-      <p class="oneliner">Claude Code <b>plans</b> the task and <b>reviews</b> the result. A near-free model — DeepSeek, Groq, or local Ollama — does the typing through a local proxy. Your expensive subscription tokens are spent on <b>thinking</b>, never on typing.</p>
+      <p class="oneliner">Claude Code <b>plans</b> the task and <b>reviews</b> the result. A near-free worker does the typing — DeepSeek, Groq, local Ollama, or the flat-rate subscriptions you already pay for: OpenAI's <b>Codex</b>, Google's <b>Antigravity</b>, Meta's <b>Muse</b>. Your expensive Anthropic tokens are spent on <b>thinking</b>, never on typing.</p>
       <div class="hero-cta">
         <a class="btn primary" href="#install">▶ &nbsp;Roll camera</a>
         <a class="btn ghost" href="#how">See how it works</a>
@@ -284,8 +284,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 8-4 4 4 4M18 8l4 4-4 4M14 4l-4 16"/></svg>
         </div>
         <h3>Execute</h3>
-        <p>The cheap worker model picks up the spec and writes every line of code, routed through a local proxy.</p>
-        <span class="who">DeepSeek / Groq / Ollama</span>
+        <p>The stunt double picks up the spec and writes every line of code — five interchangeable backends behind one contract.</p>
+        <span class="who">DeepSeek / Codex / Antigravity / Muse / Ollama</span>
       </div>
       <div class="step reveal" data-role="claude" data-d="2" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
         <div class="num">03</div>
@@ -303,7 +303,7 @@
         </div>
         <h3>Iterate</h3>
         <p>Notes go back to the worker for another take. Loop until the shot is clean — no extra thinking budget burned.</p>
-        <span class="who">DeepSeek / Groq / Ollama</span>
+        <span class="who">DeepSeek / Codex / Antigravity / Muse / Ollama</span>
       </div>
     </div>
   </div>
@@ -365,7 +365,7 @@
         </div>
         <h3>Keep rolling</h3>
         <p>The stunt double isn't on Anthropic's clock. While the limit cools down, it keeps executing the spec'd work in the background — your key, not your cap.</p>
-        <span class="who">DeepSeek / Groq / Ollama</span>
+        <span class="who">DeepSeek / Codex / Antigravity / Muse / Ollama</span>
       </div>
       <div class="step reveal" data-role="claude" data-d="2" style="--bd:rgba(255,179,71,.45);--gl:rgba(255,179,71,.16)">
         <div class="num">03</div>
@@ -423,13 +423,13 @@
   <div class="wrap">
     <div class="reveal">
       <div class="eyebrow">The call sheet · every command</div>
-      <h2 class="sec">Six commands, one crew</h2>
-      <p class="sec-sub">Plan → execute → review is the core. The rest make long runs cheap, rate-limit-proof, context-proof, searchable across every project — and turn a blank page into a launch plan.</p>
+      <h2 class="sec">Seven commands, one crew</h2>
+      <p class="sec-sub">Plan → execute → review is the core. The rest make long runs cheap, rate-limit-proof, context-proof, searchable across every project — turn a blank page into a launch plan, and put every subscription's limits on one board.</p>
     </div>
     <div class="reveal" data-d="1" style="display:grid;gap:12px;max-width:880px;margin:28px auto 0">
       <div style="display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;padding:16px 20px;border:1px solid var(--line-2);border-radius:14px;background:#0b0b0d">
         <code style="color:var(--amber);font-weight:700">/delegate</code>
-        <div><b>Plan with Claude, execute with a near-free model, review with Claude.</b> Your subscription tokens go only to thinking. <span style="opacity:.55">— saves cost</span></div>
+        <div><b>Plan with Claude, execute with a near-free worker, review with Claude.</b> Five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), OpenAI's Codex, Google's Antigravity, Meta's Muse — your ChatGPT/Antigravity/Meta subscriptions become execution capacity. <span style="opacity:.55">— saves cost · 5 backends in v0.11</span></div>
       </div>
       <div style="display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;padding:16px 20px;border:1px solid var(--line-2);border-radius:14px;background:#0b0b0d">
         <code style="color:var(--amber);font-weight:700">/relay</code>
@@ -450,6 +450,10 @@
       <div style="display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;padding:16px 20px;border:1px solid var(--teal);border-radius:14px;background:#0b0b0d">
         <code style="color:var(--teal);font-weight:700">/launch</code>
         <div><b>Turn a blank page into a product launch plan.</b> A multi-agent workflow does cited competitor research, sizes the market, ranks channels, then writes pricing, positioning + a week-by-week playbook — pressure-tested by adversarial critics — into one Product Success Overview (markdown + HTML). <span style="opacity:.55">— go-to-market · new in v0.8</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;padding:16px 20px;border:1px solid var(--teal);border-radius:14px;background:#0b0b0d">
+        <code style="color:var(--teal);font-weight:700">/usages</code>
+        <div><b>One board for every subscription's usage + limits.</b> Claude's 5-hour/weekly windows live, Codex's windows from its own snapshots, the DeepSeek balance — read at zero token cost, plus a cached segment for your status line. <span style="opacity:.55">— know your limits · new in v0.12</span></div>
       </div>
     </div>
   </div>

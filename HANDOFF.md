@@ -302,6 +302,12 @@ session._
 
 ## Last updated
 
+2026-08-29 (night) — README + website revamped to the v0.12.0 reality: five-backend story everywhere
+(hero, diagram, command table, "The trick" gains the vendor-CLI-convergence paragraph), `/usages` got a
+README section + a seventh landing-page card ("Seven commands, one crew"), and `marketplace.json`'s
+description finally lists all seven commands. Also synced the vault this session (`/vault`: stuntman
+page refreshed + new [[vendor-cli-headless-contracts]] lesson; graph refreshed).
+
 2026-08-29 (evening) — added `/usages` (v0.12.0): one zero-token usage/limits board across the stunt
 doubles (Claude live, Codex from its session-file `rate_limits` snapshot with expired-window handling,
 DeepSeek balance live, agy/muse honestly n/a) + a cached `--statusline` segment wired into the user's

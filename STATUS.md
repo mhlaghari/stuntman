@@ -82,8 +82,6 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
   one-paragraph plan + an adversarial **"roast"** pass so only survivors surface. Bookends `/launch`
   (idea-in vs ship-out); reuses the proven multi-agent `Workflow`. Working name `/forge` / `/ideate`.
   Scope next session. _(6-vs-4 resolved → **keep all 6**; `SPEC.md` still says "four commands" — fix when touched.)_
-- `marketplace.json` description still only names the delegate value prop — add
-  relay / scaffold / handoff.
 - Exercise `/relay` through a real capped → reset cycle (never run live end-to-end).
 - No tests / CI — a smoke test for `window` (parse), `scaffold` (idempotency),
   and `handoff-guard` (the five Stop-hook cases) would help.
@@ -95,6 +93,14 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-08-29 (night) — **README + website revamp for v0.12.0 reality.** README: intro/diagram/table/
+"The trick" now tell the five-backend story (incl. the vendor-CLI convergence trick), install.sh copy
+list corrected, and `/usages` got its own section (sample board + freshness story + statusline).
+Website (`docs/index.html`): hero + meta description mention Codex/Antigravity/Muse, step chips list
+all five doubles, commands section is now "Seven commands, one crew" with a `/usages` card, and the
+`/delegate` card names all five backends. `marketplace.json` description now covers all seven commands
+(closes the long-standing Planned item).
 
 2026-08-29 (evening) — **v0.12.0**: added `/usages`, the seventh command — one zero-token board for
 every stunt double's usage + limits. `bin/usages`: Claude live (reuses `bin/window`), Codex from the
