@@ -302,6 +302,10 @@ session._
 
 ## Last updated
 
+2026-08-29 (night, later) — README gained a "What's what" cast table (orchestrator / stunt double /
+five backends / bin tools / living docs / Stop hook) — **written by the Gemini stunt double itself**
+(`/delegate` via agy, `gemini-3.7-flash-high`, verbatim spec insertion, 15+/0−, zero review rounds).
+
 2026-08-29 (night) — README + website revamped to the v0.12.0 reality: five-backend story everywhere
 (hero, diagram, command table, "The trick" gains the vendor-CLI-convergence paragraph), `/usages` got a
 README section + a seventh landing-page card ("Seven commands, one crew"), and `marketplace.json`'s

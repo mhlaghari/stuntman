@@ -36,6 +36,21 @@ From a normal (subscription) Claude Code session, in any project:
 
 Each is detailed in its own section below.
 
+## What's what
+
+Two roles, five backends, five tools — here is the whole cast:
+
+| Piece | What it is |
+|---|---|
+| **The orchestrator** | Your normal Claude Code session, on the Anthropic subscription. It plans specs, reviews diffs, runs the tests. It never types implementation code. |
+| **The stunt double** | The headless worker that executes specs. `STUNTMAN_WORKER` picks it: `claude` (default — headless Claude Code via a local proxy), `opencode` (DeepSeek/Groq/Ollama/Grok/Kimi + 75 providers), `codex` (OpenAI's CLI, your ChatGPT sub), `agy` (Google's Antigravity CLI, your Antigravity sub), `muse` (Meta's Muse Code CLI, your Meta sub). `STUNTMAN_MODEL` pins the model. |
+| **`bin/stunt`** | The worker wrapper. Two verbs — `stunt exec "<spec>"` and `stunt resume <id> "<feedback>"` — normalized to one JSON shape across all five backends. |
+| **`bin/window`** | Zero-token probe of Claude's 5-hour/weekly usage window (what `/relay` reads). |
+| **`bin/usages`** | The cross-subscription usage board (what `/usages` reads; also feeds the status line). |
+| **`bin/scaffold` + `bin/wiki`** | Stand up the living-docs memory system and the cross-project second brain. |
+| **The living docs** | `HANDOFF.md` (session baton) · `STATUS.md` (board) · `SPEC.md` (contract) · `STRATEGY.md` (why). `/scaffold` writes them, `/handoff` resumes from them. |
+| **The Stop hook** | `hooks/handoff-guard.sh` — nudges once when code changed but the living docs didn't, and once a day when a project's vault page drifts stale. Fails open. |
+
 ## The pain point
 
 You pay for a Claude subscription. And then you watch Opus burn through your

@@ -94,6 +94,10 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 
 ## Last updated
 
+2026-08-29 (night, later) — README "What's what" section added (the moving-parts cast table) —
+delegated to Gemini via the agy backend as a live dogfood of `/delegate` (verbatim insertion,
+15+/0−, verification passed, zero iterations).
+
 2026-08-29 (night) — **README + website revamp for v0.12.0 reality.** README: intro/diagram/table/
 "The trick" now tell the five-backend story (incl. the vendor-CLI convergence trick), install.sh copy
 list corrected, and `/usages` got its own section (sample board + freshness story + statusline).
