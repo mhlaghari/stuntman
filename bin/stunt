@@ -22,12 +22,19 @@
 #             GPT-OSS — see `agy models`). Passes --add-dir "$PWD" because agy otherwise
 #             works in its own scratch workspace (~/.gemini/antigravity-cli/scratch)
 #             instead of the project directory.
+#   muse      `muse exec` — Meta's Muse Code CLI, no proxy needed. Reuses the user's own
+#             `muse login` (Meta account). Runs with --approval-mode never but keeps
+#             muse's OS sandbox ON (filesystem/network sandboxing, like codex's
+#             workspace-write). Resume = `muse exec --session-id <id>` (plain
+#             `muse resume` is TUI-only). Emits no token usage in exec events, so
+#             usage reports zeros.
 #
 # Env:
-#   STUNTMAN_WORKER      claude | opencode | codex | agy     (default: claude)
+#   STUNTMAN_WORKER      claude | opencode | codex | agy | muse     (default: claude)
 #   STUNTMAN_MODEL       claude: id from the proxy's /v1/models; opencode: provider/model;
 #                        codex: a model id accepted by `codex exec -m`;
-#                        agy: an id from `agy models` (e.g. gemini-3.7-flash-high)
+#                        agy: an id from `agy models` (e.g. gemini-3.7-flash-high);
+#                        muse: an id accepted by `muse exec --model`
 #   STUNTMAN_CONFIG_DIR  claude worker config dir      (default: ~/.claude-stuntman)
 #   STUNTMAN_BASE_URL    claude fallback proxy URL     (default: http://localhost:8082)
 #   STUNTMAN_AUTH_TOKEN  claude fallback proxy token   (default: freecc)
@@ -173,6 +180,37 @@ print(json.dumps({"backend": "agy", "session_id": d.get("conversation_id"),
 '
 }
 
+# muse exec --json → JSONL event stream. Session id rides on every event
+# (stream.kind == "session"); the result is the run.terminal.* event's payload.text,
+# with payload.terminal == "completed" on success. The stream carries no token
+# usage, so usage reports zeros; cost is flat Meta-subscription billing (0).
+normalize_muse() {
+  python3 -c '
+import json, sys
+sid, result, terminal = None, "", None
+for line in sys.stdin:
+    line = line.strip()
+    if not line.startswith("{"):
+        continue
+    try:
+        d = json.loads(line)
+    except ValueError:
+        continue
+    s = d.get("stream") or {}
+    if s.get("kind") == "session":
+        sid = s.get("id") or sid
+    if (d.get("payload_type") or "").startswith("run.terminal"):
+        p = d.get("payload") or {}
+        terminal = p.get("terminal")
+        result = p.get("text") or result
+print(json.dumps({"backend": "muse", "session_id": sid,
+                  "result": result, "is_error": terminal != "completed",
+                  "usage": {"input_tokens": 0, "output_tokens": 0,
+                            "cache_read_tokens": 0, "cache_write_tokens": 0},
+                  "cost_usd": 0}))
+'
+}
+
 case "${1:-}" in
   exec)
     SPEC="${2:?usage: stunt exec \"<spec>\"}"
@@ -191,6 +229,11 @@ case "${1:-}" in
       # --print-timeout lifts the 5m default, which is too short for real coding tasks.
       agy -p "$SPEC" --output-format json --dangerously-skip-permissions \
         --add-dir "$PWD" --print-timeout 30m "${MODEL_ARGS[@]}" < /dev/null | normalize_agy
+    elif [ "$BACKEND" = "muse" ]; then
+      MODEL_ARGS=()
+      [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(--model "$STUNTMAN_MODEL")
+      # approval off, but muse's OS sandbox stays ON (its default).
+      muse exec --json --approval-mode never "${MODEL_ARGS[@]}" "$SPEC" < /dev/null | normalize_muse
     else
       claude_invoke -p "$SPEC" --output-format json --dangerously-skip-permissions | normalize_claude
     fi
@@ -212,6 +255,11 @@ case "${1:-}" in
       [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(--model "$STUNTMAN_MODEL")
       agy --conversation "$SID" -p "$FEEDBACK" --output-format json --dangerously-skip-permissions \
         --add-dir "$PWD" --print-timeout 30m "${MODEL_ARGS[@]}" < /dev/null | normalize_agy
+    elif [ "$BACKEND" = "muse" ]; then
+      MODEL_ARGS=()
+      [ -n "${STUNTMAN_MODEL:-}" ] && MODEL_ARGS=(--model "$STUNTMAN_MODEL")
+      # `muse resume` is TUI-only; headless continuation is exec + --session-id.
+      muse exec --json --approval-mode never --session-id "$SID" "${MODEL_ARGS[@]}" "$FEEDBACK" < /dev/null | normalize_muse
     else
       claude_invoke -p --resume "$SID" "$FEEDBACK" --output-format json --dangerously-skip-permissions | normalize_claude
     fi

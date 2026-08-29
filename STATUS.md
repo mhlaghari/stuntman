@@ -5,17 +5,22 @@ every session._
 
 ## Built
 
-**v0.10.0** — six commands (each a skill + a `bin/` helper where needed), plus a
+**v0.11.0** — six commands (each a skill + a `bin/` helper where needed), plus a
 living-document system and an enforcement hook:
 
 - **`/delegate`** (`skills/delegate`, `bin/stunt`) — plan with Claude, execute
-  with a cheap worker (Claude-via-proxy, `opencode`, `codex`, or `agy`), review
-  with Claude. **v0.9.0:** added `codex` as a third backend (OpenAI's Codex CLI,
-  no proxy, reuses the user's own `codex login`) — same plan/execute/review/
-  iterate contract as the other two, smoke-tested live end-to-end. **v0.10.0:**
-  added `agy` (Google's Antigravity CLI) as a fourth backend — no proxy, reuses
-  the user's Antigravity subscription; roster spans Gemini 3.x, Claude
-  Sonnet/Opus 4.6, and GPT-OSS (`agy models`). Smoke-tested live end-to-end.
+  with a cheap worker (Claude-via-proxy, `opencode`, `codex`, `agy`, or
+  `muse`), review with Claude. **v0.9.0:** added `codex` as a third backend
+  (OpenAI's Codex CLI, no proxy, reuses the user's own `codex login`) — same
+  plan/execute/review/iterate contract as the other two, smoke-tested live
+  end-to-end. **v0.10.0:** added `agy` (Google's Antigravity CLI) as a fourth
+  backend — no proxy, reuses the user's Antigravity subscription; roster spans
+  Gemini 3.x, Claude Sonnet/Opus 4.6, and GPT-OSS (`agy models`). Smoke-tested
+  live end-to-end. **v0.11.0:** added `muse` (Meta's Muse Code CLI) as a fifth
+  backend — no proxy, reuses the user's `muse login`; approval off, OS sandbox
+  on; no usage data in its event stream (reports zeros). Smoke-tested live
+  end-to-end. Grok + Kimi documented as opencode-backend routes (`xai/…` /
+  `moonshotai/…` with a key) — no new code needed.
 - **`/relay`** (`skills/relay`, `bin/window`) — read the 5-hour usage window via
   a zero-token OAuth probe and span the rate-limit gap.
 - **`/scaffold`** (`skills/scaffold`, `bin/scaffold`) — stand up the project-memory
@@ -81,6 +86,17 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-08-29 (later) — **v0.11.0**: `/delegate` gained a fifth backend, `muse` (Meta's Muse Code CLI).
+`bin/stunt` dispatches to `muse exec --json --approval-mode never` (exec) / the same plus
+`--session-id <id>` (resume — plain `muse resume` is TUI-only), normalizing the JSONL event stream
+(session id from `stream{kind:"session"}`, result + error from the `run.terminal.*` event) to the
+shared shape. Muse emits no token usage → zeros; `cost_usd` 0 (flat Meta-account billing). Approval
+off but muse's OS sandbox stays ON (codex-style profile); writes land in the cwd with no extra flag.
+Smoke-tested live end-to-end through `bin/stunt` (exec wrote a file; resume applied review feedback in
+the same session). Grok/Kimi: no dedicated CLIs installed — documented as opencode-backend routes
+(`xai/…` / `moonshotai/…` after `opencode auth login`). SKILL.md / README (Route E + Grok-Kimi note +
+FAQ) / how-it-works updated. plugin.json 0.10.0→0.11.0 + muse/meta/grok/kimi keywords.
 
 2026-08-29 — **v0.10.0**: `/delegate` gained a fourth backend, `agy` (Google's Antigravity CLI).
 `bin/stunt` dispatches to `agy -p … --output-format json --dangerously-skip-permissions --add-dir

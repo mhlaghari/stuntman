@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: Delegate implementation work to a stunt double (a headless worker — Claude Code via a local proxy, opencode running DeepSeek/Groq/Ollama, OpenAI's Codex CLI, or Google's Antigravity CLI). Claude plans the task, the worker executes it, Claude reviews the diff and iterates. Use when the user invokes /delegate <task>, or says "delegate this" / "have the stunt double do it" / "send this to the worker" / "have codex do it" / "have agy (antigravity) do it". Saves expensive subscription tokens for planning and review only.
+description: Delegate implementation work to a stunt double (a headless worker — Claude Code via a local proxy, opencode running DeepSeek/Groq/Ollama/Grok/Kimi, OpenAI's Codex CLI, Google's Antigravity CLI, or Meta's Muse Code CLI). Claude plans the task, the worker executes it, Claude reviews the diff and iterates. Use when the user invokes /delegate <task>, or says "delegate this" / "have the stunt double do it" / "send this to the worker" / "have codex do it" / "have agy (antigravity) do it" / "have muse do it". Saves expensive subscription tokens for planning and review only.
 ---
 
 # stuntman: plan → execute → review
@@ -16,7 +16,8 @@ STUNT="$(command -v stunt || echo "${CLAUDE_PLUGIN_ROOT}/bin/stunt")"
 ```
 
 Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
-(`claude` via local proxy — the default —, `opencode`, `codex`, or `agy`).
+(`claude` via local proxy — the default —, `opencode`, `codex`, `agy`, or
+`muse`).
 
 ## Preflight
 
@@ -32,6 +33,8 @@ Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
 - Backend `agy`: check `agy --version`. If missing, tell the user to install
   Google Antigravity (the `agy` CLI ships with it; `agy install` wires the
   PATH) and stop.
+- Backend `muse`: check `muse --version`. If missing, tell the user to install
+  Meta's Muse Code CLI and run `muse login`, then stop.
 
 ## 1. PLAN (you — this is where the expensive tokens earn their keep)
 
@@ -119,14 +122,23 @@ transcript under `~/.claude/projects/<project>/`.
   the user's own Antigravity subscription login — its roster (`agy models`)
   spans Gemini 3.x, Claude Sonnet/Opus, and GPT-OSS. The wrapper passes
   `--add-dir "$PWD"` (without it agy edits its own scratch workspace, not the
-  project) — so specs for agy should use absolute paths. None of the four
-  consume Anthropic credits from this session. Pin a model with
-  `STUNTMAN_MODEL` (claude: proxy model id; opencode: `provider/model`;
-  codex: a model id accepted by `codex exec -m`; agy: an id from `agy models`).
+  project) — so specs for agy should use absolute paths. Backend `muse` runs
+  Meta's Muse Code CLI headlessly (`muse exec --json`; resume is `muse exec
+  --session-id <id>` — plain `muse resume` is TUI-only), reusing the user's
+  own `muse login`; it emits no token usage, so usage reads zeros. Grok and
+  Kimi models route through the `opencode` backend (`xai/…` /
+  `moonshotai/…` with the matching key). None of the five backends consume
+  Anthropic credits from this session. Pin a model with `STUNTMAN_MODEL`
+  (claude: proxy model id; opencode: `provider/model`; codex: a model id
+  accepted by `codex exec -m`; agy: an id from `agy models`; muse: an id
+  accepted by `muse exec --model`).
 - The worker runs without permission prompts (claude and agy:
   `--dangerously-skip-permissions`; opencode: its default run policy; codex:
   `-s workspace-write`, sandboxed to the project directory but no per-action
-  approval) — only delegate within trusted project directories.
-- Codex and agy have no metered per-call cost (flat subscription billing
-  outside this tool's visibility), so their `cost_usd` is always reported as
-  `0` — mention this in the cost line rather than implying the run was free.
+  approval; muse: `--approval-mode never` with muse's OS sandbox left ON) —
+  only delegate within trusted project directories.
+- Codex, agy, and muse have no metered per-call cost (flat subscription
+  billing outside this tool's visibility), so their `cost_usd` is always
+  reported as `0` — mention this in the cost line rather than implying the
+  run was free. Muse additionally reports zero token usage (its event stream
+  has no usage data) — say "usage not reported by muse" in the cost line.

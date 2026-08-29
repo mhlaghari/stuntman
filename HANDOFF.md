@@ -6,7 +6,29 @@ session._
 
 ## What changed this session
 
-- **This session (2026-08-29): added `agy` (Google Antigravity CLI) as a fourth `/delegate` backend
+- **This session (2026-08-29, later): added `muse` (Meta's Muse Code CLI) as a fifth `/delegate`
+  backend + documented the Grok/Kimi route (v0.10.0 → v0.11.0, committed with authorization).**
+  User asked to "add for opencode too, and grok, and kimi and muse". Findings: **opencode was already
+  a backend** (Route B since the start); **grok/kimi have no CLIs installed on this machine**, but both
+  are already reachable through the opencode backend (`xai/…` / `moonshotai/…` once a key is added via
+  `opencode auth login`) — documented in README/SKILL rather than coded; **muse was installed and fully
+  wireable**. `bin/stunt` gained a `muse` branch: exec = `muse exec --json --approval-mode never
+  [--model id] "<spec>"`, resume = same + `--session-id <id>` (**plain `muse resume` is TUI-only** —
+  headless continuation is exec with a reused session id, verified live: it recalled prior context and
+  edited the same file). `normalize_muse()` reads the JSONL event stream: session id from any event's
+  `stream{kind:"session"}.id`, result/error from the `run.terminal.*` event (`payload.text`,
+  `payload.terminal != "completed"` → is_error). **Muse emits no token usage in exec events** — usage
+  reports zeros and `cost_usd` 0 (flat Meta-account billing; `muse login`). Safety profile: approval
+  off but **muse's OS sandbox stays ON** (its default; codex-workspace-write-style). Muse writes to the
+  cwd correctly with no extra flag (unlike agy's `--add-dir`). Smoke-tested live end-to-end through
+  `bin/stunt` (exec created a file; resume applied review feedback in the same session,
+  `muse-spark-1.2-contributor` default model). Docs: SKILL.md, README (Route E + Grok/Kimi note under
+  Route B + FAQ), how-it-works, plugin.json 0.11.0 + muse/meta/grok/kimi keywords. Also this session:
+  the earlier agy work was committed + pushed (`9d97c40`) and the marketplace clone fast-forwarded
+  (it had uncommitted `bin/stunt` drift byte-identical to the pushed commit — discarded via
+  `git checkout` before `git pull --ff-only`; unclear what wrote it, watch for recurrence).
+
+- **Prior (2026-08-29): added `agy` (Google Antigravity CLI) as a fourth `/delegate` backend
   (v0.9.1 → v0.10.0, NOT committed).** User has an Antigravity subscription and wanted its models usable
   from the same plan/execute/review loop. `bin/stunt` gained an `agy` branch: exec = `agy -p "<spec>"
   --output-format json --dangerously-skip-permissions --add-dir "$PWD" --print-timeout 30m [--model id]`,
@@ -248,6 +270,13 @@ session._
   exactly how the first MIQ smoke test produced an Adversaria plan in the wrong folder.
 
 ## Last updated
+
+2026-08-29 (later) — added `muse` (Meta's Muse Code CLI) as a fifth `/delegate` backend (v0.11.0):
+exec + resume via `muse exec --json --approval-mode never` (+ `--session-id` for resume; `muse resume`
+itself is TUI-only), smoke-tested live end-to-end through `bin/stunt`. No token usage in muse's event
+stream → zeros; sandbox stays on. Grok/Kimi documented as opencode-backend routes (`xai/…` /
+`moonshotai/…`) — no dedicated CLIs installed. agy work committed (`9d97c40`), marketplace clone
+fast-forwarded.
 
 2026-08-29 — added `agy` (Google Antigravity CLI) as a fourth `/delegate` backend (v0.10.0): exec +
 resume wired through `bin/stunt` with `--add-dir "$PWD"` (load-bearing) and a 30m print timeout,

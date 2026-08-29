@@ -140,6 +140,9 @@ Prerequisites:
    export STUNTMAN_WORKER=opencode
    export STUNTMAN_MODEL=deepseek/deepseek-v4-flash   # any provider/model opencode knows
    ```
+   This route also covers **Grok** and **Kimi**: add an xAI or Moonshot key via
+   `opencode auth login`, then pin `STUNTMAN_MODEL=xai/<grok-model>` or
+   `moonshotai/<kimi-model>` — no extra wiring needed.
 
    **Route C — [Codex](https://github.com/openai/codex) worker** (no proxy — OpenAI's own
    CLI, billed on your ChatGPT subscription or API key):
@@ -155,6 +158,14 @@ Prerequisites:
    ```bash
    # install Google Antigravity — the `agy` CLI ships with it (`agy install` wires the PATH)
    export STUNTMAN_WORKER=agy
+   ```
+
+   **Route E — Muse Code worker** (no proxy — Meta's own CLI, billed on your Meta
+   account subscription):
+   ```bash
+   # install Muse Code (the `muse` CLI), then:
+   muse login                   # approve a code in your browser
+   export STUNTMAN_WORKER=muse
    ```
 
 ### Option A — Claude Code plugin (recommended)
@@ -196,7 +207,8 @@ What happens:
 ## Choosing your stunt double
 
 Two knobs: `STUNTMAN_WORKER` picks the backend (`claude` via the local proxy —
-the default —, `opencode`, `codex`, or `agy`), `STUNTMAN_MODEL` pins the model:
+the default —, `opencode`, `codex`, `agy`, or `muse`), `STUNTMAN_MODEL` pins
+the model:
 
 ```bash
 # Route A (proxy): any id from the proxy's /v1/models
@@ -213,6 +225,9 @@ export STUNTMAN_MODEL="gpt-5.4-codex"   # optional — omit to use codex's own d
 # Route D (agy): no proxy, reuses your own Antigravity subscription
 export STUNTMAN_WORKER=agy
 export STUNTMAN_MODEL="gemini-3.7-flash-high"   # optional — any id from `agy models`
+
+# Route E (muse): no proxy, reuses your own `muse login` (Meta account)
+export STUNTMAN_WORKER=muse                     # STUNTMAN_MODEL optional
 ```
 
 Route A's worker is a full headless Claude Code (same tools and agentic loop
@@ -223,8 +238,11 @@ tool's visibility (its `cost_usd` always reports `0`), so it's the pick when
 you already pay for Codex and want it working inside the same plan/execute/
 review loop as the other two. Route D is Google's Antigravity CLI — same
 flat-subscription story as Codex (`cost_usd` reports `0`), with the widest
-model roster of the four (Gemini 3.x tiers, Claude Sonnet/Opus, GPT-OSS via
-`agy models`), so one subscription covers three model families.
+model roster of the routes (Gemini 3.x tiers, Claude Sonnet/Opus, GPT-OSS via
+`agy models`), so one subscription covers three model families. Route E is
+Meta's Muse Code CLI — flat Meta-account billing like Codex and Antigravity,
+approval off but its OS sandbox kept on (the codex-style safety profile); it
+reports no per-call token usage, so its usage numbers read `0`.
 
 Good stunt doubles, roughly in order of bang-per-buck:
 
@@ -389,11 +407,11 @@ Anything that speaks the Anthropic Messages API works. Edit `bin/stunt` and
 point `ANTHROPIC_BASE_URL` wherever you like.
 
 **Do I need the proxy at all?**
-Not with the opencode or codex backends — opencode talks to DeepSeek, Groq,
-Ollama, and 75+ providers natively, and codex talks to OpenAI directly via
-your own `codex login`. The proxy route's advantage is that the worker is a
-full headless Claude Code instance (same tools and editing loop as the
-orchestrator).
+Only for Route A. opencode talks to DeepSeek, Groq, Ollama, Grok, Kimi, and
+75+ providers natively; codex, agy, and muse are OpenAI's, Google's, and
+Meta's own CLIs riding your own logins/subscriptions. The proxy route's
+advantage is that the worker is a full headless Claude Code instance (same
+tools and editing loop as the orchestrator).
 
 **Does the `window` probe cost tokens or eat my limit?**
 No. It reads the same OAuth usage endpoint `/usage` reads, with the credentials

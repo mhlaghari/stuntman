@@ -62,6 +62,14 @@ backend agy:
         no proxy — reuses the user's own Antigravity subscription login;
         --add-dir is load-bearing (without it agy edits its own scratch
         workspace, ~/.gemini/antigravity-cli/scratch, not the project)
+
+backend muse:
+        muse exec --json --approval-mode never [--model id]
+        muse exec --json --approval-mode never --session-id <id> ... for
+        resume (plain `muse resume` is TUI-only)
+        no proxy — reuses the user's own `muse login` (Meta account);
+        approval off but muse's OS sandbox stays ON; the event stream
+        carries no token usage, so usage reports zeros
 ```
 
 The isolated `CLAUDE_CONFIG_DIR` matters: without it, the worker shares
