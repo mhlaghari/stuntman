@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Resume work in a scaffolded project by reading its memory docs first, then continuing where the last session left off. Reads HANDOFF.md (the session baton), STATUS.md (the status board), README.md, and anything else the CLAUDE.md "read this first" list points to, gives a short read-back of where things stand, then picks up the next step. The runtime half of /scaffold. Use when the user invokes /handoff, says "execute handoff", "resume", "pick up where we left off", or "continue from the handoff".
+description: Resume a Stuntman project from HANDOFF.md, STATUS.md, and the host's AGENTS.md or CLAUDE.md memory contract. Read back the current state and continue the documented next step. Use when asked to execute a handoff or resume from project memory.
 ---
 
 # stuntman: handoff — resume from the project's memory
@@ -10,6 +10,9 @@ them. It reads the project's running state, orients, and continues — so a bran
 new session (or one after `/clear`) picks up with zero re-explaining.
 
 ## What to do
+
+Read [host setup](../runtime.md). Follow `AGENTS.md` in Codex and `CLAUDE.md`
+in Claude Code, including any additional read-first documents listed there.
 
 1. **Read the memory docs, in order:**
    - `HANDOFF.md` — the session baton: what the last session changed, the next
@@ -29,7 +32,8 @@ new session (or one after `/clear`) picks up with zero re-explaining.
    `~/Documents/Documents/MyProjects/laghari-vault`) contains
    `wiki/projects/<project dirname>.md`, compare its `updated:` frontmatter to
    `git log -1 --format=%cs`. If it is more than 7 days behind, mention that in
-   the read-back and suggest running `/vault` after the session's work.
+   the read-back. If a vault-maintenance skill is available, suggest it;
+   otherwise offer to refresh the page directly. `/vault` is not bundled.
 
 3. **Orient and confirm.** Give a short read-back: where the project stands and
    the next step you picked up from `HANDOFF.md`. Surface anything stale or
@@ -37,7 +41,7 @@ new session (or one after `/clear`) picks up with zero re-explaining.
 
 4. **Continue the work** from that next step — unless the user redirects you.
 
-5. **Before you stop**, honor the contract in `CLAUDE.md`: update `HANDOFF.md`
+5. **Before you stop**, honor the host's memory contract: update `HANDOFF.md`
    (what changed, next step, gotchas), `STATUS.md` (refresh the board), and
    `README.md` (if the project's surface changed) — written for a reader with
    zero memory of this session. Never commit without explicit authorization.
@@ -46,7 +50,7 @@ new session (or one after `/clear`) picks up with zero re-explaining.
 
 - This is the runtime half of the pair: `/scaffold` writes the system,
   `/handoff` runs it. The read-first / update-before-stopping instructions also
-  live in `CLAUDE.md` (which auto-loads), so the loop holds even if a session
+  live in the host's instruction file (which auto-loads), so the loop holds even if a session
   never explicitly runs `/handoff` — this command just makes the resume
   deliberate.
 - Trust the working tree over the docs when they disagree — then fix the docs.

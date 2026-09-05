@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""Observe a Stuntman invocation while preserving its normalized stdout contract."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import uuid
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from stuntman_floor import emit
+
+
+def main():
+    script, backend, *args = sys.argv[1:]
+    sid = 'worker-' + uuid.uuid4().hex
+    base = {'sid': sid, 'host': backend, 'worker': True, 'cwd': os.getcwd(),
+            'desc': os.environ.get('STUNTMAN_MODEL') or backend, 'ppid': os.getpid()}
+    emit(dict(base, evt='WorkerStart'))
+    env = os.environ | {'STUNTMAN_FLOOR_WRAPPED': '1', 'STUNTMAN_FLOOR_WORKER_ID': sid,
+                        'STUNTMAN_FLOOR_HOST': backend}
+    code, result = 1, {}
+    try:
+        process = subprocess.run([script, *args], env=env, stdout=subprocess.PIPE)
+        code = process.returncode
+        sys.stdout.buffer.write(process.stdout)
+        sys.stdout.buffer.flush()
+        try:
+            parsed = json.loads(process.stdout)
+            result = parsed if isinstance(parsed, dict) else {}
+        except (ValueError, UnicodeError):
+            pass
+    finally:
+        failed = code != 0 or result.get('is_error', True)
+        emit(dict(base, evt='WorkerError' if failed else 'WorkerStop',
+                  session_id=result.get('session_id'),
+                  say=str(result.get('result') or '')[:200]))
+    return code if code >= 0 else 128 - code
+
+
+if __name__ == '__main__':
+    sys.exit(main())

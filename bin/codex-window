@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Read Codex's last local quota snapshot without invoking a model or an API."""
+
+import argparse
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+def snapshot(sessions):
+    # A freshly opened session may not have a token_count event yet. Fall back
+    # to the next file instead of losing the last available quota information.
+    files = []
+    for path in sessions.rglob("rollout-*.jsonl"):
+        try:
+            files.append((path.stat().st_mtime, path))
+        except OSError:
+            continue
+    for _, path in sorted(files, reverse=True):
+        last = None
+        try:
+            with path.open(errors="replace") as stream:
+                for line in stream:
+                    if '"rate_limits"' not in line:
+                        continue
+                    try:
+                        event = json.loads(line)
+                        if event.get("type") != "event_msg":
+                            continue
+                        payload = event.get("payload") or {}
+                        if payload.get("type") != "token_count":
+                            continue
+                        limits = payload.get("rate_limits")
+                        if not isinstance(limits, dict):
+                            continue
+                        if not any(isinstance(limits.get(k), dict) for k in ("primary", "secondary")):
+                            continue
+                        timestamp = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+                        if timestamp.tzinfo is None:
+                            continue
+                        last = limits, timestamp
+                    except (ValueError, KeyError, TypeError, AttributeError):
+                        continue
+        except OSError:
+            continue
+        if last:
+            return last
+    return None
+
+
+def read_window(sessions):
+    found = snapshot(sessions)
+    if not found:
+        return {"available": False, "live": False, "reason": "no Codex quota snapshot found; check /status in Codex"}
+    limits, timestamp = found
+    now = datetime.now(timezone.utc)
+    windows = []
+    for name in ("primary", "secondary"):
+        raw = limits.get(name)
+        if not isinstance(raw, dict):
+            continue
+        pct, reset = raw.get("used_percent"), raw.get("resets_at")
+        if not isinstance(pct, (float, int)) or isinstance(pct, bool) or not 0 <= pct <= 100:
+            continue
+        reset_valid = isinstance(reset, (int, float)) and not isinstance(reset, bool) and reset > 0
+        expired = reset_valid and reset <= now.timestamp()
+        windows.append({"name": name, "used_percent": pct,
+                        "window_minutes": raw.get("window_minutes"),
+                        "resets_at": reset if reset_valid else None,
+                        "expired": bool(expired)})
+    if not windows:
+        return {"available": False, "live": False, "reason": "Codex snapshot has no usable quota windows; check /status"}
+    age = max(0, int((now - timestamp).total_seconds()))
+    exhausted = [w for w in windows if w["used_percent"] >= 100 and not w["expired"]]
+    return {"available": True, "live": False, "plan": limits.get("plan_type"),
+            "snapshot_at": timestamp.isoformat(), "snapshot_age_s": age,
+            "stale": age > 3600, "windows": windows,
+            "blocked": bool(exhausted),
+            "reason": "local snapshot only; an elapsed reset does not establish current usage"}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sessions-dir", type=Path,
+                        default=Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "sessions")
+    args = parser.parse_args()
+    print(json.dumps(read_window(args.sessions_dir)))
+
+
+if __name__ == "__main__":
+    main()

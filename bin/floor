@@ -1,0 +1,462 @@
+#!/usr/bin/env python3
+"""Serve the Stuntman floor for Claude Code, Codex, and delegated workers."""
+import argparse
+from collections import OrderedDict
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+import urllib.parse
+import webbrowser
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from stuntman_floor import process_identity
+
+FLOOR_DIR = Path(os.environ.get('STUNTMAN_FLOOR_DIR', str(Path.home() / '.stuntman/floor')))
+EVENTS = FLOOR_DIR / 'events.jsonl'
+STALE_S, DONE_TTL_S, ENDED_TTL_S = 300, 6 * 3600, 120
+TOKEN = secrets.token_hex(24)
+HOSTS = {'claude', 'codex', 'opencode', 'agy', 'muse'}
+COMMON_EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse',
+                 'PermissionRequest', 'Stop', 'SubagentStart', 'SubagentStop', 'SessionEnd']
+
+
+def board_dir():
+    candidates = [os.environ.get('STUNTMAN_FLOOR_BOARD'),
+                  Path(__file__).resolve().parent.parent / 'skills/floor/board',
+                  Path.home() / '.claude/skills/floor/board']
+    return next((Path(c).resolve() for c in candidates if c and (Path(c) / 'index.html').is_file()), None)
+
+
+def _tail_lines(path, max_bytes):
+    try:
+        with open(path, 'rb') as stream:
+            if os.fstat(stream.fileno()).st_size > max_bytes:
+                stream.seek(-max_bytes, os.SEEK_END)
+                stream.readline()
+            return stream.read().decode('utf-8', errors='replace').splitlines()
+    except (OSError, TypeError):
+        return []
+
+
+def _text_of(content):
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ''
+    return '\n'.join(b['text'] for b in content if isinstance(b, dict)
+                     and b.get('type') in ('text', 'input_text', 'output_text')
+                     and isinstance(b.get('text'), str))
+
+
+def transcript_tail(path, max_msgs=60):
+    """Parse public messages, never reasoning/system content or tool results."""
+    messages = []
+    for line in _tail_lines(path, 400_000):
+        try:
+            event = json.loads(line)
+            if not isinstance(event, dict):
+                continue
+            kind = event.get('type')
+            if kind in ('user', 'assistant'):  # Claude transcript
+                item = event.get('message') or {}
+                if not isinstance(item, dict) or event.get('isMeta'):
+                    continue
+                role, content = item.get('role'), item.get('content')
+                if role not in ('user', 'assistant'):
+                    continue
+                text = _text_of(content).strip()
+                tools = [b['name'] for b in content if isinstance(b, dict)
+                         and b.get('type') == 'tool_use' and isinstance(b.get('name'), str)] if isinstance(content, list) else []
+            elif kind == 'response_item':  # Codex rollout; event_msg copies are ignored
+                item = event.get('payload') or {}
+                if not isinstance(item, dict):
+                    continue
+                if item.get('type') == 'message' and item.get('role') in ('user', 'assistant'):
+                    role, text, tools = item['role'], _text_of(item.get('content')).strip(), []
+                    if item.get('channel') == 'analysis':
+                        continue
+                    if role == 'user' and text.startswith(('# AGENTS.md instructions', '<environment_context>')):
+                        continue
+                elif item.get('type') in ('function_call', 'custom_tool_call'):
+                    role, text, tools = 'assistant', '', [item.get('name', 'tool')]
+                else:
+                    continue
+            else:
+                continue
+            if text or tools:
+                messages.append({'role': role, 'text': text[:2000], 'tools': tools, 'ts': event.get('timestamp')})
+        except (ValueError, TypeError, AttributeError):
+            continue
+    return messages[-max_msgs:]
+
+
+def last_assistant_text(path):
+    for message in reversed(transcript_tail(path)):
+        if message['role'] == 'assistant' and message['text']:
+            return re.sub(r'\s+', ' ', message['text'])[:160]
+    return None
+
+
+def reduce_sessions():
+    sessions = OrderedDict()
+    try:
+        stream = open(EVENTS, encoding='utf-8', errors='replace')
+    except OSError:
+        return sessions
+    with stream:
+        for line in stream:
+            try:
+                event = json.loads(line)
+                if not isinstance(event, dict):
+                    continue
+                sid, host, ts = event.get('sid'), event.get('host', 'claude'), event.get('ts')
+                if not isinstance(sid, str) or not sid or sid == 'unknown' or host not in HOSTS:
+                    continue
+                if not isinstance(ts, (int, float)) or isinstance(ts, bool) or not 0 < ts < time.time() + 60:
+                    continue
+                key = host + ':' + sid
+                state = sessions.setdefault(key, {'id': key, 'sid': sid, 'host': host, 'cwd': None,
+                    'state': 'idle', 'tool': None, 'msg': None, 'say': None, 'last_ts': 0,
+                    'children': OrderedDict(), 'tp': None, 'ppid': None, 'process_identity': None,
+                    'worker': False, 'calls': {}})
+                if ts < state['last_ts']:
+                    continue
+                for field in ('cwd', 'tp', 'process_identity', 'say'):
+                    if isinstance(event.get(field), str) and event[field]:
+                        state[field] = event[field]
+                if isinstance(event.get('ppid'), int) and event['ppid'] > 1:
+                    state['ppid'] = event['ppid']
+                state['worker'] |= event.get('worker') is True
+                state['last_ts'] = ts
+                evt, tool, call = event.get('evt'), event.get('tool'), event.get('call_id')
+                if evt in ('SessionStart', 'WorkerStart'):
+                    state.update(state='running' if evt == 'WorkerStart' else 'idle', tool=None, msg=None)
+                elif evt == 'UserPromptSubmit':
+                    state.update(state='thinking', tool=None, msg=None)
+                elif evt == 'PreToolUse':
+                    state['calls'][call or 'legacy'] = tool
+                    needs_input = isinstance(tool, str) and any(t in tool.lower() for t in ('askuserquestion', 'request_user_input'))
+                    state.update(state='needs_input' if needs_input else 'running', tool=tool, msg=None)
+                elif evt in ('PostToolUse', 'PostToolUseFailure'):
+                    state['calls'].pop(call or 'legacy', None)
+                    state.update(state='running' if state['calls'] else 'thinking',
+                                 tool=next(iter(state['calls'].values()), None), msg=None)
+                elif evt == 'PermissionRequest' or (evt == 'Notification' and event.get('notification_type') in (None, 'permission_prompt', 'idle_prompt', 'elicitation_dialog')):
+                    state.update(state='needs_input', msg=event.get('msg') or 'Open the session to respond.', tool=tool)
+                elif evt in ('SubagentStart', 'SubagentStop'):
+                    agent = event.get('agent_id')
+                    if isinstance(agent, str) and agent:
+                        if evt == 'SubagentStart':
+                            state['children'][agent] = {'id': agent, 'desc': event.get('desc') or 'subagent', 'ts': ts}
+                        else:
+                            state['children'].pop(agent, None)
+                elif evt in ('Stop', 'WorkerStop', 'WorkerError', 'SessionEnd', 'Interrupt'):
+                    status = {'Stop': 'done', 'WorkerStop': 'done', 'WorkerError': 'failed',
+                              'SessionEnd': 'ended', 'Interrupt': 'idle'}[evt]
+                    state.update(state=status, tool=None, msg=None)
+                    state['calls'].clear()
+                    state['children'].clear()
+            except (ValueError, TypeError, AttributeError):
+                continue
+    return sessions
+
+
+def session_by_sid(key):
+    sessions = reduce_sessions()
+    if key in sessions:
+        return sessions[key]
+    # Legacy clients may send a raw sid; accept only unambiguous matches.
+    matches = [s for s in sessions.values() if s['sid'] == key]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _proc_parents():
+    try:
+        result = subprocess.run(['ps', '-axo', 'pid=,ppid='], capture_output=True, text=True, timeout=2)
+        return {int(p): int(parent) for p, parent in (line.split() for line in result.stdout.splitlines())}
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return {}
+
+
+def _tmux_panes():
+    try:
+        result = subprocess.run(['tmux', 'list-panes', '-a', '-F', '#{pane_id} #{pane_pid}'],
+                                capture_output=True, text=True, timeout=2)
+        return {int(pid): pane for pane, pid in (line.split() for line in result.stdout.splitlines())}
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return {}
+
+
+_reach_cache = {}
+
+
+def find_pane(session, refresh=False):
+    """Only a live, foreground interactive agent may receive terminal input."""
+    if session['worker'] or session['state'] not in ('idle', 'done'):
+        return None
+    pid, identity = session.get('ppid'), session.get('process_identity')
+    if not pid or not identity:
+        return None
+    key = (session['id'], pid, identity)
+    hit = _reach_cache.get(key)
+    if not refresh and hit and hit[0] > time.monotonic():
+        return hit[1]
+    pane = None
+    if process_identity(pid) == identity:
+        parents, panes = _proc_parents(), _tmux_panes()
+        current, seen = pid, set()
+        agent_pid = None
+        while current and current > 1 and current not in seen:
+            seen.add(current)
+            try:
+                info = subprocess.run(['ps', '-p', str(current), '-o', 'comm=,args='],
+                                      capture_output=True, text=True, timeout=1).stdout.strip()
+                parts = shlex.split(info)
+                executable = Path(parts[0]).name if parts else ''
+                is_agent = executable == session['host'] or (executable == 'node' and any(session['host'] in v and ('cli' in v or '/bin/' in v) for v in parts[1:3]))
+                headless = any(v in ('exec', 'app-server', '-p', '--print') for v in parts[1:])
+                if is_agent and headless:
+                    break  # A nested headless process must never target its outer TUI.
+                if is_agent and agent_pid is None:
+                    agent_pid = current
+                if current in panes:
+                    if agent_pid:
+                        foreground = subprocess.run(['ps', '-p', str(agent_pid), '-o', 'pgid=,tpgid='],
+                                                    capture_output=True, text=True, timeout=1).stdout.split()
+                        if len(foreground) == 2 and foreground[0] == foreground[1] and int(foreground[0]) > 0:
+                            pane = panes[current]
+                    break
+            except (OSError, ValueError, subprocess.TimeoutExpired):
+                break
+            current = parents.get(current)
+    _reach_cache[key] = (time.monotonic() + 10, pane)
+    return pane
+
+
+def reach_detail(session):
+    if session['worker']:
+        return 'Worker run: review or resume it through Stuntman in your coding session.'
+    if session['state'] == 'needs_input':
+        return 'This session needs a response in its own window. Open it to handle the question or approval.'
+    if session['state'] not in ('idle', 'done'):
+        return 'Wait for this turn to finish, or steer it from its own window.'
+    return 'View-only: a live foreground Claude Code or Codex session inside tmux is required to send from here.'
+
+
+def send_to_session(session, text):
+    if not isinstance(text, str) or len(text) > 8000:
+        return {'ok': False, 'reason': 'invalid-text', 'detail': 'Use a prompt of at most 8,000 characters.'}
+    text = re.sub(r'[\r\n]+', ' ', text)
+    text = re.sub(r'[\x00-\x1f\x7f]', '', text).strip()
+    if not text:
+        return {'ok': False, 'reason': 'empty'}
+    pane = find_pane(session, refresh=True)
+    if not pane:
+        return {'ok': False, 'reason': 'unreachable', 'detail': reach_detail(session)}
+    try:
+        subprocess.run(['tmux', 'send-keys', '-t', pane, '-l', '--', text], check=True, timeout=3)
+        # Recheck identity before Enter: never submit into a process that exited.
+        if process_identity(session['ppid']) != session['process_identity']:
+            return {'ok': False, 'reason': 'session-ended', 'detail': 'The session ended before submission. Open its terminal to review the pending text.'}
+        subprocess.run(['tmux', 'send-keys', '-t', pane, 'Enter'], check=True, timeout=3)
+        return {'ok': True}
+    except (OSError, subprocess.SubprocessError):
+        return {'ok': False, 'reason': 'tmux-error', 'detail': 'The terminal could not accept this prompt. Open its session window.'}
+
+
+def reduce_state():
+    now, rooms = time.time(), OrderedDict()
+    counts = {'working': 0, 'needs_input': 0, 'done': 0}
+    for session in reduce_sessions().values():
+        age = max(0, int(now - session['last_ts']))
+        state = session['state']
+        if (state == 'ended' and age > ENDED_TTL_S) or (state in ('done', 'idle', 'failed') and age > DONE_TTL_S):
+            continue
+        if state in ('thinking', 'running') and age > STALE_S:
+            state = 'ghost'
+        output = {k: session[k] for k in ('id', 'sid', 'host', 'worker', 'tool', 'msg')}
+        output.update(state=state, age_s=age, children=list(session['children'].values())[-4:],
+                      say=last_assistant_text(session['tp']) or session['say'],
+                      reach='tmux' if find_pane(session) else 'none', has_transcript=bool(session['tp']))
+        counter = 'working' if state in ('thinking', 'running') else state
+        if counter in counts:
+            counts[counter] += 1
+        cwd = session['cwd'] or 'unknown'
+        room = rooms.setdefault(cwd, {'cwd': cwd, 'name': Path(cwd).name or cwd, 'agents': []})
+        room['agents'].append(output)
+    order = {'needs_input': 0, 'failed': 1, 'running': 2, 'thinking': 2, 'done': 3, 'idle': 4, 'ghost': 5, 'ended': 6}
+    result = sorted(rooms.values(), key=lambda r: min(order.get(a['state'], 9) for a in r['agents']))
+    for room in result:
+        room['agents'].sort(key=lambda a: order.get(a['state'], 9))
+    return {'generated': int(now), 'counts': counts, 'rooms': result}
+
+
+class Handler(BaseHTTPRequestHandler):
+    def setup(self):
+        super().setup()
+        self.connection.settimeout(5)
+
+    def _allowed(self):
+        hosts = {f'127.0.0.1:{self.server.server_port}', f'localhost:{self.server.server_port}'}
+        host = self.headers.get('Host', '')
+        origin = self.headers.get('Origin')
+        if host not in hosts or (origin and origin != 'http://' + host) or self.headers.get('Sec-Fetch-Site') == 'cross-site':
+            self._json({'ok': False, 'reason': 'forbidden-origin'}, 403)
+            return False
+        return True
+
+    def _body(self, body, content_type, code=200):
+        self.send_response(code)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _json(self, value, code=200):
+        self._body(json.dumps(value).encode(), 'application/json', code)
+
+    def do_GET(self):
+        if not self._allowed():
+            return
+        path = urllib.parse.urlsplit(self.path).path
+        if path == '/state.json':
+            self._json(reduce_state())
+        elif path == '/transcript':
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            session = session_by_sid((query.get('sid') or [''])[0])
+            if not session:
+                self._json({'messages': [], 'reach': 'none', 'detail': 'This session is no longer on the floor.'}, 404)
+                return
+            messages = transcript_tail(session['tp'])
+            if not messages and session['say']:
+                messages = [{'role': 'assistant', 'text': session['say'], 'tools': []}]
+            reachable = bool(find_pane(session))
+            self._json({'messages': messages, 'reach': 'tmux' if reachable else 'none',
+                        'detail': '' if reachable else reach_detail(session)})
+        elif path in ('/', '/index.html'):
+            html = (self.server.board / 'index.html').read_text().replace('__FLOOR_TOKEN__', TOKEN)
+            self._body(html.encode(), 'text/html; charset=utf-8')
+        elif path == '/assets/vexel-laghari.webp':
+            self._body((self.server.board / 'assets/vexel-laghari.webp').read_bytes(), 'image/webp')
+        else:
+            self._json({'ok': False, 'reason': 'not-found'}, 404)
+
+    def do_POST(self):
+        if not self._allowed():
+            return
+        if self.path != '/send':
+            self._json({'ok': False, 'reason': 'not-found'}, 404)
+            return
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= 65536 or self.headers.get_content_type() != 'application/json':
+                raise ValueError('invalid body')
+            request = json.loads(self.rfile.read(length))
+            if not isinstance(request, dict):
+                raise ValueError('invalid object')
+        except (ValueError, OSError):
+            self._json({'ok': False, 'reason': 'bad-request'}, 400)
+            return
+        if not isinstance(request.get('token'), str) or not secrets.compare_digest(request['token'], TOKEN):
+            self._json({'ok': False, 'reason': 'bad-token'}, 403)
+            return
+        if not isinstance(request.get('sid'), str):
+            self._json({'ok': False, 'reason': 'bad-session'}, 400)
+            return
+        session = session_by_sid(request['sid'])
+        if not session:
+            self._json({'ok': False, 'reason': 'unknown-session'}, 404)
+            return
+        self._json(send_to_session(session, request.get('text')))
+
+    def log_message(self, *args):
+        pass
+
+
+def wire_hooks(host='claude', settings=None):
+    """Standalone installation only; plugin installs bundle the same recorder."""
+    if settings is None:
+        settings = (Path(os.environ.get('CODEX_HOME', str(Path.home() / '.codex'))) / 'hooks.json'
+                    if host == 'codex' else Path.home() / '.claude/settings.json')
+    settings = Path(settings)
+    cfg = json.loads(settings.read_text()) if settings.exists() else {}
+    shim = Path(__file__).resolve().with_name('floor-hook')
+    if not shim.is_file():
+        raise ValueError('floor-hook is missing next to floor')
+    hooks = cfg.setdefault('hooks', {})
+    changed = []
+    events = COMMON_EVENTS + (['Notification'] if host == 'claude' else ['Interrupt'])
+    command = f'STUNTMAN_FLOOR_HOST={host} {shlex.quote(str(shim))}'
+    for event in events:
+        entries = hooks.setdefault(event, [])
+        matches = [h for entry in entries for h in entry.get('hooks', []) if 'floor-hook' in h.get('command', '')]
+        if matches:
+            for handler in matches:
+                if handler.get('command') != command:
+                    handler['command'] = command
+                    changed.append(event)
+            continue
+        entries.append({'hooks': [{'type': 'command', 'command': command, 'timeout': 3}]})
+        changed.append(event)
+    if not changed:
+        print('floor: hooks already wired')
+        return
+    settings.parent.mkdir(parents=True, exist_ok=True)
+    if settings.exists():
+        backup = settings.with_name(settings.name + '.bak-floor-' + str(time.time_ns()))
+        shutil.copy2(settings, backup)
+    temporary = settings.with_name(settings.name + '.floor-tmp')
+    temporary.write_text(json.dumps(cfg, indent=2) + '\n')
+    temporary.replace(settings)
+    print(f'floor: wired {host} events in {settings}; start a new session.')
+    if host == 'codex':
+        print('Review and trust the new hooks in Codex /hooks before they can run.')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--json', action='store_true')
+    parser.add_argument('--no-open', action='store_true')
+    parser.add_argument('--port', type=int, default=int(os.environ.get('STUNTMAN_FLOOR_PORT', '4517')))
+    parser.add_argument('--wire-hooks', action='store_true')
+    parser.add_argument('--host', choices=['claude', 'codex', 'both'], default='claude')
+    args = parser.parse_args()
+    if args.wire_hooks:
+        for host in (['claude', 'codex'] if args.host == 'both' else [args.host]):
+            wire_hooks(host)
+        return
+    if args.json:
+        print(json.dumps(reduce_state(), indent=2))
+        return
+    board = board_dir()
+    if not board:
+        parser.error('board assets not found (skills/floor/board/index.html)')
+    if not 0 <= args.port <= 65535:
+        parser.error('port must be between 0 and 65535')
+    server = ThreadingHTTPServer(('127.0.0.1', args.port), Handler)
+    server.board = board
+    url = f'http://127.0.0.1:{server.server_port}/'
+    print(f'The floor is open: {url}', flush=True)
+    if not args.no_open:
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+
+
+if __name__ == '__main__':
+    main()

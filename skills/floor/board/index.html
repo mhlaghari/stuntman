@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🎬 The Floor — stuntman</title>
+<style>
+  /* Munder Difflin ideology, Laghari Labs cast.
+     Palette: Dunder-maroon + gold on a dark stage, pixel-snapped. */
+  :root {
+    --maroon: #6E1423;
+    --maroon-deep: #4a0d18;
+    --gold: #F4D35E;
+    --paper: #F4F1EA;
+    --bg: #14090c;
+    --panel: #1f1014;
+    --line: #3a1b23;
+    --ok: #7bc47f;
+    --dim: #b69da4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--paper);
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    padding: 20px; min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    border: 3px solid var(--maroon); background: var(--maroon-deep);
+    padding: 12px 18px; margin-bottom: 18px;
+    box-shadow: 0 4px 0 #000;
+  }
+  header h1 { margin: 0; font-size: 18px; letter-spacing: 2px; color: var(--gold); }
+  .tally { display: flex; gap: 14px; font-size: 12px; margin-left: auto; }
+  .tally b { color: var(--gold); }
+  .tally .warn b { color: #ff9d5c; }
+  #stamp { font-size: 11px; color: var(--dim); width: 100%; }
+
+  .rooms { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .room {
+    border: 3px solid var(--line); background: var(--panel);
+    min-width: 260px; flex: 1 1 300px; max-width: 460px;
+    box-shadow: 0 4px 0 #000;
+  }
+  .room.hot { border-color: var(--gold); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 18px 2px rgba(244,211,94,.35), 0 4px 0 #000; } }
+  .room h2 {
+    margin: 0; padding: 8px 12px; font-size: 12px; letter-spacing: 1px;
+    background: var(--maroon); color: var(--paper);
+    text-transform: uppercase; overflow-wrap: anywhere;
+  }
+  .agent { display: flex; gap: 12px; padding: 12px; border-top: 2px solid var(--line); }
+
+  /* ── Vexel sprite plumbing ───────────────────────────────────────────
+     Atlas: 8 cols × 11 rows, cell 192×208 (assets/vexel-laghari.webp).
+     One class per animation row; steps() walks the columns. */
+  .stage { width: 106px; height: 115px; flex: 0 0 106px; }
+  .sprite {
+    width: 192px; height: 208px;
+    background: url("assets/vexel-laghari.webp") no-repeat;
+    image-rendering: pixelated;
+    transform: scale(0.55); transform-origin: top left;
+  }
+  .anim-idle    { background-position-y: 0;       animation: fx7 2.4s steps(7) infinite; }
+  .anim-waving  { background-position-y: -624px;  animation: fx4 0.8s steps(4) infinite; }
+  .anim-jumping { background-position-y: -832px;  animation: fx5 0.7s steps(5) infinite; }
+  .anim-failed  { background-position-y: -1040px; animation: fx8 1.1s steps(8) infinite; }
+  .anim-waiting { background-position-y: -1248px; animation: fx6 1.5s steps(6) infinite; }
+  .anim-running { background-position-y: -1456px; animation: fx6 0.8s steps(6) infinite; }
+  .anim-review  { background-position-y: -1664px; animation: fx6 1.3s steps(6) infinite; }
+  @keyframes fx4 { to { background-position-x: -768px; } }
+  @keyframes fx5 { to { background-position-x: -960px; } }
+  @keyframes fx6 { to { background-position-x: -1152px; } }
+  @keyframes fx7 { to { background-position-x: -1344px; } }
+  @keyframes fx8 { to { background-position-x: -1536px; } }
+  .ghosted .sprite { filter: grayscale(1) brightness(.6); }
+
+  /* Sub-agents: son/daughter stand-ins until their own rigs exist —
+     the same Vexel, re-hued + shrunk. */
+  .kids { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .kid { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--dim); }
+  .kid .stage { width: 48px; height: 52px; flex: 0 0 48px; }
+  .kid .sprite { transform: scale(0.25); }
+  .kid.son .sprite { filter: hue-rotate(140deg) saturate(1.2); }
+  .kid.daughter .sprite { filter: hue-rotate(280deg) saturate(1.2); }
+
+  .meta { min-width: 0; flex: 1; }
+  .who { font-size: 12px; color: var(--gold); }
+  .who .sid { color: var(--dim); font-size: 11px; }
+  .badge {
+    display: inline-block; margin-top: 4px; padding: 2px 8px;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    border: 2px solid var(--line); color: var(--paper);
+  }
+  .badge.needs_input { border-color: var(--gold); color: var(--gold); }
+  .badge.running, .badge.thinking { border-color: #6ea8d8; color: #6ea8d8; }
+  .badge.done { border-color: var(--ok); color: var(--ok); }
+  .badge.ghost, .badge.ended, .badge.idle { color: var(--dim); }
+  .tool { font-size: 11px; color: var(--paper); margin-top: 4px;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
+  .msg {
+    margin-top: 6px; padding: 6px 8px; font-size: 11px;
+    background: #2a1207; border-left: 3px solid var(--gold); color: #ffd9a0;
+  }
+  .age { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .say {
+    margin-top: 6px; font-size: 11px; color: #cbb8a4; font-style: italic;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .empty { padding: 40px; text-align: center; color: var(--dim); font-size: 12px; width: 100%; }
+  .agent { cursor: pointer; }
+  .agent:hover { background: #291419; }
+
+  /* ── conversation drawer ── */
+  #drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 92vw);
+    background: var(--panel); border-left: 3px solid var(--maroon);
+    box-shadow: -8px 0 24px rgba(0,0,0,.6); display: none; flex-direction: column;
+    z-index: 10;
+  }
+  #drawer.open { display: flex; }
+  #drawer .dhead {
+    background: var(--maroon); padding: 10px 14px; display: flex; gap: 10px;
+    align-items: center; font-size: 12px;
+  }
+  #drawer .dhead b { color: var(--gold); letter-spacing: 1px; }
+  #drawer .dhead .reach { font-size: 11px; padding: 2px 6px; border: 1px solid var(--gold);
+    color: var(--gold); }
+  #drawer .dhead .reach.none { border-color: var(--dim); color: var(--dim); }
+  #drawer .dhead button {
+    margin-left: auto; background: none; border: 2px solid var(--paper); color: var(--paper);
+    font-family: inherit; font-size: 11px; cursor: pointer; padding: 2px 8px;
+  }
+  #dlog { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .m { max-width: 92%; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+       white-space: pre-wrap; overflow-wrap: anywhere; border: 2px solid var(--line); }
+  .m.user { align-self: flex-end; background: #2a1a08; border-color: #5a3a14; color: #ffd9a0; }
+  .m.assistant { align-self: flex-start; background: #17212a; border-color: #2c4257; color: #d9e6f2; }
+  .m .tools { margin-top: 4px; font-size: 11px; color: var(--dim); }
+  #dsend { display: flex; gap: 8px; padding: 10px; border-top: 2px solid var(--line); }
+  #dsend input {
+    flex: 1; background: var(--bg); border: 2px solid var(--line); color: var(--paper);
+    font-family: inherit; font-size: 12px; padding: 8px;
+  }
+  #dsend input:focus { outline: none; border-color: var(--gold); }
+  #dsend button {
+    background: var(--maroon); border: 2px solid var(--gold); color: var(--gold);
+    font-family: inherit; font-size: 12px; padding: 8px 16px; cursor: pointer;
+  }
+  #dsend button:disabled { opacity: .4; cursor: default; }
+  #dnote { padding: 0 12px 10px; font-size: 11px; color: var(--dim); }
+  #dnote.err { color: #ff9d5c; }
+
+  .agent:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
+  .host { display: block; margin-top: 4px; font-size: 11px; color: var(--paper); }
+  .badge.failed { border-color: #ff9d5c; color: #ff9d5c; }
+  .msg, .say, #dtitle { overflow-wrap: anywhere; }
+  #dtitle { min-width: 0; }
+  #drawer .dhead { flex-wrap: wrap; }
+  #dsend input { min-width: 0; font-size: 16px; }
+  #dnote { font-size: 12px; line-height: 1.5; }
+  #drawer button { min-height: 36px; }
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    header { padding: 12px; gap: 12px; }
+    .tally { margin-left: 0; flex-wrap: wrap; gap: 12px; }
+    .room { min-width: 0; max-width: none; flex-basis: 100%; }
+    #drawer { width: 100%; }
+    .stage { width: 82px; height: 89px; flex-basis: 82px; }
+    .sprite { transform: scale(.42); }
+    .m { font-size: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sprite, .room.hot { animation: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 THE FLOOR</h1>
+  <div class="tally">
+    <span>working <b id="c-working">0</b></span>
+    <span class="warn">needs you <b id="c-needs">0</b></span>
+    <span>done <b id="c-done">0</b></span>
+  </div>
+  <div id="stamp">connecting…</div>
+</header>
+<div class="rooms" id="rooms"><div class="empty">No agents on the floor yet — events land as hooked sessions run.</div></div>
+
+<div id="drawer" role="dialog" aria-labelledby="dtitle">
+  <div class="dhead">
+    <b id="dtitle">—</b>
+    <span class="reach" id="dreach">…</span>
+    <button id="dclose" aria-label="Close conversation">✕ close</button>
+  </div>
+  <div id="dlog" role="log" aria-label="Session conversation"></div>
+  <div id="dsend">
+    <input id="dinput" placeholder="Prompt this session…" aria-label="Prompt this session" aria-describedby="dnote" maxlength="8000" disabled>
+    <button id="dbtn" disabled>Send</button>
+  </div>
+  <div id="dnote" role="status"></div>
+</div>
+
+<script>
+  const TOKEN = "__FLOOR_TOKEN__";
+  const HOST = {claude: "Claude Code", codex: "Codex", opencode: "OpenCode", agy: "Antigravity", muse: "Muse"};
+  const LABEL = {running: "working", thinking: "thinking", needs_input: "needs you", done: "done",
+    ghost: "silent", ended: "left", idle: "idle", failed: "failed"};
+  const $ = id => document.getElementById(id);
+  const esc = text => String(text ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  let curSid = null, drawerTimer = null, sending = false, reachable = false, tickActive = false;
+  const drafts = new Map();
+
+  function animFor(agent) {
+    return {running:"anim-running", thinking:"anim-waiting", needs_input:"anim-waving",
+      failed:"anim-failed", ghost:"anim-waiting"}[agent.state] ||
+      (agent.state === "done" && agent.age_s < 30 ? "anim-jumping" : "anim-idle");
+  }
+  function fmtAge(seconds) {
+    if (seconds < 60) return seconds + "s";
+    if (seconds < 3600) return Math.floor(seconds / 60) + "m";
+    return Math.floor(seconds / 3600) + "h " + Math.floor((seconds % 3600) / 60) + "m";
+  }
+  async function jsonFetch(url, options) {
+    const response = await fetch(url, {...options, signal: AbortSignal.timeout(8000)});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || (response.status === 403 ? "Reload the board to reconnect." : "The session is no longer available."));
+    return data;
+  }
+  async function tick() {
+    if (tickActive) return;
+    tickActive = true;
+    try {
+      const state = await jsonFetch("state.json");
+      $("c-working").textContent = state.counts.working;
+      $("c-needs").textContent = state.counts.needs_input;
+      $("c-done").textContent = state.counts.done;
+      $("stamp").textContent = "updated " + new Date(state.generated * 1000).toLocaleTimeString();
+      const focused = document.activeElement?.closest(".agent")?.dataset.sid;
+      $("rooms").innerHTML = state.rooms.map(room => {
+        const hot = room.agents.some(agent => agent.state === "needs_input");
+        return `<section class="room${hot ? " hot" : ""}"><h2>${esc(room.name)}</h2>` + room.agents.map(agent => {
+          const kids = (agent.children || []).map((child, index) =>
+            `<span class="kid ${index % 2 ? "daughter" : "son"}"><span class="stage" aria-hidden="true"><span class="sprite anim-running" style="display:block"></span></span>${esc(child.desc)}</span>`).join("");
+          return `<div class="agent${["ghost","ended"].includes(agent.state) ? " ghosted" : ""}" role="button" tabindex="0"
+            data-sid="${esc(agent.id)}" data-room="${esc(room.name)}" aria-label="Read ${esc(HOST[agent.host])} ${agent.worker ? "worker" : "session"} ${esc(agent.sid.slice(0,8))} in ${esc(room.name)}">
+            <span class="stage" aria-hidden="true"><span class="sprite ${animFor(agent)}" style="display:block"></span></span>
+            <div class="meta"><div class="who">Laghari <span class="sid">· ${esc(agent.sid.replace(/^worker-/, "").slice(0,8))}</span></div>
+            <span class="host">${esc(HOST[agent.host] || agent.host)}${agent.worker ? " · worker" : ""}</span>
+            <span class="badge ${esc(agent.state)}">${esc(LABEL[agent.state] || agent.state)}</span>
+            ${agent.tool ? `<div class="tool">${esc(agent.tool)}</div>` : ""}
+            ${agent.msg ? `<div class="msg">${esc(agent.msg)}</div>` : ""}
+            ${agent.say ? `<div class="say">${esc(agent.say)}</div>` : ""}
+            <div class="age">${fmtAge(agent.age_s)} ago</div>${kids ? `<div class="kids">${kids}</div>` : ""}</div></div>`;
+        }).join("") + "</section>";
+      }).join("") || '<div class="empty">No agents on the floor yet. Enable Stuntman hooks and start a new Claude Code or Codex session. Delegated workers appear when they run.</div>';
+      if (focused) document.querySelector(`.agent[data-sid="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
+    } catch {
+      $("stamp").textContent = "Connection lost. Start the floor server; this board will reconnect automatically.";
+    } finally { tickActive = false; }
+  }
+  function note(text, error = false) {
+    $("dnote").textContent = text;
+    $("dnote").className = error ? "err" : "";
+  }
+  function updateSend() {
+    $("dinput").disabled = !reachable || sending;
+    $("dbtn").disabled = !reachable || sending;
+    $("dbtn").textContent = sending ? "Sending…" : "Send";
+  }
+  async function refreshDrawer(scroll) {
+    const sid = curSid;
+    if (!sid) return;
+    try {
+      const result = await jsonFetch("transcript?sid=" + encodeURIComponent(sid));
+      if (curSid !== sid) return;
+      reachable = result.reach === "tmux";
+      $("dreach").textContent = reachable ? "ready to prompt" : "view-only";
+      $("dreach").className = "reach" + (reachable ? "" : " none");
+      updateSend();
+      if (!sending) note(result.detail || "Send a new prompt to this session.");
+      const log = $("dlog"), atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+      const html = result.messages.map(message => `<div class="m ${message.role === "user" ? "user" : "assistant"}">${esc(message.text)}${
+        message.tools?.length ? `<div class="tools">${message.tools.map(esc).join(" · ")}</div>` : ""}</div>`).join("") || '<div class="m assistant">No conversation recorded yet.</div>';
+      if (log.innerHTML !== html) log.innerHTML = html;
+      if (scroll || atBottom) log.scrollTop = log.scrollHeight;
+    } catch (error) {
+      if (curSid !== sid) return;
+      reachable = false; updateSend();
+      note(error.message || "Conversation unavailable. Retrying shortly.", true);
+    }
+  }
+  function openDrawer(sid, room) {
+    if (curSid) drafts.set(curSid, $("dinput").value);
+    curSid = sid; reachable = false; updateSend();
+    $("dinput").value = drafts.get(sid) || "";
+    $("dtitle").textContent = room + " · " + sid.split(":")[0];
+    $("drawer").classList.add("open");
+    $("dlog").textContent = "Loading conversation…";
+    $("dclose").focus(); note("");
+    clearInterval(drawerTimer);
+    refreshDrawer(true);
+    drawerTimer = setInterval(() => refreshDrawer(false), 3000);
+  }
+  function closeDrawer() {
+    const sid = curSid;
+    if (sid) drafts.set(sid, $("dinput").value);
+    curSid = null; clearInterval(drawerTimer);
+    $("drawer").classList.remove("open");
+    document.querySelector(`.agent[data-sid="${CSS.escape(sid || "")}"]`)?.focus({preventScroll:true});
+  }
+  async function sendPrompt() {
+    const sid = curSid, text = $("dinput").value.trim();
+    if (!sid || !text || sending || !reachable) return;
+    sending = true; updateSend(); note("Sending…");
+    try {
+      const result = await jsonFetch("send", {method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({sid, text, token:TOKEN})});
+      if (result.ok) {
+        drafts.delete(sid);
+        if (curSid === sid) {
+          if ($("dinput").value.trim() === text) $("dinput").value = "";
+          note("Delivered. The reply will appear here.");
+        }
+      } else if (curSid === sid) { reachable = false; note(result.detail || "Open the session window to continue.", true); }
+    } catch (error) {
+      if (curSid === sid) note("Delivery could not be confirmed. Check the session before retrying. " + error.message, true);
+    } finally { sending = false; updateSend(); }
+  }
+  $("rooms").addEventListener("click", event => { const agent = event.target.closest(".agent"); if (agent) openDrawer(agent.dataset.sid, agent.dataset.room); });
+  $("rooms").addEventListener("keydown", event => { const agent = event.target.closest(".agent"); if (agent && ["Enter"," "].includes(event.key)) { event.preventDefault(); openDrawer(agent.dataset.sid, agent.dataset.room); } });
+  $("dclose").addEventListener("click", closeDrawer);
+  $("dbtn").addEventListener("click", sendPrompt);
+  $("dinput").addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); sendPrompt(); } });
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && curSid) closeDrawer(); });
+  tick(); setInterval(tick, 2000);
+</script>
+</body>
+</html>

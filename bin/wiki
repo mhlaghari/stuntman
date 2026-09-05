@@ -5,6 +5,18 @@
 set -euo pipefail
 shopt -s nullglob
 
+HOST="${STUNTMAN_HOST:-claude}"
+if [ "${1:-}" = "--host" ]; then
+  HOST="${2:?usage: wiki [--host claude|codex|both] [target] [vault_name]}"
+  shift 2
+fi
+case "$HOST" in
+  claude) CONTRACTS=(CLAUDE.md) ;;
+  codex) CONTRACTS=(AGENTS.md) ;;
+  both) CONTRACTS=(CLAUDE.md AGENTS.md) ;;
+  *) echo "error: unknown host: $HOST (expected claude, codex, or both)" >&2; exit 2 ;;
+esac
+[ "$#" -le 2 ] || { echo "usage: wiki [--host claude|codex|both] [target] [vault_name]" >&2; exit 2; }
 TARGET="${1:-$PWD}"
 TARGET="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "error: no such directory: ${1:-$PWD}" >&2; exit 1; }
 BASENAME="$(basename "$TARGET")"
@@ -24,10 +36,11 @@ w() {
 
 echo "== stuntman:wiki scaffolding $VAULT_NAME =="
 
-w "$VAULT/CLAUDE.md" <<'EOF'
+for CONTRACT in "${CONTRACTS[@]}"; do
+w "$VAULT/$CONTRACT" <<'EOF'
 # Knowledge Vault (LLM Wiki)
 
-Second brain for the projects in this folder. Persistent memory across Claude Code
+Second brain for the projects in this folder. Persistent memory across coding-agent
 sessions — one vault, many projects. Cross-project patterns and lessons live here so
 every session starts informed. Scaffolded by stuntman `/wiki`.
 
@@ -84,6 +97,7 @@ tags: [project, domain/<x>, status/<y>, stack/<z>]
 - One idea per note. Reuse existing concept notes before creating new ones (new concept only if it spans ≥3 projects).
 - Never store secrets, model weights, or datasets here — notes only, never project code.
 EOF
+done
 
 w "$VAULT/.graphifyignore" <<'EOF'
 # Navigation/bookkeeping pages — keep OUT of the knowledge graph.

@@ -1,87 +1,89 @@
 ---
 name: relay
-description: Run long work across Claude's 5-hour usage limit automatically. A rate-limit-aware self-loop — it reads your 5-hour window (utilization + exact reset time) at zero token cost, keeps the cheap stunt double executing while Claude is capped (the worker has no Anthropic limit), and resumes the Claude side the moment the window reopens. Use when the user invokes /relay, says "keep working across the limit", "resume when my 5-hour limit resets", "don't let the rate limit stop the loop", or sets a long autonomous task that may outlast the window.
+description: Continue authorized Stuntman work around the current host's usage limit. Inspect Claude's live quota or Codex's local quota snapshot, save resumable state, and run already specified work on an independent worker when available. Use when asked to relay work across a usage reset or keep a task resumable at the limit.
 ---
 
-# stuntman: relay — work across the 5-hour window
+# Stuntman relay
 
-The 5-hour limit shouldn't stall a long run. This loop **detects** how much of
-the window is gone and exactly when it resets, **keeps the second unit (the
-stunt double) rolling** while Claude is capped, and **picks up the Claude side**
-as soon as the window is open again.
+Read [host and tool setup](../runtime.md). The host plans and reviews; an
+independent worker can execute a prepared spec while the host is capped.
+The host's quota and the worker's quota may be shared: a Codex worker using
+this Codex account does not provide extra capacity around its limit.
 
-## The window probe
+## Inspect the current host's window
 
-```bash
-WINDOW="$(command -v window || echo "${CLAUDE_PLUGIN_ROOT}/bin/window")"
-STUNT="$(command -v stunt || echo "${CLAUDE_PLUGIN_ROOT}/bin/stunt")"
-"$WINDOW"
-# → {"five_hour_pct":62.0,"resets_at":"...","seconds_until_reset":9056,
-#    "blocked":false,"severity":"normal","seven_day_pct":11.0,...}
-```
+In Claude Code, run `"$STUNTMAN_ROOT/bin/window"`. This uses Claude's live
+usage endpoint, with `five_hour_pct`, `blocked`, `seconds_until_reset`,
+`resets_at`, and `seven_day_pct`. If it returns an error, report that the
+quota is unavailable; do not treat that as zero use.
 
-Zero tokens, no Claude call — safe to poll even mid-blackout. If it returns
-`{"error":...}` (token missing/expired), tell the user and stop.
+In Codex, run `"$STUNTMAN_ROOT/bin/codex-window"`. This reads local session
+files only, never credentials or a model. It returns `available`, `live: false`,
+`snapshot_age_s`, `stale`, and `windows` containing `used_percent`,
+`window_minutes`, `resets_at` (Unix seconds), and `expired`.
 
-## How it runs
+- A Codex snapshot is an observation, not a live quota check. Missing windows,
+  `available: false`, `stale: true`, or elapsed resets mean current headroom
+  is unknown. Use current host quota information if available, or explain
+  that `/status` is needed. Never promise zero use after a reset.
+- Treat a known window at 90% or higher as a reason to preserve a handoff.
+  Check every reported window; a weekly cap can outlast the shorter reset.
+- For a known cap, the relevant reset is the latest reset among the binding
+  windows, not automatically the five-hour reset. If a binding window has no
+  reset time, do not invent one.
 
-Self-paced loop. Start it with **`/loop` and no interval**, e.g.
-`/loop relay <task> across the limit`. Omitting the interval lets you self-pace
-via `ScheduleWakeup`, using the probe to decide when to wake next. Invoked
-directly (`/relay`) without `/loop`, it does a single detect → act → arm cycle.
+## Continue or checkpoint
 
-Tunable constant:
+While the host has headroom, complete the next planning or review unit using
+[delegate](../delegate/SKILL.md): prepare the exact spec, inspect the worker's
+diff, and run verification yourself before advancing the queue.
 
-- `PAUSE_AT = 90` (%). At/above this, treat the Claude window as effectively
-  closed and stop spending Claude tokens — leaving headroom to hand off cleanly.
+As a cap approaches, write `.stuntman/relay-state.json` with:
 
-## Each iteration
+- Host, task, acceptance criteria, and the current queue position.
+- Worker backend, optional model pin, session ID (if issued), and process
+  handle/PID while running. Keep credentials out of this file.
+- Absolute project, spec, stdout, and stderr paths; baseline and verification
+  commands; whether work is running, awaiting review, or awaiting execution.
+- Observed quota timestamp, binding windows, and the exact next step.
 
-1. **Probe** `"$WINDOW"`.
+Use task-specific files under `.stuntman/` so concurrent runs do not overwrite
+one another. Preserve any existing state. Add the directory to `.gitignore`
+when appropriate for the project.
 
-2. **Window open** (`five_hour_pct < PAUSE_AT` and not `blocked`): do the next
-   *Claude-side* unit — plan the next spec, or review the worker's last output
-   (git diff + run the verification yourself; never trust the worker's claim).
-   Advance the task queue. If running unattended, `ScheduleWakeup` a short
-   interval (e.g. 300–600s, stays cache-warm) to check back; otherwise continue
-   interactively.
+If an already specified unit can run on a worker with independent capacity,
+start it with the host's supported background-process facility and capture
+its output. Keep the chosen backend and model fixed for later resume calls.
+Do not start a worker on a shared capped account. If no independent worker is
+configured, save the handoff and explain what is waiting.
 
-3. **Window closed** (`five_hour_pct >= PAUSE_AT` or `blocked`):
-   a. **Save a handoff** to `.stuntman/relay-state.json` in the project: the
-      task, queue position, the worker `session_id`, and exactly what to resume.
-   b. **Keep the second unit rolling.** If execution work is already spec'd,
-      hand it to the stunt double — it bills your own near-free key, not
-      Anthropic, so the cap doesn't touch it. Run it `run_in_background`:
-      `"$STUNT" exec "$(cat /tmp/stunt-spec.md)"` (or `"$STUNT" resume <sid> ...`).
-      Capture `session_id`/`usage` per the `/delegate` contract.
-   c. **Arm the resume** off `seconds_until_reset`:
-      - **≤ 3300s (~55 min):** `ScheduleWakeup(delaySeconds = seconds_until_reset + 90)`.
-        Claude wakes itself just after reset and continues — fully hands-free.
-      - **> 3300s:** `ScheduleWakeup` is clamped to 1 hour and Claude can't wake
-        itself mid-blackout (a wakeup that fires while still capped just 429s).
-        So report: *"Capped — resets at <local time>. The stunt double is
-        handling <X> meanwhile. Ping me anytime after that and I'll pick up from
-        the handoff."* Resume is then triggered by the user's next message.
-   d. **Report:** current `five_hour_pct`, reset time (localized from
-      `resets_at`), what the worker is doing, and how resume will happen.
+A process started in a tool call is not necessarily detached from the host.
+Only say it will survive the cap/session exit when the actual process facility
+supports that lifetime. Confirm launch and retain its handle. Never infer
+completion from the presence of a partially written output file.
 
-## Resume (on a scheduled wakeup, or the user's ping after reset)
+## Resume scheduling
 
-1. Probe `"$WINDOW"`. If still `blocked`, re-arm / notify as above.
-2. If open: read `.stuntman/relay-state.json`, **review whatever the worker
-   produced during the cap** (git diff + run verification), then continue the
-   task queue from where it paused.
+Use a scheduling tool only when the current host actually exposes one and
+supports the required delay and persistence. Claude Code's `/loop` and
+`ScheduleWakeup`, when present, are optional host facilities; do not issue
+those calls in Codex or assume every Claude environment provides them.
 
-## Notes
+If a supported wakeup was created, report its actual schedule. Otherwise
+report the observed reset in the user's timezone and explain that the next
+user message/new session must resume from the saved state. Do not claim that
+sleeping in a tool call can wake a capped model automatically.
 
-- The probe hits the same OAuth usage endpoint as `/usage` (`five_hour` +
-  `seven_day`); it spends no tokens and makes no Claude call.
-- `ScheduleWakeup` is clamped to `[60, 3600]`s — that's why gaps over ~55 min
-  fall back to a ping-triggered resume. For a scheduled wakeup to fire, the
-  machine must be awake and online at that time.
-- Watch `seven_day_pct` too — if the weekly limit is the binding one, no
-  amount of waiting for the 5-hour reset helps; say so.
-- During the cap only the worker runs (opencode / local-proxy backend); see
-  `/delegate` for the full plan → execute → review worker contract.
-- State lives in `.stuntman/relay-state.json` — add `.stuntman/` to
-  `.gitignore`.
+## On resume
+
+1. Read the saved state and inspect the host's quota again.
+2. Check whether the recorded process/session is still running before starting
+   anything. Avoid duplicate execution.
+3. Once the worker exits, read complete stdout and stderr, record the session
+   ID and usage, and review the diff against the saved baseline.
+4. Run verification, send any feedback to the same backend/session, and
+   advance the queue only after review passes.
+
+Report the quota source/freshness, completed work, what is still running or
+waiting, and exactly how the next resume happens. Stuntman cannot guarantee
+unattended review while the orchestrator itself has no capacity.

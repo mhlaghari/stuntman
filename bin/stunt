@@ -42,8 +42,18 @@
 # Anything else (first arg starting with "-", or no args) passes straight through to
 # the claude backend for manual/interactive use, e.g.:  stunt -p "task" --output-format json
 set -e
+set -o pipefail
 
 BACKEND="${STUNTMAN_WORKER:-claude}"
+
+# Keep monitoring outside provider dispatch; it never changes the result JSON.
+if [ "${STUNTMAN_FLOOR_WRAPPED:-}" != "1" ] && { [ "${1:-}" = exec ] || [ "${1:-}" = resume ]; }; then
+  STUNT_PATH="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$0")"
+  FLOOR_RUN="${STUNT_PATH%/*}/stuntman-floor-run"
+  if [ -x "$FLOOR_RUN" ]; then
+    exec "$FLOOR_RUN" "$STUNT_PATH" "$BACKEND" "$@"
+  fi
+fi
 
 claude_invoke() {
   export CLAUDE_CONFIG_DIR="${STUNTMAN_CONFIG_DIR:-$HOME/.claude-stuntman}"

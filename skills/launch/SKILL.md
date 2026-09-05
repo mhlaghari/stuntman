@@ -7,8 +7,10 @@ description: Build a complete, research-backed product-launch plan. Fans out a m
 
 You are the **orchestrator**. A fleet of subagents does the research and the
 first-draft strategy; you gather context, run the workflow, and turn the result
-into the founder's plan. This skill **authorizes and expects a `Workflow` call** —
-that is the whole point of /launch, so don't ask permission to fan out.
+into the founder's plan. Read [host and tool setup](../runtime.md) first.
+Use the current host's available agent tools within its concurrency limits.
+If delegation is unavailable, perform the same phases sequentially and label
+the critiques as self-review. The skill does not expand the user's permissions.
 
 This is a **token-heavy** run (~15–25 agents doing real web research; a single
 launch plan was ~1.5M subagent tokens). It is worth it for a real launch
@@ -17,7 +19,7 @@ decision; say so if the user seems to want something quick instead.
 ## 1. Gather the product brief (grounding beats guessing)
 
 - **If you're in the product's repo:** read the grounding docs first — `README`,
-  `CLAUDE.md`, and any `SPEC` / `STATUS` / `STRATEGY` / marketing docs. Skim the
+  `AGENTS.md` / `CLAUDE.md`, and any `SPEC` / `STATUS` / `STRATEGY` / marketing docs. Skim the
   code only enough to know what *actually ships today* vs. what's roadmap. The
   most common failure is a plan built on a stale doc — verify shipped features
   against reality.
@@ -30,7 +32,7 @@ decision; say so if the user seems to want something quick instead.
 
 ## 2. Pin the launch brief (ask only what changes the plan)
 
-If the user hasn't already said, use **AskUserQuestion** for the four decisions
+If the user hasn't already said, use the host's question tool or ask concisely for the four decisions
 that genuinely reshape the output (offer a "recommend for me" option on each):
 
 1. **Beachhead** — who to win first (the plan optimizes for this).
@@ -51,15 +53,39 @@ controversy, how it compares on the differentiator).
 
 ## 4. Run the workflow
 
-Resolve the script path (works for both the plugin and the `install.sh` route):
+### Codex and hosts without `Workflow`
 
-```bash
-if [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "$CLAUDE_PLUGIN_ROOT/skills/launch/launch-workflow.js" ]; then
-  echo "$CLAUDE_PLUGIN_ROOT/skills/launch/launch-workflow.js"
-else
-  echo "$HOME/.claude/skills/launch/launch-workflow.js"
-fi
-```
+Use native agent tools when available, in bounded batches. Pass each agent
+`productBrief`, `launchBrief`, `differentiators`, today's date, its research
+question, and output expectations. Each task must be self-contained.
+
+1. **Research:** one profile per competitor (product, target buyer, current
+   pricing with date and URL, real differentiators, strengths/weaknesses,
+   relevance to this product). Also cover market size/trends, category
+   tailwinds/risks, and specific launch channels. Require primary sources,
+   explicit unknowns, and links supporting every changing factual claim.
+2. **Synthesize:** feed the research to strategy tasks for product assessment,
+   positioning, pricing, and a week-by-week launch plan within the brief's
+   budget and timeline. Distinguish sourced facts from recommendations.
+3. **Pressure-test:** give the draft and evidence to two critics: feasibility
+   (resources, dependencies, milestones) and market reality (buyer demand,
+   differentiation, acquisition costs, pricing). Reconcile objections using
+   evidence; preserve unresolved risks for the founder.
+4. **Compile:** write `docs/LAUNCH_PLAN.md` and a standalone styled HTML report.
+   Include an executive verdict, competitor matrix, positioning, pricing,
+   beta recommendation, weekly milestones, launch channels, success metrics,
+   risks, and a source list with unverified claims identified. Inspect both
+   artifacts, including the HTML in a browser when available.
+
+Keep these phases even when performed sequentially. Do not invoke the bundled
+JavaScript with Node; it requires the separate `Workflow` runtime. Proceed to
+step 5 after creating both artifacts.
+
+### Hosts that expose `Workflow`
+
+Use the existing bundled workflow at
+`$STUNTMAN_ROOT/skills/launch/launch-workflow.js` (or alongside this skill in
+legacy standalone installs).
 
 Then call `Workflow` with that `scriptPath` and the assembled `args`:
 
@@ -86,11 +112,11 @@ full `markdownReport` plus headline fields (`executiveSummary`, `productVerdict`
 
 ## 5. Land the deliverables and report
 
-- Write the returned `markdownReport` to a doc the founder will keep — e.g.
+- Write the compiled report (or the returned `markdownReport` in Workflow mode) to a doc the founder will keep — e.g.
   `docs/LAUNCH_PLAN.md` (in a repo) or `<product>-launch-plan.md`. The report may
   contain HTML entities (`&amp;`, `&lt;`) from the writer; **unescape them** before
   saving the markdown (`python3 -c "import html,sys; ..."` or equivalent).
-- Verify the HTML file exists (`htmlOut`).
+- Verify the HTML file exists (`htmlOut` in Workflow mode).
 - **Report the verdict to the user in your own words**, not just a file pointer:
   is the product good, the recommended strategy, the pricing, whether they need
   beta testers, and the top next actions. If the plan recommends a **pivot off the
@@ -103,13 +129,12 @@ full `markdownReport` plus headline fields (`executiveSummary`, `productVerdict`
 
 ## Notes
 
-- **Real research needs web tools.** The subagents use `firecrawl_search` /
-  `WebSearch` / `WebFetch`; they load schemas via `ToolSearch` on demand. In a
-  headless/cron run without web access the research degrades to memory — warn the
-  user if so.
+- **Real research needs web tools.** Use the web tools actually available in the current host. Without web access,
+  report the research limitation and produce a provisional plan; do not present
+  remembered prices or market figures as verified current facts.
 - **The critics are load-bearing.** The two adversarial passes (feasibility +
   market-reality) are why the plan survives contact with reality. Don't strip them
   to save tokens.
 - **Pass `date` explicitly** — workflow scripts can't read the clock.
-- To re-run after editing `launch-workflow.js`, resume with
+- In the optional `Workflow` runtime only, to re-run after editing `launch-workflow.js`, resume with
   `Workflow({ scriptPath, resumeFromRunId })` — unchanged agents return cached.

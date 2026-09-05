@@ -10,8 +10,10 @@ zero-cost — no worker is invoked.
 
 ## Run it
 
+Read [host and tool setup](../runtime.md).
+
 ```bash
-USAGES="$(command -v usages || echo "${CLAUDE_PLUGIN_ROOT}/bin/usages")"
+USAGES="$STUNTMAN_ROOT/bin/usages"
 "$USAGES" --json
 ```
 
@@ -38,11 +40,17 @@ Explain freshness honestly:
 If `claude.blocked` is true, point at `/relay` (spanning the cap is exactly
 what it's for).
 
+For Codex relay decisions, use `bin/codex-window` from the same bundle. It reads
+local quota snapshots without probing Claude credentials or DeepSeek. An elapsed
+reset is not evidence of current usage; check the host's `/status` if stale.
+
 ## Status line
 
-If the user asks for these numbers in their status line, wire
+In Claude Code, if the user asks for these numbers in their status line, wire
 `"$USAGES" --statusline` into their existing statusline command — it prints a
 compact worker segment (e.g. `CX 23%/5h 4%/wk · DS $0.89`), caches for 5
 minutes (`~/.stuntman/usages-cache.txt`), and prints nothing on failure, so
 it's safe to embed. Claude's own numbers are deliberately absent from it —
 Claude Code's status line JSON already carries them natively.
+In Codex, present the board in the conversation; do not write Claude's status
+line configuration or assume Codex accepts the same command format.

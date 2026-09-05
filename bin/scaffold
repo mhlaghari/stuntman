@@ -12,11 +12,23 @@
 # CLAUDE.md auto-loads every session, so the contract is always in context: each
 # session reads the docs first and keeps them current. Resume with /handoff.
 #
-# Usage: scaffold [project_dir]    (default: current directory)
+# Usage: scaffold [--host claude|codex|both] [project_dir]
 set -e
 
+HOST="${STUNTMAN_HOST:-claude}"
+if [ "${1:-}" = "--host" ]; then
+  HOST="${2:?usage: scaffold [--host claude|codex|both] [project_dir]}"
+  shift 2
+fi
+case "$HOST" in
+  claude) CONTRACTS=(CLAUDE.md) ;;
+  codex) CONTRACTS=(AGENTS.md) ;;
+  both) CONTRACTS=(CLAUDE.md AGENTS.md) ;;
+  *) echo "error: unknown host: $HOST (expected claude, codex, or both)" >&2; exit 2 ;;
+esac
+[ "$#" -le 1 ] || { echo "usage: scaffold [--host claude|codex|both] [project_dir]" >&2; exit 2; }
 DIR="${1:-$PWD}"
-CLAUDE_MD="$DIR/CLAUDE.md"
+[ -d "$DIR" ] || { echo "error: no such project directory: $DIR" >&2; exit 1; }
 START="<!-- stuntman:scaffold:start -->"
 OLD_START="<!-- stuntman:handoff:start -->"   # pre-0.5 marker
 
@@ -28,7 +40,7 @@ cat <<'EOF'
 
 These are **living documents** — read them first, keep them current.
 
-**Read this first — start of every session** (or just run `/handoff`):
+**Read this first — start of every session** (or ask for a Stuntman handoff):
 1. `HANDOFF.md` — the session baton: what the last session changed, the next step, gotchas. Assume zero memory of prior sessions.
 2. `STATUS.md` — the board: built / in progress / planned.
 3. `SPEC.md` — the contract: what this is, the load-bearing principles, where it's going. Build to it.
@@ -57,16 +69,19 @@ make() {
   fi
 }
 
-# 1. CLAUDE.md contract — idempotent, append-only, never rewrites existing content
-if [ -f "$CLAUDE_MD" ] && { grep -qF "$START" "$CLAUDE_MD" || grep -qF "$OLD_START" "$CLAUDE_MD"; }; then
-  echo "• CLAUDE.md already has the scaffold contract — left as-is"
-elif [ -f "$CLAUDE_MD" ]; then
-  { printf '\n'; emit_block; } >> "$CLAUDE_MD"
-  echo "• appended scaffold contract to existing CLAUDE.md"
+# 1. Host contracts — idempotent, append-only, never rewrite existing content.
+for CONTRACT in "${CONTRACTS[@]}"; do
+CONTRACT_PATH="$DIR/$CONTRACT"
+if [ -f "$CONTRACT_PATH" ] && { grep -qF "$START" "$CONTRACT_PATH" || grep -qF "$OLD_START" "$CONTRACT_PATH"; }; then
+  echo "• $CONTRACT already has the scaffold contract — left as-is"
+elif [ -f "$CONTRACT_PATH" ]; then
+  { printf '\n'; emit_block; } >> "$CONTRACT_PATH"
+  echo "• appended scaffold contract to existing $CONTRACT"
 else
-  { printf '# CLAUDE.md\n\n'; emit_block; } > "$CLAUDE_MD"
-  echo "• created CLAUDE.md with the scaffold contract"
+  { printf '# %s\n\n' "$CONTRACT"; emit_block; } > "$CONTRACT_PATH"
+  echo "• created $CONTRACT with the scaffold contract"
 fi
+done
 
 # 2. HANDOFF.md — the session baton
 make "$DIR/HANDOFF.md" "HANDOFF.md" <<'EOF'
@@ -117,7 +132,7 @@ make "$DIR/SPEC.md" "SPEC.md" <<'EOF'
 # SPEC
 
 _The product contract — a **living doc**. What this is and where it's going
-(`CLAUDE.md` covers the current code; this covers the destination). Every session
+(the host's instruction file covers the current code; this covers the destination). Every session
 reads this first; keep it current._
 
 ## Vision

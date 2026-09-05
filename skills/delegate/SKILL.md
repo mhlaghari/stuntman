@@ -1,29 +1,35 @@
 ---
 name: delegate
-description: Delegate implementation work to a stunt double (a headless worker — Claude Code via a local proxy, opencode running DeepSeek/Groq/Ollama/Grok/Kimi, OpenAI's Codex CLI, Google's Antigravity CLI, or Meta's Muse Code CLI). Claude plans the task, the worker executes it, Claude reviews the diff and iterates. Use when the user invokes /delegate <task>, or says "delegate this" / "have the stunt double do it" / "send this to the worker" / "have codex do it" / "have agy (antigravity) do it" / "have muse do it". Saves expensive subscription tokens for planning and review only.
+description: Delegate implementation to Stuntman's headless workers (Claude via proxy, opencode, Codex, Antigravity, or Muse). The current host plans, reviews the diff, verifies, and iterates. Use when asked to use Stuntman to delegate a task, send work to a stunt double, or run the delegate skill.
 ---
 
 # stuntman: plan → execute → review
 
-You (Claude, on subscription) are the **architect and reviewer**. A cheap
+Read [host and tool setup](../runtime.md) first. You, in Claude Code or Codex,
+are the **architect and reviewer**. A
 worker model (`stunt`) is the **executor**. Never implement the task yourself
 unless the worker fails twice.
 
 ## Resolve the worker command
 
 ```bash
-STUNT="$(command -v stunt || echo "${CLAUDE_PLUGIN_ROOT}/bin/stunt")"
+STUNT="$STUNTMAN_ROOT/bin/stunt"
 ```
 
 Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
 (`claude` via local proxy — the default —, `opencode`, `codex`, `agy`, or
 `muse`).
 
+If the user specifies a worker, set `STUNTMAN_WORKER` for every exec and resume
+call. Otherwise preserve their environment/default. Save the backend and any
+model pin with the session ID so review resumes the same provider. Running in
+Codex does not automatically select Codex as the worker.
+
 ## Preflight
 
 - Backend `claude` (default): check the proxy —
   `curl -s -m 2 http://localhost:8082/v1/models -H "x-api-key: freecc" -o /dev/null -w "%{http_code}"`.
-  If unreachable, start `fcc-server` in the background (run_in_background),
+  If unreachable, start `fcc-server` with the host's background execution tool,
   wait a few seconds, re-check. If still down, tell the user and stop.
 - Backend `opencode`: check `opencode --version`. If missing, tell the user
   to install it (`brew install sst/tap/opencode`) and stop.
@@ -36,9 +42,9 @@ Use `"$STUNT"` everywhere below. The worker backend is `$STUNTMAN_WORKER`
 - Backend `muse`: check `muse --version`. If missing, tell the user to install
   Meta's Muse Code CLI and run `muse login`, then stop.
 
-## 1. PLAN (you — this is where the expensive tokens earn their keep)
+## 1. PLAN
 
-Explore the codebase yourself (Read/Grep/Glob) and write a **self-contained
+Explore the codebase yourself and write a **self-contained
 spec** to a temp file. The worker has NO access to this conversation, so the
 spec must include:
 
@@ -51,6 +57,9 @@ spec must include:
   unless listed, never run git write commands.
 - Verification: the exact commands that must pass (tests, build, lint),
   including any env activation they need.
+- Include: "You are the Stuntman executor. Implement directly; do not delegate
+  or launch more Stuntman workers." This avoids recursive delegation when the
+  worker also has Stuntman installed.
 - End with: "When done, run the verification commands and fix failures before
   finishing. Reply with a summary of changed files."
 
@@ -65,7 +74,10 @@ From the **project root**:
 "$STUNT" exec "$(cat /tmp/stunt-spec.md)"
 ```
 
-- Use a generous Bash timeout (600000); workers can be slow.
+- Use the host's supported long-running process mechanism; workers can be slow.
+  Retain the process handle and capture stdout/stderr to task-specific files
+  when needed. An output file is not complete until the process exits. Never
+  start a replacement worker just because the first poll returned no output.
 - Output is one JSON line:
   `{"backend", "session_id", "result", "is_error", "usage", "cost_usd"}`.
   Capture `session_id` (needed for iteration) and keep `usage`/`cost_usd`
@@ -103,11 +115,11 @@ anything you had to fix yourself.
 Always include a cost line, summing `usage`/`cost_usd` across all worker
 calls (exec + resumes):
 
-> Worker: 14,162 tokens (8,166 out) · $0.0002 · Claude spent: planning + review only
+> Worker: 14,162 tokens (8,166 out) · $0.0002 · Orchestrator: planning + review
 
-If the user wants their own (orchestrator) side measured too, point them at
-`/cost` for the session or the per-message `usage` blocks in the session
-transcript under `~/.claude/projects/<project>/`.
+For orchestrator usage, use the current host's session accounting. Claude Code
+offers `/cost`; Codex offers `/status` for limits and its own usage telemetry.
+Never infer orchestrator tokens from the worker totals.
 
 ## Notes
 
@@ -127,8 +139,9 @@ transcript under `~/.claude/projects/<project>/`.
   --session-id <id>` — plain `muse resume` is TUI-only), reusing the user's
   own `muse login`; it emits no token usage, so usage reads zeros. Grok and
   Kimi models route through the `opencode` backend (`xai/…` /
-  `moonshotai/…` with the matching key). None of the five backends consume
-  Anthropic credits from this session. Pin a model with `STUNTMAN_MODEL`
+  `moonshotai/…` with the matching key). Worker usage is recorded separately
+  from the orchestrator's per-call accounting. A worker using the same subscription
+  as the host can share its quota. Pin a model with `STUNTMAN_MODEL`
   (claude: proxy model id; opencode: `provider/model`; codex: a model id
   accepted by `codex exec -m`; agy: an id from `agy models`; muse: an id
   accepted by `muse exec --model`).
@@ -137,8 +150,7 @@ transcript under `~/.claude/projects/<project>/`.
   `-s workspace-write`, sandboxed to the project directory but no per-action
   approval; muse: `--approval-mode never` with muse's OS sandbox left ON) —
   only delegate within trusted project directories.
-- Codex, agy, and muse have no metered per-call cost (flat subscription
-  billing outside this tool's visibility), so their `cost_usd` is always
-  reported as `0` — mention this in the cost line rather than implying the
-  run was free. Muse additionally reports zero token usage (its event stream
+- Codex, agy, and muse report `cost_usd: 0` because this wrapper has no dollar
+  accounting for them. This does not mean free execution; Codex can also use
+  metered API-key billing. Muse additionally reports zero token usage (its event stream
   has no usage data) — say "usage not reported by muse" in the cost line.

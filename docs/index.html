@@ -251,7 +251,7 @@
     <div class="hero-inner">
       <div class="take"><span class="dot"></span> Scene 01 · Take 1 · Rolling</div>
       <h1 class="title">Claude doesn't do<span class="l2">its own stunts.</span></h1>
-      <p class="oneliner">Claude Code <b>plans</b> the task and <b>reviews</b> the result. A near-free worker does the typing — DeepSeek, Groq, local Ollama, or the flat-rate subscriptions you already pay for: OpenAI's <b>Codex</b>, Google's <b>Antigravity</b>, Meta's <b>Muse</b>. Your expensive Anthropic tokens are spent on <b>thinking</b>, never on typing.</p>
+      <p class="oneliner">Claude Code or Codex <b>plans</b> the task and <b>reviews</b> the result. A near-free worker does the typing — DeepSeek, Groq, local Ollama, or the flat-rate subscriptions you already pay for: OpenAI's <b>Codex</b>, Google's <b>Antigravity</b>, Meta's <b>Muse</b>. Your expensive Anthropic tokens are spent on <b>thinking</b>, never on typing.</p>
       <div class="hero-cta">
         <a class="btn primary" href="#install">▶ &nbsp;Roll camera</a>
         <a class="btn ghost" href="#how">See how it works</a>
@@ -423,13 +423,13 @@
   <div class="wrap">
     <div class="reveal">
       <div class="eyebrow">The call sheet · every command</div>
-      <h2 class="sec">Seven commands, one crew</h2>
+      <h2 class="sec">Eight commands, one crew</h2>
       <p class="sec-sub">Plan → execute → review is the core. The rest make long runs cheap, rate-limit-proof, context-proof, searchable across every project — turn a blank page into a launch plan, and put every subscription's limits on one board.</p>
     </div>
     <div class="reveal" data-d="1" style="display:grid;gap:12px;max-width:880px;margin:28px auto 0">
       <div style="display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;padding:16px 20px;border:1px solid var(--line-2);border-radius:14px;background:#0b0b0d">
         <code style="color:var(--amber);font-weight:700">/delegate</code>
-        <div><b>Plan with Claude, execute with a near-free worker, review with Claude.</b> Five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), OpenAI's Codex, Google's Antigravity, Meta's Muse — your ChatGPT/Antigravity/Meta subscriptions become execution capacity. <span style="opacity:.55">— saves cost · 5 backends in v0.11</span></div>
+        <div><b>Plan and review with Claude Code or Codex; execute with a selected worker.</b> Five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), OpenAI's Codex, Google's Antigravity, Meta's Muse — your ChatGPT/Antigravity/Meta subscriptions become execution capacity. <span style="opacity:.55">— saves cost · 5 backends in v0.11</span></div>
       </div>
       <div style="display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;padding:16px 20px;border:1px solid var(--line-2);border-radius:14px;background:#0b0b0d">
         <code style="color:var(--amber);font-weight:700">/relay</code>
@@ -455,6 +455,10 @@
         <code style="color:var(--teal);font-weight:700">/usages</code>
         <div><b>One board for every subscription's usage + limits.</b> Claude's 5-hour/weekly windows live, Codex's windows from its own snapshots, the DeepSeek balance — read at zero token cost, plus a cached segment for your status line. <span style="opacity:.55">— know your limits · new in v0.12</span></div>
       </div>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;padding:16px 20px;border:1px solid var(--teal);border-radius:14px;background:#0b0b0d">
+        <code style="color:var(--teal);font-weight:700">/floor</code>
+        <div><b>See your agents across projects.</b> Claude Code, Codex, and Stuntman workers share one live Vexel board. Read conversations, see who needs you, and prompt ready tmux sessions. <span style="opacity:.55">— the agent floor · new in v0.13</span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -464,7 +468,7 @@
     <div class="reveal" style="text-align:center">
       <div class="eyebrow" style="justify-content:center">Action</div>
       <h2 class="sec">Two takes and you're rolling</h2>
-      <p class="sec-sub" style="margin:0 auto">It's a Claude Code plugin. Open source. No keys to swap, no config to babysit.</p>
+      <p class="sec-sub" style="margin:0 auto">A plugin for Claude Code and Codex. Open source. Choose the host and worker you already use.</p>
     </div>
     <div class="terminal reveal" data-d="1">
       <div class="term-bar">
@@ -482,7 +486,7 @@
         </div>
       </div>
     </div>
-    <p class="install-note">Then just work as usual — Claude calls in the stunt double whenever there's typing to be done.</p>
+    <p class="install-note">For Codex, run <code>codex plugin marketplace add mhlaghari/stuntman</code>, then <code>codex plugin add stuntman@stuntman</code>. Start a new thread and select a Stuntman skill. <a href="https://github.com/mhlaghari/stuntman/blob/main/docs/codex.md">Codex setup and hook trust</a>.</p>
   </div>
 </section>
 
@@ -498,7 +502,7 @@
       </div>
     </div>
     <div class="foot-meta">
-      <span>STUNTMAN — an open-source Claude Code plugin · MIT</span>
+      <span>STUNTMAN — an open-source Claude Code and Codex plugin · MIT</span>
       <span>“Claude doesn't do its own stunts.”</span>
     </div>
   </div>

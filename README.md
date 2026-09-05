@@ -1,11 +1,12 @@
 # 🎬 stuntman
 
-**Claude doesn't do its own stunts.** · [Website](https://mhlaghari.github.io/stuntman/)
+**Your coding agent doesn't do its own stunts.** · [Website](https://mhlaghari.github.io/stuntman/)
 
-Claude Code plans the scene and reviews the take. A near-free worker takes the
+Claude Code **or Codex** plans the scene and reviews the take. A worker takes the
 hits — DeepSeek, Groq, a local Ollama, **or the flat-rate subscriptions you
 already pay for**: OpenAI's Codex, Google's Antigravity, Meta's Muse Code.
-Your expensive Anthropic tokens go only where intelligence actually matters.
+Keep your orchestrator focused on planning and review. Choose the executor
+independently with `STUNTMAN_WORKER`.
 
 ![stuntman demo](docs/assets/demo.gif)
 
@@ -22,29 +23,36 @@ Your expensive Anthropic tokens go only where intelligence actually matters.
 
 ## Commands
 
-From a normal (subscription) Claude Code session, in any project:
+From Claude Code or Codex, in any project. In Claude Code, use the slash
+commands below; in Codex, select the Stuntman skill with `$` in CLI or `@`
+in the app, or ask for it by name (for example, "Use Stuntman to delegate
+this task to opencode").
 
 | Command | What it does | Spans |
 |---|---|---|
-| **`/delegate <task>`** | Claude plans + reviews; a near-free worker executes the spec — five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), Codex, Antigravity (`agy`), Muse. | cost |
-| **`/relay <task>`** | Keeps the cheap worker going across Claude's 5-hour usage limit; Claude resumes at reset. | the rate limit |
-| **`/scaffold`** | Stands up a project's self-resuming memory — a `CLAUDE.md` contract + four living docs (HANDOFF · STATUS · SPEC · STRATEGY). | the context boundary |
+| **`/delegate <task>`** | The host plans + reviews; a near-free worker executes the spec — five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), Codex, Antigravity (`agy`), Muse. | cost |
+| **`/relay <task>`** | Preserves progress across usage caps with independent workers and available scheduling. | the rate limit |
+| **`/scaffold`** | Stands up a project's self-resuming memory — an `AGENTS.md` or `CLAUDE.md` contract + four living docs (HANDOFF · STATUS · SPEC · STRATEGY). | the context boundary |
 | **`/handoff`** | Reads those docs and continues exactly where the last session stopped. | new sessions / `/clear` |
 | **`/wiki`** | Builds a "second brain" across a folder of projects — an Obsidian vault + a graphify knowledge graph + a live MCP for cross-project recall. | every project |
 | **`/launch`** | Fans out a multi-agent workflow — cited competitor research, market sizing, channel ranking, then pricing + positioning + a week-by-week launch playbook, pressure-tested by adversarial critics — into one Product Success Overview (markdown + HTML). | the blank-page launch |
 | **`/usages`** | One board for every stunt double's usage + limits — Claude 5h/7d (live), Codex 5h/weekly (last snapshot), DeepSeek balance (live) — plus a cached `--statusline` segment. | all the subscription dashboards |
 
+| **`/floor`** | Live Vexel board for Claude Code, Codex, and Stuntman workers: status, conversations, and prompting ready tmux sessions. | agents across projects |
+
 Each is detailed in its own section below.
 
 ## What's what
 
-Two roles, five backends, five tools — here is the whole cast:
+Two roles, five backends, shared tools — here is the whole cast:
 
 | Piece | What it is |
 |---|---|
-| **The orchestrator** | Your normal Claude Code session, on the Anthropic subscription. It plans specs, reviews diffs, runs the tests. It never types implementation code. |
+| **The orchestrator** | Your current Claude Code or Codex session. It plans specs, reviews diffs, runs the tests. It never types implementation code. |
 | **The stunt double** | The headless worker that executes specs. `STUNTMAN_WORKER` picks it: `claude` (default — headless Claude Code via a local proxy), `opencode` (DeepSeek/Groq/Ollama/Grok/Kimi + 75 providers), `codex` (OpenAI's CLI, your ChatGPT sub), `agy` (Google's Antigravity CLI, your Antigravity sub), `muse` (Meta's Muse Code CLI, your Meta sub). `STUNTMAN_MODEL` pins the model. |
 | **`bin/stunt`** | The worker wrapper. Two verbs — `stunt exec "<spec>"` and `stunt resume <id> "<feedback>"` — normalized to one JSON shape across all five backends. |
+| **`bin/floor` + `bin/floor-hook`** | Local agent board and lifecycle recorder; `bin/stunt` also emits worker events. |
+| **`bin/codex-window`** | Local Codex quota snapshot for relay decisions, including freshness and binding windows. |
 | **`bin/window`** | Zero-token probe of Claude's 5-hour/weekly usage window (what `/relay` reads). |
 | **`bin/usages`** | The cross-subscription usage board (what `/usages` reads; also feeds the status line). |
 | **`bin/scaffold` + `bin/wiki`** | Stand up the living-docs memory system and the cross-project second brain. |
@@ -144,6 +152,36 @@ DeepSeek's hero is the screenshot hack blowing its 4%-opacity film grain to
 
 ## Install
 
+### Codex plugin
+
+Use a Codex CLI version that supports `codex plugin`:
+
+```bash
+codex plugin marketplace add mhlaghari/stuntman
+codex plugin add stuntman@stuntman
+```
+
+For a local checkout, run `./install.sh --codex` from the Stuntman repository.
+This registers the checkout as a local marketplace and installs its bundle.
+Start a **new Codex thread/session** after installation, then ask:
+
+> Use Stuntman to set up project memory for Codex.
+
+Codex uses `AGENTS.md` for memory; Claude Code continues to use `CLAUDE.md`.
+The helper also accepts `bin/scaffold --host both` to set up both files while
+sharing the same HANDOFF / STATUS / SPEC / STRATEGY documents.
+
+All seven skills are shared between hosts. The launch skill uses Codex's native
+agent tools when available, and relay uses a local Codex quota snapshot. Automatic
+resume depends on the host's scheduling support and available quota. A Codex
+worker on the same account shares Codex's limits. See [Codex support](docs/codex.md)
+for the full behavior, dependencies, and validation commands.
+
+The optional Stop hook works after you review and trust it in Codex. Installation
+does not change your hook trust or sandbox settings. The skills work without it.
+
+### Claude Code
+
 Prerequisites:
 
 1. [Claude Code](https://claude.com/claude-code) with a subscription (the orchestrator).
@@ -208,9 +246,24 @@ Inside Claude Code:
 git clone https://github.com/mhlaghari/stuntman && cd stuntman && ./install.sh
 ```
 
-Copies the `/delegate`, `/relay`, `/scaffold`, `/handoff`, `/wiki`, `/launch`,
-and `/usages` skills to `~/.claude/skills/` and the `stunt` worker, `window`
-probe, `usages` board, `scaffold`, and `wiki` tools to `~/.local/bin/`.
+The default `./install.sh` (or `./install.sh --claude`) copies the `/delegate`,
+`/relay`, `/scaffold`, `/handoff`, `/wiki`, `/launch`,
+`/usages`, and `/floor` skills to `~/.claude/skills/` and the `stunt` worker, `window`
+probe, `codex-window`, `usages` and `floor` boards, `scaffold`, and `wiki` tools to `~/.local/bin/`.
+
+## Floor — agents across projects
+
+Use the floor skill to open `http://127.0.0.1:4517/`. Sessions with active hooks
+appear as Vexel avatars, grouped by project and labeled by host. Click a card
+to read its conversation. Idle or finished Claude Code/Codex sessions in tmux
+can receive prompts; workers, approvals, and other terminals are view-only.
+
+The plugin bundles lifecycle hooks. Start a new session after installation;
+Codex asks you to review and trust hooks in `/hooks`. For a standalone install,
+run `floor --wire-hooks --host claude` (or `codex` / `both`) once. The bundled
+`stunt` helper emits worker start/finish/failure events without host hooks.
+Monitoring makes no model calls. A silent avatar means no recent event, not
+proof that the process stopped.
 
 ## Usage
 
@@ -477,3 +530,7 @@ while you're rate-limited.
 ## License
 
 MIT
+
+## Changelog
+
+- 2026-09-05 — Added Codex plugin packaging, shared host-aware skills, AGENTS.md memory, native launch phases, and a local Codex quota probe.

@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: Set up a project's self-resuming memory system in one shot. Writes a contract into CLAUDE.md (a "read this first" list + a "before you stop" process contract) and creates the docs it references — HANDOFF.md (the session baton) and STATUS.md (the status board) — then populates them from the project's current state. Idempotent, never clobbers. After this, every session reads those docs first and rewrites them before stopping, and /handoff resumes any session. Use when the user invokes /scaffold, says "scaffold this project", "set up the handoff/status docs", or "make this project document and resume itself".
+description: Set up Stuntman project memory in AGENTS.md for Codex, CLAUDE.md for Claude Code, or both. Create and populate HANDOFF, STATUS, SPEC, and STRATEGY without clobbering existing content. Use when asked to scaffold project memory or set up handoff/status docs.
 ---
 
 # stuntman: scaffold — stand up the project-memory system
@@ -11,14 +11,17 @@ the one-time **setup**; `/handoff` is the per-session **resume**.
 
 ## The scaffolder
 
+Read [host and tool setup](../runtime.md). Set `STUNTMAN_HOST` to `codex` in
+Codex or `claude` in Claude Code; use `both` when the user requests both hosts.
+
 ```bash
-SCAFFOLD="$(command -v scaffold || echo "${CLAUDE_PLUGIN_ROOT}/bin/scaffold")"
-"$SCAFFOLD"          # sets up the current project (cwd)
+SCAFFOLD="$STUNTMAN_ROOT/bin/scaffold"
+"$SCAFFOLD" --host "$STUNTMAN_HOST"
 ```
 
 Idempotent and non-destructive. It:
 - writes a contract block (`<!-- stuntman:scaffold:start … end -->`) into
-  `CLAUDE.md` — created if absent, appended if present, skipped if already there
+  the host's instruction file (`AGENTS.md`, `CLAUDE.md`, or both) — created if absent, appended if present, skipped if already there
   (recognizes the pre-0.5 `stuntman:handoff` marker too). Never rewrites
   existing content.
 - creates the living docs it references — `HANDOFF.md` (the session baton),
@@ -46,19 +49,20 @@ Idempotent and non-destructive. It:
    each doc's date / changelog. `README.md` is maintained too (refresh when the
    surface changes); scaffold doesn't *create* one — if it's missing, say so.
 4. **Report**: the system is active. Every future session now reads
-   `HANDOFF.md` / `STATUS.md` first (the instruction lives in `CLAUDE.md`, which
+   `HANDOFF.md` / `STATUS.md` first (the instruction lives in the host's instruction file, which
    auto-loads) and updates them before stopping. To resume any time, the user
    runs **`/handoff`** or says **"execute handoff"**.
 
 ## Notes
 
-- The contract is **instruction-driven** (`CLAUDE.md` auto-loads, so read-first /
+- The contract is **instruction-driven** (the host's instruction file auto-loads, so read-first /
   update-before-stop is always in context), and a **Stop hook** (ships with the
   plugin) backs it up: in scaffolded projects only, if the session changed code
   but didn't update `HANDOFF.md` / `STATUS.md`, it nudges once before the turn
-  ends. It fails open and never touches non-scaffolded projects.
+  ends. It fails open and never touches non-scaffolded projects. Codex only runs
+  the hook after the user trusts it; the memory workflow does not require it.
 - **Self-contained**: no dependency on an external `/checkpoint` skill or memory
-  system — just `CLAUDE.md` + the living docs. (If the user already runs a
+  system — just the host's instruction file + the living docs. (If the user already runs a
   `/checkpoint` that maintains `STATUS.md`, it stays compatible — same file.)
 - Pairs with `/relay`: when a long run pauses at the 5-hour cap, `HANDOFF.md` is
   the human-readable state the next session resumes from.

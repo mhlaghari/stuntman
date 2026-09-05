@@ -1,31 +1,48 @@
 # HANDOFF
 
-_The session baton — a **living doc**. The current agent updates it before
-stopping; the next reads it first. Write for a reader with zero memory of this
-session._
+## Current handoff — 2026-09-05
 
-## What changed this session
+The user authorized finishing `/floor` together with Codex compatibility and
+committing the combined work. Version 0.13.0 brings all eight skills to Claude
+Code and Codex. The original floor draft was incorporated from the main
+checkout in the isolated `codex/compatibility` worktree.
 
-- **This session (2026-08-29, evening): added `/usages` — the seventh command (v0.12.0).** One
-  zero-token usage/limits board across the stunt doubles, born from the user asking to see all worker
-  usage in one place instead of per-app. **What each backend actually exposes (investigated live):**
-  Claude → live OAuth probe (existing `bin/window`); **Codex → its session files cache a full
-  `rate_limits` object** (`~/.codex/sessions/**/rollout-*.jsonl`, `token_count` events: primary=5h,
-  secondary=weekly/10080min, used_percent + unix resets_at + plan_type) — read the newest file's last
-  snapshot, and **treat a window whose resets_at already passed as ~0%** (the first draft showed a
-  stale 23%/5h from a 13h-old snapshot); DeepSeek → `GET api.deepseek.com/user/balance` with the key
-  from `~/.local/share/opencode/auth.json`; **agy → nothing local** (its `quota_manager.go` refreshes
-  server-side, log shows only `loadCodeAssist`/`fetchAvailableModels`, no quota persisted anywhere in
-  `~/.gemini/antigravity-cli`); **muse → nothing** (grep hits in sessions were project *content*, not
-  telemetry). `bin/usages` verbs: pretty board / `--json` / `--statusline` (worker-only segment —
-  Claude is deliberately absent since Claude Code feeds the statusline its own rate_limits natively;
-  300s cache; fails silent). Statusline wired: `~/.claude/statusline-command.sh` (user-global, NOT in
-  repo) now appends a `🎬` segment — **the segment is passed as a printf argument, never in the format
-  string** (worker text contains literal `%`); original backed up at
-  `~/.claude/statusline-command.sh.bak-pre-stuntman`. New `skills/usages/SKILL.md` (renders the board,
-  explains freshness, points at `/relay` when blocked); install.sh copies skill + bin;
-  `~/.local/bin/usages` symlinked to the marketplace clone (same pattern as `stunt`). README command
-  table now 7 rows. plugin.json 0.12.0 + usage/limits/statusline keywords.
+- Codex manifest and marketplace, `install.sh --codex`, shared host setup,
+  AGENTS.md scaffolding, local quota snapshots, and native launch phases.
+- `/floor` retains the user's expressive Vexel atlas. Shared plugin hooks
+  record Claude/Codex lifecycle events; the `stunt` wrapper emits worker
+  start/finish/failure events without changing its stdout result contract.
+- Sessions are keyed by host and ID, subagents by actual ID. Concurrent tool
+  calls and locked log rotation are handled. Transcript reads omit reasoning,
+  system content, and tool results. Monitoring makes no model calls.
+- Prompting requires a ready live foreground TUI in tmux, checked by PID and
+  process birth identity. Workers, approvals, busy/headless and non-tmux
+  sessions are view-only. HTTP input validates host, origin, token, and size.
+- The board supports keyboard navigation, reduced motion, mobile width,
+  per-session drafts, stale-request protection, and reconnect states.
+- All 31 offline tests pass, as do manifest/skill validators and shell checks.
+  Fresh Codex app-server discovery returns all eight enabled skills, no load
+  errors, and all required helpers/hooks/assets. Desktop and 390/320px browser
+  checks cover keyboard controls, escaping, empty/reconnect states, reduced
+  motion, per-session drafts, and failed sends; no JavaScript errors or
+  horizontal overflow. No paid model calls were used for these checks.
+
+The original floor draft is preserved in the named Git stash
+`stuntman-floor-before-codex-integration-2026-09-05` when integrating main.
+Keep that recovery copy until the user no longer needs it.
+
+Start a new Codex thread after installing. The user reviews/trusts session
+hooks through `/hooks`; installation does not bypass trust. `floor --wire-hooks
+--host claude|codex|both` is for standalone installs, not an extra plugin step.
+
+Prior floor work (Aug 30–31): local hook-fed Vexel board, transcript drawer,
+and tmux prompting were implemented and exercised against live Claude Code.
+The custom son/daughter rigs and floor auto-start remain optional follow-ups.
+The earlier usage board still estimates expired windows as approximately zero;
+Codex relay instead uses `codex-window`, which correctly treats expired data as
+unknown current capacity.
+
+## Earlier context
 
 - **Prior (2026-08-29, later): added `muse` (Meta's Muse Code CLI) as a fifth `/delegate`
   backend + documented the Grok/Kimi route (v0.10.0 → v0.11.0, committed with authorization).**
@@ -213,6 +230,13 @@ session._
 
 ## Next step
 
+- **`/floor` follow-ups (v0.13.x):** (1) **real son/daughter Vexel rigs** — generate in the same
+  format as `laghari-vexel/assets/avatar-rig` (the user drives likeness; board slots them in by
+  swapping the `.kid` sprite classes); (2) **put the stunt doubles on the floor** — `bin/stunt`
+  emits exec/resume/review events into the same log so `/delegate` workers appear as cast members;
+  (3) landing page card ("Eight commands"); (4) auto-start `floor` server (launchd or on-demand from
+  the statusline). Get **commit authorization** for v0.13.0 first.
+
 - **The bake-off answered the open build questions** (see `../film-crew-bench/RESULTS.md`): worker =
   DeepSeek-Flash tier (lands close) + local via Ollama/MLX; harness must be **agentic** (incremental
   write) with a **real render gate**; Opus reviews **once**. Name = **Film Crew** (new repo; stuntman
@@ -246,6 +270,24 @@ session._
 
 ## Gotchas
 
+- **`/floor` wiring lives in `~/.claude/settings.json`, not the plugin's `hooks/hooks.json`** — it's
+  machine-level (must fire in every project), and shipping it in the plugin too would double-log
+  every event. `floor --wire-hooks` is the one sanctioned wiring path (idempotent, backs up).
+  Sessions only emit after they (re)start — though PreToolUse hooks were observed hot-loading into
+  the already-running session that did the wiring.
+- **`~/.local/bin/floor` + `floor-hook` symlink to the WORKING COPY** (`Documents/MyProjects/stuntman/bin/`),
+  unlike `stunt` which links to the marketplace clone — repoint after the v0.13.0 release lands there.
+- **Chrome resolves `localhost` to `::1` but `bin/floor` binds `127.0.0.1`** — the board URL that
+  always works in every browser is `http://127.0.0.1:4517/`. (The Claude-in-Chrome extension also
+  couldn't screenshot it; Playwright could.)
+- **The floor's prompt path only reaches tmux-hosted sessions.** The hook's parent process is the
+  `claude` binary itself; `/send` walks it up to a `tmux` pane and send-keys into it. VS Code
+  integrated terminals have no injection API — those sessions are view-only on the board (the
+  drawer says so). The `/send` token is per-server-run; restarting `bin/floor` invalidates open
+  tabs (reload the page).
+- The Vexel atlas cell math is load-bearing in `board/index.html`: 192×208 cells, one animation row
+  each — idle r0/7f, waving r3/4f, jumping r4/5f, failed r5/8f, waiting r6/6f, running r7/6f,
+  review r8/6f. If the atlas is regenerated, re-derive from `validation-extended.json`.
 - **`~/.local/bin/stunt` is a SYMLINK to `~/.claude/plugins/marketplaces/stuntman/bin/stunt`** (since
   2026-08-25). Never `cp` a new stunt onto it — that writes through the symlink into the marketplace
   clone's working tree, dirtying it and blocking `git pull --ff-only`. The correct "sync" is: commit +
@@ -301,6 +343,19 @@ session._
   exactly how the first MIQ smoke test produced an Adversaria plan in the wrong folder.
 
 ## Last updated
+
+2026-08-31 (night, round 2) — `/floor` is now interactive: cards show each agent's last words;
+click → drawer with the live conversation + a prompt box that types into tmux-hosted sessions via
+send-keys (ppid→pane resolution, token-guarded POST /send; verified live end-to-end). Non-tmux
+sessions = view-only with an honest badge. Expressive v2 Vexel atlas swapped in (same geometry).
+
+2026-08-31 (night) — added `/floor` (v0.13.0, uncommitted): one live avatar board for every Claude
+Code session on the machine — Munder Difflin's hooks-as-event-plane ideology + the Laghari Vexel
+cast. `bin/floor-hook` (8 lifecycle hooks in `~/.claude/settings.json`, backed up) →
+`~/.stuntman/floor/events.jsonl` → `bin/floor` state reducer + board at `127.0.0.1:4517`. States:
+working/thinking/**waving-needs-you**/done/silent; rooms per project; Task sub-agents as hue-shifted
+son/daughter placeholders. Smoke-tested with real hooks (caught this session + a concurrent
+meeting-note-taker session live). Next: real kid rigs, stunt doubles on the floor, commit auth.
 
 2026-08-29 (night, later) — README gained a "What's what" cast table (orchestrator / stunt double /
 five backends / bin tools / living docs / Stop hook) — **written by the Gemini stunt double itself**

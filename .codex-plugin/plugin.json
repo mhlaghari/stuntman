@@ -1,7 +1,7 @@
 {
   "name": "stuntman",
   "description": "Plan and review in Claude Code or Codex, delegate to five worker backends, keep project memory, and watch agents on the live floor.",
-  "version": "0.13.0",
+  "version": "0.13.0+codex.20260905134611",
   "author": {
     "name": "mhlaghari",
     "email": "mhlaghari@gmail.com"
@@ -42,5 +42,24 @@
     "agent-monitoring",
     "dashboard",
     "avatars"
-  ]
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Stuntman",
+    "shortDescription": "Plan, delegate, review, and resume across coding agents",
+    "longDescription": "Plan and review in Claude Code or Codex, delegate to five worker backends, keep project memory, and watch agents on the live floor.",
+    "developerName": "mhlaghari",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/mhlaghari/stuntman",
+    "defaultPrompt": [
+      "Use Stuntman to delegate this task.",
+      "Use Stuntman to set up project memory.",
+      "Show my Stuntman usage board."
+    ],
+    "brandColor": "#8C1831"
+  }
 }

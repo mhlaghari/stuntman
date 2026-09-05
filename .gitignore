@@ -3,6 +3,7 @@
 
 # stuntman relay state (written by /relay) — runtime, machine-local.
 .stuntman/
+__pycache__/
 
 # Film Crew bake-off artifacts (screenshots + Playwright output) — not part of the plugin.
 /verify-*.png

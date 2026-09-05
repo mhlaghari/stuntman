@@ -5,8 +5,23 @@ every session._
 
 ## Built
 
-**v0.12.0** — seven commands (each a skill + a `bin/` helper where needed), plus a
-living-document system and an enforcement hook:
+**v0.13.0** — eight skills for Claude Code and Codex, shared helpers, project
+memory, and a local agent board.
+
+- **Codex compatibility:** native manifest and marketplace, CLI installation,
+  eight host-aware skills, AGENTS.md memory, optional shared Stop hook,
+  snapshot-only quota probe, and native launch phases.
+- **`/floor`:** Claude/Codex session hooks plus Stuntman worker events, grouped
+  by project with host labels and the expressive Vexel atlas. Transcript
+  drawer, real child IDs, overlapping tool calls, concurrent log rotation,
+  worker failure state, keyboard/mobile/reduced-motion support. Prompting
+  requires an idle/done foreground TUI in tmux and verified process identity;
+  other sessions are view-only. Origin/token/size checks protect local input.
+- **Validation:** 31 offline tests, plugin/skill validators, and shell checks
+  pass. Fresh Codex discovery finds eight enabled skills with no load errors.
+  Browser checks pass at desktop, 390px, and 320px widths, including keyboard,
+  drafts, failed sends, reduced motion, escaping, and empty/reconnect states.
+  Live Codex hook delivery awaits the user’s hook trust in a new session.
 
 - **`/usages`** (`skills/usages`, `bin/usages`) — **v0.12.0:** one board for
   every stunt double's usage + limits, all zero-token: Claude 5h/7d live (via
@@ -77,14 +92,15 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 
 ## Planned
 
+- **`/floor` follow-ups:** real son/daughter Vexel rigs (user drives likeness;
+  same rig format as `laghari-vexel/assets/avatar-rig`); optional server auto-start.
 - **NEW build candidate — a `/launch`-adjacent ideation command** ("what should I make?"): propose
   buildable ideas grounded in the user's own projects (graphify vault / `my-agents` graph), each with a
   one-paragraph plan + an adversarial **"roast"** pass so only survivors surface. Bookends `/launch`
   (idea-in vs ship-out); reuses the proven multi-agent `Workflow`. Working name `/forge` / `/ideate`.
-  Scope next session. _(6-vs-4 resolved → **keep all 6**; `SPEC.md` still says "four commands" — fix when touched.)_
+  Scope next session.
 - Exercise `/relay` through a real capped → reset cycle (never run live end-to-end).
-- No tests / CI — a smoke test for `window` (parse), `scaffold` (idempotency),
-  and `handoff-guard` (the five Stop-hook cases) would help.
+- Add CI for the offline Python test suite.
 - The Stop hook ships with the plugin route only; the `install.sh` route doesn't
   wire it into `~/.claude/settings.json` yet.
 
@@ -93,6 +109,21 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-09-05 — Combined Codex host support and the completed floor draft in v0.13.0.
+
+
+2026-08-31 (night, round 2) — **the floor became interactive**: 💬 last-words on every card, click →
+conversation drawer (transcript tail), prompt box that types into tmux-hosted sessions for real
+(verified live: board → send-keys → TUI → reply back in the drawer). Vexel expressive v2 atlas
+dropped in (guitar/rock animations, same geometry). Non-tmux sessions = view-only, said honestly.
+
+2026-08-31 (night) — **v0.13.0 (uncommitted): `/floor`, the eighth command** — the agent floor:
+every Claude Code session on the machine as a live Laghari Vexel avatar (working / thinking /
+waving-needs-you / done / silent), rooms per project, Task sub-agents as son/daughter placeholders.
+Hooks wired machine-wide (`floor --wire-hooks`, settings.json backed up), zero-token, view-only by
+design. Inherits Munder Difflin's event-plane ideology; avoids its non-commercial LimeZu assets by
+using the user's own Vexel rig. Smoke-tested live with real hooks + Playwright-verified rendering.
 
 2026-08-29 (night, later) — README "What's what" section added (the moving-parts cast table) —
 delegated to Gemini via the agy backend as a live dogfood of `/delegate` (verbatim insertion,

@@ -1,6 +1,6 @@
 ---
 name: wiki
-description: Scaffold an LLM-wiki "second brain" for the current folder in one shot — lays the vault skeleton, writes a note per project from its README/code, builds a graphify knowledge graph, and wires the graphify MCP so Claude can query prior work across projects. Auto-detects a single project vs a folder of many projects. Use when the user invokes /wiki, says "scaffold the LLM wiki", "build a second brain here", "graphify this folder", or "turn these projects into a knowledge base".
+description: Scaffold an LLM-wiki "second brain" for the current folder in one shot — lays the vault skeleton, writes a note per project from its README/code, builds a graphify knowledge graph, and wires the graphify MCP so the current host can query prior work across projects. Auto-detects a single project vs a folder of many projects. Use when the user invokes /wiki, says "scaffold the LLM wiki", "build a second brain here", "graphify this folder", or "turn these projects into a knowledge base".
 ---
 
 # stuntman: wiki — stand up an LLM-wiki second brain + graphify
@@ -14,36 +14,39 @@ It's the Karpathy "LLM wiki" pattern, automated. Run it once in the target folde
 
 ## Dependencies
 - **graphify** (`pip install graphifyy`, or the user's `/graphify` skill) — builds the graph.
-- **mcp** python package + the **`claude`** CLI — to wire the live query server.
+- **mcp** python package + the current host CLI (`claude` or `codex`) — to wire the live query server.
 The skill installs/checks these along the way; if one is truly unavailable, do that step's fallback and tell the user.
 
 ## What to do
 
 ### 1. Scaffold the skeleton (deterministic, idempotent)
+Read [host and tool setup](../runtime.md). Set `STUNTMAN_HOST` to `codex` in
+Codex or `claude` in Claude Code; use `both` when requested.
+
 ```bash
-WIKI="$(command -v wiki || echo "${CLAUDE_PLUGIN_ROOT}/bin/wiki")"
-"$WIKI"            # current folder; or:  "$WIKI" /path/to/folder
+WIKI="$STUNTMAN_ROOT/bin/wiki"
+"$WIKI" --host "$STUNTMAN_HOST"   # optionally append /path/to/folder
 ```
 Read its output: `VAULT=…`, `MODE=single|folder`, and (folder mode) the `PROJECTS:` list.
 Never clobbers — re-running only fills gaps. `$VAULT` is `<folder>-wiki/`.
 
 ### 2. Ensure graphify is installed
 Resolve an interpreter that can `import graphify` (uv tool / pipx / venv / system). If none,
-`pip install graphifyy -q` (add `--break-system-packages` if needed). Save the interpreter path to
-`$VAULT/graphify-out/.graphify_python` for later steps.
+install it in a dedicated virtual environment or with uv/pipx. Save the interpreter path to
+`$VAULT/graphify-out/.graphify_python` for later steps (create that directory first).
 
 ### 3. Populate the notes from reality
 Write notes that a reader with zero memory of the codebase can use. Follow the schema in
-`$VAULT/CLAUDE.md` (frontmatter + Summary / Architecture / Connections / Notable).
+the vault's `AGENTS.md` (Codex) or `CLAUDE.md` (Claude Code), including frontmatter + Summary / Architecture / Connections / Notable.
 
 Every note's frontmatter needs `type:` and a one-line `description:` (OKF v0.1 — this is what
 makes the vault portable across agent tooling). Wikilinks must target real page basenames
 (kebab-case filenames, not Title Case) — broken links render as ghost nodes in Obsidian.
 
 - **MODE=folder:** one `$VAULT/wiki/projects/<name>.md` per detected project. For more than ~4
-  projects, **dispatch parallel `general-purpose` subagents** (one per cluster of 3–5 projects)
+  projects, **use available native subagents within host limits** (one per cluster of 3–5 projects)
   to read each project's README / manifest / structure / key entry files and return a structured
-  summary; then **author the notes centrally** so cross-links are consistent (linking needs a
+  summary (read sequentially if no subagent tool is available); then **author the notes centrally** so cross-links are consistent (linking needs a
   global view of all projects). Group projects into families and write `wiki/_PROJECTS_MOC.md`,
   fill `wiki/index.md`, and seed `wiki/hot.md`. Create a `wiki/concepts/` or `wiki/patterns/` note
   **only** where a pattern genuinely spans ≥3 projects.
@@ -59,21 +62,29 @@ altitude). The scaffold includes a `$VAULT/.graphifyignore` that keeps navigatio
 become the top god nodes, hairballing the whole graph. graphify's `detect()` honors it
 automatically, including on later `graphify update` runs; never hand-add those pages back. Preferred: invoke the **`/graphify`** skill on `$VAULT/wiki`. If that skill isn't present,
 run the pipeline directly with the saved interpreter: detect → semantic-extract the notes via
-`general-purpose` subagents → `build_from_json` → `cluster` → `report.generate` → `export.to_json` /
+available native subagents or sequential extraction → `build_from_json` → `cluster` → `report.generate` → `export.to_json` /
 `to_html`, and `export.to_canvas` into `$VAULT/graph.canvas`. Output lands in `$VAULT/graphify-out/`
 (`graph.html`, `graph.json`, `GRAPH_REPORT.md`).
 
-### 5. Wire the live MCP (so Claude queries it automatically later)
+### 5. Wire the live MCP in the current host
 ```bash
 INTERP="$(cat "$VAULT/graphify-out/.graphify_python")"
 "$INTERP" -c "import mcp" 2>/dev/null || uv pip install --python "$INTERP" mcp -q || "$INTERP" -m pip install mcp -q
 NAME="$(basename "$VAULT")"          # e.g. myprojects-wiki
-claude mcp remove "$NAME" --scope user 2>/dev/null || true
+# Codex:
+codex mcp add "$NAME" -- "$INTERP" -m graphify.serve "$VAULT/graphify-out/graph.json"
+codex mcp get "$NAME"
+
+# Claude Code (use this block instead when Claude Code is the host):
 claude mcp add "$NAME" --scope user -- "$INTERP" -m graphify.serve "$VAULT/graphify-out/graph.json"
-claude mcp list | grep "$NAME"       # expect ✔ Connected
+claude mcp get "$NAME"
 ```
 The server loads `graph.json` at session start, so the brain is queryable from the user's **next**
-session. (If `claude` CLI is unavailable, print the exact `claude mcp add` command for them to run.)
+session. (If the current host CLI is unavailable, give its exact add command.)
+Check for an existing entry with `mcp get` before adding; preserve unrelated
+entries and reuse an entry already pointing at this graph. A listed configuration
+is not proof of a live connection: query the graph through MCP in a new session
+when available, otherwise report that connection verification is pending.
 
 ### 6. Report
 Show: the vault path, project/concept counts, and from `GRAPH_REPORT.md` the **God Nodes** and

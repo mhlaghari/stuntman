@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""Record Claude Code or Codex lifecycle events; always exit silently with 0."""
+import json
+import os
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    from stuntman_floor import emit, normalize_hook
+    event = normalize_hook(json.loads(sys.stdin.buffer.read(1_048_576)), os.getppid())
+    if event:
+        emit(event)
+except Exception:
+    pass

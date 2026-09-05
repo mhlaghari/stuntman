@@ -45,7 +45,7 @@ if [ -n "$porcelain" ]; then
     f="${f##* -> }"        # rename: keep the new path
     case "$(basename "$f")" in
       HANDOFF.md|STATUS.md) docs_touched=1 ;;
-      CLAUDE.md|SPEC.md|STRATEGY.md|README.md) : ;;   # docs, but don't count as "work"
+      CLAUDE.md|AGENTS.md|SPEC.md|STRATEGY.md|README.md) : ;;   # docs, but don't count as "work"
       *) non_doc=1 ;;
     esac
   done <<EOF
@@ -53,7 +53,7 @@ $porcelain
 EOF
 
   if [ "$non_doc" = "1" ] && [ "$docs_touched" = "0" ]; then
-    handoff_reason='stuntman: code changed but HANDOFF.md / STATUS.md were not updated. Per this project CLAUDE.md contract, refresh them (what changed, the next step, and the STATUS board) and any SPEC/STRATEGY/README the change touched, then stop again. This nudge fires once.'
+    handoff_reason='stuntman: code changed but HANDOFF.md / STATUS.md were not updated. Per this project memory contract, refresh them (what changed, the next step, and the STATUS board) and any SPEC/STRATEGY/README the change touched, then stop again. This nudge fires once.'
   fi
 fi
 
@@ -74,7 +74,7 @@ if [ -f "$page" ]; then
       if [ -n "$page_epoch" ] && [ -n "$commit_epoch" ] &&
          [ "$((commit_epoch - page_epoch))" -gt 604800 ]; then
         today="$(date +%F 2>/dev/null)"
-        marker_dir="$HOME/.claude/plugins/data/stuntman-stuntman"
+        marker_dir="${PLUGIN_DATA:-${CLAUDE_PLUGIN_DATA:-$HOME/.claude/plugins/data/stuntman-stuntman}}"
         marker="$marker_dir/vault-nudge-$project_name"
         if [ -n "$today" ] && mkdir -p "$marker_dir" 2>/dev/null; then
           marker_date="$(cat "$marker" 2>/dev/null)"
