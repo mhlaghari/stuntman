@@ -15,6 +15,10 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+# Hosts invoke these helpers as `python3 <script>`; Windows cannot exec a shebang itself.
+HOOK = [sys.executable, str(ROOT / 'bin/floor-hook')]
+needs_shebang_exec = unittest.skipIf(sys.platform == 'win32',
+                                     'fixture scripts are executed through their shebang')
 sys.path.insert(0, str(ROOT / 'bin'))
 import stuntman_floor as events
 loader = importlib.machinery.SourceFileLoader('floor_under_test', str(ROOT / 'bin/floor'))
@@ -42,7 +46,7 @@ class FloorTests(unittest.TestCase):
         env = dict(self.env)
         for name in ('STUNTMAN_FLOOR_HOST','STUNTMAN_FLOOR_WORKER_ID','PLUGIN_ROOT'):
             env.pop(name,None)
-        result = subprocess.run([ROOT/'bin/floor-hook'], input=json.dumps(payload), text=True,
+        result = subprocess.run(HOOK, input=json.dumps(payload), text=True,
                                 capture_output=True, env=env, timeout=5)
         self.assertEqual(result.returncode,0)
         self.assertEqual(result.stdout,'')
@@ -52,7 +56,7 @@ class FloorTests(unittest.TestCase):
 
     def test_malformed_hook_fails_open_without_phantom_agent(self):
         for payload in ('not json','[]','{}'):
-            result = subprocess.run([ROOT/'bin/floor-hook'], input=payload, text=True,
+            result = subprocess.run(HOOK, input=payload, text=True,
                                     capture_output=True, env=self.env, timeout=5)
             self.assertEqual((result.returncode,result.stdout,result.stderr),(0,'',''))
         self.assertFalse(floor.EVENTS.exists())
@@ -149,6 +153,18 @@ class FloorTests(unittest.TestCase):
                  'codex codex app-server\n' if args[2]=='10' else 'codex codex\n','')):
             self.assertIsNone(floor.find_pane(self.session(),refresh=True))
 
+    def test_event_lock_excludes_a_rival_and_frees_on_close(self):
+        """Windows locks through msvcrt where POSIX uses flock; the contract is identical."""
+        lock = self.directory / 'events.lock'
+        with lock.open('a') as held:
+            events._lock_exclusive(held)
+            with lock.open('a') as rival:
+                with self.assertRaises(BlockingIOError):
+                    events._lock_exclusive(rival)
+        with lock.open('a') as after_release:
+            events._lock_exclusive(after_release)
+
+    @needs_shebang_exec
     def test_worker_observer_preserves_stdout_and_exit_code(self):
         worker=self.directory/'fake worker'
         worker.write_text('#!/usr/bin/env python3\nimport json,sys\nprint(json.dumps({"session_id":"provider-session","result":"finished","is_error":False}))\nsys.exit(int(sys.argv[1]))\n')
@@ -162,6 +178,7 @@ class FloorTests(unittest.TestCase):
         self.assertEqual([s['state'] for s in states],['done','failed'])
         self.assertTrue(all(s['worker'] for s in states))
 
+    @needs_shebang_exec
     def test_stunt_codex_dispatch_is_monitored_without_changing_json(self):
         fakebin=self.directory/'bin';fakebin.mkdir()
         fake=fakebin/'codex'

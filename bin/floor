@@ -17,7 +17,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from stuntman_floor import process_identity
+from stuntman_floor import IS_WINDOWS, process_identity
 
 FLOOR_DIR = Path(os.environ.get('STUNTMAN_FLOOR_DIR', str(Path.home() / '.stuntman/floor')))
 EVENTS = FLOOR_DIR / 'events.jsonl'
@@ -260,6 +260,8 @@ def reach_detail(session):
         return 'This session needs a response in its own window. Open it to handle the question or approval.'
     if session['state'] not in ('idle', 'done'):
         return 'Wait for this turn to finish, or steer it from its own window.'
+    if IS_WINDOWS:
+        return 'View-only on Windows: sending needs tmux, so steer this session from its own window.'
     return 'View-only: a live foreground Claude Code or Codex session inside tmux is required to send from here.'
 
 
