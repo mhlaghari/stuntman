@@ -1,16 +1,35 @@
 """Shared fail-open event writer for floor hooks and Stuntman workers."""
-import fcntl
 import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import time
 
 ROTATE_BYTES = 5_000_000
+IS_WINDOWS = sys.platform == 'win32'
+
+if IS_WINDOWS:
+    import msvcrt
+else:
+    import fcntl
+
+
+def _lock_exclusive(handle):
+    """Non-blocking exclusive lock, raising BlockingIOError when already held."""
+    if not IS_WINDOWS:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return
+    try:
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError as error:
+        raise BlockingIOError(str(error)) from error
 
 
 def process_identity(pid):
     """Capture birth time as well as PID; a reused PID is a different process."""
+    if IS_WINDOWS:
+        return None  # No ps, and terminal send needs tmux, so nothing consumes it.
     try:
         result = subprocess.run(['ps', '-p', str(int(pid)), '-o', 'lstart=,comm='],
                                 capture_output=True, text=True, timeout=0.5)
@@ -30,7 +49,7 @@ def emit(event):
             deadline = time.monotonic() + 0.05
             while True:
                 try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    _lock_exclusive(lock)
                     break
                 except BlockingIOError:
                     if time.monotonic() >= deadline:
@@ -38,14 +57,17 @@ def emit(event):
                     time.sleep(0.005)
             path = directory / 'events.jsonl'
             if path.exists() and path.stat().st_size > ROTATE_BYTES:
-                with path.open('rb') as stream:
-                    stream.seek(-ROTATE_BYTES // 2, os.SEEK_END)
-                    stream.readline()
-                    tail = stream.read()
-                temporary = directory / 'events.rotate'
-                temporary.write_bytes(tail)
-                temporary.chmod(0o600)
-                temporary.replace(path)
+                try:
+                    with path.open('rb') as stream:
+                        stream.seek(-ROTATE_BYTES // 2, os.SEEK_END)
+                        stream.readline()
+                        tail = stream.read()
+                    temporary = directory / 'events.rotate'
+                    temporary.write_bytes(tail)
+                    temporary.chmod(0o600)
+                    temporary.replace(path)
+                except OSError:
+                    pass  # Windows blocks replacing a log the board holds open; keep appending.
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
             try:
                 os.write(fd, line)
