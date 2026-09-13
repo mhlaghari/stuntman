@@ -12,6 +12,10 @@ is on `origin/main`. GitHub Pages reports that revision built successfully;
 the public Floor section is present and its JPEG returns HTTP 200 with bytes
 identical to the repository asset.
 
+The delegation-policy documentation was subsequently committed and pushed as
+`16f32f1`; its remote SHA was verified. README embeds the tracked screenshot,
+and the live website's JPEG still matches the repository asset byte-for-byte.
+
 ### What changed
 
 - **Latest direction:** the user reaffirmed that Fable and Astra should plan,
@@ -96,6 +100,10 @@ Review artifacts: `/tmp/stuntman-review-20260914/`. Prior visual specs, worker
 results, and rejected artwork: `/tmp/stuntman-floor-world/`. The repository assets
 are authoritative; temporary artifacts may disappear. Preserve the pre-existing
 untracked `bin/floor 2`, `bin/floor-hook 2`, and `skills/floor/SKILL 2.md`.
+The post-push Stop-hook audit found no tracked changes. The hook inspects only
+working-tree status, so these three pre-existing untracked files trigger its
+missing-memory warning after memory updates are committed. Do not delete them
+or create repeated documentation commits just to silence that warning.
 
 ## Previous handoff — 2026-09-05
 

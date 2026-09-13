@@ -18,12 +18,17 @@ every session._
 | Windows/router review | WSL remains unverified; native Windows unsupported end to end. OmniRoute investigated and documented, not installed. |
 | Validation | 46 Python + 22 world + 26 audio checks pass; syntax and HTTP asset checks pass. |
 | Website/repo | `1025c18` pushed to main; GitHub Pages built that revision. Public Floor section and byte-identical JPEG verified. |
+| Documentation delivery | Delegation policy and next steps committed and pushed as `16f32f1`; remote SHA verified. README screenshot and public image rechecked. |
 | Personal vault | Stuntman page, index/hot/log, and graph-refresh lesson updated; Markdown-aware helper refreshed graph JSON/HTML/canvas. Existing scheduled graph job reports exit 78 and needs a separate repair. |
 
 Recommended next: implement runtime delegation policy using the working direct
 OpenCode route. Add the user's video when provided. WSL validation and an isolated
 OmniRoute trial are optional future work. No further Floor redesign is queued. No plugin
 reinstall or version bump is part of this source/site delivery.
+
+Post-push audit: no tracked changes remained. Three preserved, pre-existing
+untracked duplicate files cause the Stop hook to repeat its memory warning after
+commits; this does not indicate missing implementation or memory updates.
 
 ## Built
 
@@ -132,9 +137,11 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 
 ## Last updated
 
-2026-09-14 — Floor visual/audio work completed and verified locally. Restored the
-preferred skyline layout, kept new branding and all expressive rock animations;
-80 tests pass. No commit or release made.
+2026-09-14 — Approved Floor, scaffold roster, runtime review, and screenshot
+published to main and the existing website. Delivery validation: 94 checks pass.
+Delegation-policy documentation subsequently pushed as `16f32f1`; automatic
+runtime routing remains planned. Post-push memory audit corrected this older
+uncommitted-status entry and recorded the duplicate-file hook warning.
 
 2026-09-05 — Combined Codex host support and the completed floor draft in v0.13.0.
 
