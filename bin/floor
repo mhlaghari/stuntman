@@ -24,6 +24,18 @@ EVENTS = FLOOR_DIR / 'events.jsonl'
 STALE_S, DONE_TTL_S, ENDED_TTL_S = 300, 6 * 3600, 120
 TOKEN = secrets.token_hex(24)
 HOSTS = {'claude', 'codex', 'opencode', 'agy', 'muse'}
+ALLOWED_ASSETS = {
+    'vexel-laghari.webp': 'image/webp',
+    'vexel-claude.webp': 'image/webp',
+    'vexel-codex.webp': 'image/webp',
+    'vexel-gemini.webp': 'image/webp',
+    'vexel-deepseek.webp': 'image/webp',
+    'laghari-labs-logo.png': 'image/png',
+    'floor-audio.js': 'application/javascript',
+    'floor-world.js': 'application/javascript',
+    'floor-world.css': 'text/css',
+    'dubai-skyline.svg': 'image/svg+xml',
+}
 COMMON_EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse',
                  'PermissionRequest', 'Stop', 'SubagentStart', 'SubagentStop', 'SessionEnd']
 
@@ -347,8 +359,50 @@ class Handler(BaseHTTPRequestHandler):
         elif path in ('/', '/index.html'):
             html = (self.server.board / 'index.html').read_text().replace('__FLOOR_TOKEN__', TOKEN)
             self._body(html.encode(), 'text/html; charset=utf-8')
-        elif path == '/assets/vexel-laghari.webp':
-            self._body((self.server.board / 'assets/vexel-laghari.webp').read_bytes(), 'image/webp')
+        elif path.startswith('/assets/'):
+            raw = path[len('/assets/'):]
+            decoded = raw
+            for _ in range(3):
+                nxt = urllib.parse.unquote(decoded)
+                if nxt == decoded:
+                    break
+                decoded = nxt
+            if not decoded or '/' in decoded or '\\' in decoded or '\x00' in decoded:
+                self._json({'ok': False, 'reason': 'not-found'}, 404)
+                return
+            if '..' in decoded:
+                self._json({'ok': False, 'reason': 'not-found'}, 404)
+                return
+            mime = ALLOWED_ASSETS.get(decoded)
+            if mime is None:
+                self._json({'ok': False, 'reason': 'not-found'}, 404)
+                return
+            try:
+                board_root = self.server.board.resolve()
+                board_assets = (self.server.board / 'assets').resolve()
+                # assets directory itself must not escape board (symlinked assets dir)
+                try:
+                    assets_inside = board_assets.is_relative_to(board_root)
+                except AttributeError:
+                    assets_inside = str(board_assets) == str(board_root) or str(board_assets).startswith(str(board_root) + os.sep)
+                if not assets_inside:
+                    self._json({'ok': False, 'reason': 'not-found'}, 404)
+                    return
+                target = (self.server.board / 'assets' / decoded).resolve()
+                try:
+                    is_inside = target.is_relative_to(board_assets)
+                except AttributeError:
+                    is_inside = str(target) == str(board_assets) or str(target).startswith(str(board_assets) + os.sep)
+                if not is_inside:
+                    self._json({'ok': False, 'reason': 'not-found'}, 404)
+                    return
+                if not target.is_file():
+                    self._json({'ok': False, 'reason': 'not-found'}, 404)
+                    return
+                self._body(target.read_bytes(), mime)
+            except (OSError, ValueError):
+                self._json({'ok': False, 'reason': 'not-found'}, 404)
+                return
         else:
             self._json({'ok': False, 'reason': 'not-found'}, 404)
 

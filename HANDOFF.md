@@ -1,6 +1,76 @@
 # HANDOFF
 
-## Current handoff — 2026-09-05
+## Current handoff — 2026-09-14
+
+The user approved the Floor and authorized committing and pushing it, adding a
+real screenshot to the repository and existing website, and completing the queued
+Stuntman runtime review. This delivery uses `main` and the existing GitHub Pages
+source `docs/`; it does not reinstall the plugin or create a separate hosted site.
+
+### What changed
+
+- **Approved Floor:** detailed Dubai skyscraper panorama and project rooftop bays,
+  one supplied Laghari Labs lightning logo, **lagharilabs.com**, and project/demo
+  controls in the header. Keep this composition; the tall project-building
+  experiment was rejected. Five exact expressive Vexel atlases are retained.
+- Working agents riff on guitar; thinking/needs-input agents headbang with rock
+  horns; failures rage; completion starts with a guitar jump, then victory, then
+  idle. No continuous running. Demo drawers include eight-second pose previews.
+- Audio remains opt-in with five voices and separate done/help/failure cues.
+  Initial/reconnect snapshots are silent. Pause/reduced-motion, stable keyed DOM,
+  focus/drafts, transcript cancellation, and guarded tmux prompting are retained.
+- **Screenshot:** `docs/assets/floor-demo.jpg` is an actual Safari capture of the
+  approved public demo, linked from README and a new Floor showcase on the site.
+  It contains simulated projects only. The user plans to supply a video later.
+- **Scaffold:** `bin/stuntman_roster.py` adds a managed inventory block to selected
+  `CLAUDE.md` / `AGENTS.md`. Fable and GPT/Astra are preferred spec writers/reviewers;
+  other models execute. CLI presence and bounded catalogs are snapshots, not
+  authentication/price guarantees. Reruns replace only their own valid block,
+  preserve user text byte-for-byte, and skip malformed markers with a warning.
+  The legacy installer includes the new helper. No model inference in discovery.
+- **Wiki:** corrected generated and skill instructions: Graphify 0.5.0's
+  `graphify update` rebuilds code, not Markdown semantics. Agents maintain notes;
+  `/wiki` rebuilds their graph; the Stop hook only nudges. Existing personal vaults
+  were not rewritten. Restart the graph MCP/new session after a rebuild.
+- **Runtime review:** `docs/runtime-review.md` records verified direct OpenCode
+  delegation, the Windows/WSL support boundary, and cited research distinguishing
+  OmniRoute from OmniRouter. Native Windows is not supported end to end; WSL is
+  unverified. No router or account configuration was installed or changed.
+
+### Review and verification
+
+The Floor implementation was delegated to Antigravity `gemini-3.8-flash-high` and
+Muse in the earlier visual pass, with host fixes after review. This runtime pass
+used `opencode/muse-spark-1.3-contributor-free` for scaffold and site/wiki changes.
+Host review corrected overbroad cache parsing and trailing-newline preservation
+through same-session feedback. The source scaffold was also exercised against
+real installed catalogs in a disposable project for both hosts.
+
+- 46 Python tests and 48 JavaScript checks (22 world + 26 audio) pass.
+- Shell syntax, whitespace, asset HTTP/MIME/body checks, and screenshot dimensions
+  checked; the approved demo was inspected in Safari. No real prompts were sent
+  from the Floor during verification. Site rendering/publication is checked as
+  part of the authorized push.
+- Worker accounting is saved in `/tmp/stuntman-review-20260914/`; OpenCode reports
+  usage and zero cost for the selected free route. Host usage is separate.
+
+### Next step
+
+Add the user's video to the existing Floor showcase when supplied. No redesign
+is queued. An optional future task could validate Stuntman end to end in WSL or
+trial an isolated OmniRoute provider configuration; neither is claimed complete.
+Child-specific Vexel rigs and optional server auto-start remain deferred.
+
+Local Floor: `http://127.0.0.1:4517/?demo=1` (live: `/`). If stopped, run
+`./bin/floor --no-open`. The installed plugin cache remains the earlier version;
+this task publishes source/site changes, not a plugin reinstall.
+
+Review artifacts: `/tmp/stuntman-review-20260914/`. Prior visual specs, worker
+results, and rejected artwork: `/tmp/stuntman-floor-world/`. The repository assets
+are authoritative; temporary artifacts may disappear. Preserve the pre-existing
+untracked `bin/floor 2`, `bin/floor-hook 2`, and `skills/floor/SKILL 2.md`.
+
+## Previous handoff — 2026-09-05
 
 The user authorized finishing `/floor` together with Codex compatibility and
 committing the combined work. Version 0.13.0 brings all eight skills to Claude
@@ -228,7 +298,7 @@ unknown current capacity.
 - _Prior this session (v0.7.0):_ added `/wiki` (second-brain scaffolder + graphify + MCP) and the
   commands-overview table/landing section — see the v0.7.0 entry in `STATUS.md`.
 
-## Next step
+## Earlier next steps (historical)
 
 - **`/floor` follow-ups (v0.13.x):** (1) **real son/daughter Vexel rigs** — generate in the same
   format as `laghari-vexel/assets/avatar-rig` (the user drives likeness; board slots them in by
@@ -343,6 +413,10 @@ unknown current capacity.
   exactly how the first MIQ smoke test produced an Adversaria plan in the wrong folder.
 
 ## Last updated
+
+2026-09-14 — Completed and verified the Floor visual/audio upgrade; restored the
+user-preferred skyline/rooftop layout, retained new branding and rock animations.
+Changes remain uncommitted.
 
 2026-08-31 (night, round 2) — `/floor` is now interactive: cards show each agent's last words;
 click → drawer with the live conversation + a prompt box that types into tmux-hosted sessions via

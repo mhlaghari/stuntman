@@ -214,6 +214,138 @@ class FloorTests(unittest.TestCase):
         self.assertNotIn(b'__FLOOR_TOKEN__',body)
         self.assertEqual(request('GET','/assets/vexel-laghari.webp')[0],200)
 
+    def _fixture_board(self):
+        # Tiny fixture board with minimal index.html and tiny allowlisted assets
+        td = tempfile.TemporaryDirectory(prefix='floor-fixture-')
+        self.addCleanup(td.cleanup)
+        board = Path(td.name) / 'board'
+        board.mkdir()
+        (board / 'index.html').write_text('<html>__FLOOR_TOKEN__</html>')
+        assets = board / 'assets'
+        assets.mkdir()
+        # create tiny fixture contents for each allowlisted file
+        fixtures = {
+            'vexel-laghari.webp': b'fake-webp-laghari',
+            'vexel-claude.webp': b'fake-webp-claude',
+            'vexel-codex.webp': b'fake-webp-codex',
+            'vexel-gemini.webp': b'fake-webp-gemini',
+            'vexel-deepseek.webp': b'fake-webp-deepseek',
+            'laghari-labs-logo.png': b'\x89PNGfixture',
+            'floor-audio.js': b'console.log("audio")',
+            'floor-world.js': b'console.log("world")',
+            'floor-world.css': b'body{}',
+            'dubai-skyline.svg': b'<svg></svg>',
+        }
+        for name, data in fixtures.items():
+            (assets / name).write_bytes(data)
+        return board, fixtures
+
+    def _mock_handler_for_board(self, board, path, host='127.0.0.1:4517', origin=None):
+        import urllib.parse, json
+        from io import BytesIO
+        from unittest.mock import MagicMock
+        h = floor.Handler.__new__(floor.Handler)
+        h.server = MagicMock()
+        h.server.board = board
+        h.server.server_port = 4517
+        captured = {}
+        def send_response(code): captured['code'] = code
+        def send_header(k, v): captured.setdefault('headers', {})[k] = v
+        def end_headers(): pass
+        h.send_response = send_response
+        h.send_header = send_header
+        h.end_headers = end_headers
+        h.wfile = BytesIO()
+        def _json(v, c=200):
+            h.wfile.write(json.dumps(v).encode())
+            captured['code'] = c
+            captured['headers'] = {'Content-Type': 'application/json'}
+        def _body(b, ct, c=200):
+            h.wfile.write(b)
+            captured['code'] = c
+            captured['headers'] = {'Content-Type': ct}
+        h._json = _json
+        h._body = _body
+        h.headers = MagicMock()
+        h.headers.get = lambda k, d='': {'Host': host, 'Origin': origin, 'Sec-Fetch-Site': None}.get(k, d)
+        h.headers.get_content_type = lambda: ''
+        h.path = path
+        if not h._allowed():
+            return captured['code'], captured['headers'].get('Content-Type'), h.wfile.getvalue()
+        h.wfile = BytesIO()
+        captured = {}
+        h._json = _json
+        h._body = _body
+        h.do_GET()
+        return captured.get('code'), captured.get('headers', {}).get('Content-Type'), h.wfile.getvalue()
+
+    def test_http_allowlisted_assets_fixture(self):
+        board, fixtures = self._fixture_board()
+        assets = board / 'assets'
+        # correct MIME for each allowlisted asset when present
+        for name, mime in [
+            ('vexel-laghari.webp', 'image/webp'),
+            ('vexel-claude.webp', 'image/webp'),
+            ('vexel-codex.webp', 'image/webp'),
+            ('vexel-gemini.webp', 'image/webp'),
+            ('vexel-deepseek.webp', 'image/webp'),
+            ('laghari-labs-logo.png', 'image/png'),
+            ('floor-audio.js', 'application/javascript'),
+            ('floor-world.js', 'application/javascript'),
+            ('floor-world.css', 'text/css'),
+            ('dubai-skyline.svg', 'image/svg+xml'),
+        ]:
+            code, ctype, body = self._mock_handler_for_board(board, f'/assets/{name}')
+            self.assertEqual(code, 200, f'{name} should be 200')
+            self.assertEqual(ctype, mime, f'{name} MIME')
+            self.assertEqual(body, fixtures[name])
+        # missing allowlisted file -> 404
+        (assets / 'floor-world.js').unlink()
+        code, _, _ = self._mock_handler_for_board(board, '/assets/floor-world.js')
+        self.assertEqual(code, 404)
+        (assets / 'floor-world.js').write_bytes(fixtures['floor-world.js'])
+        # unknown asset -> 404
+        for unk in ['unknown.webp', 'not-allowlisted.js', 'evil.png', 'floor-audio.css']:
+            code, _, _ = self._mock_handler_for_board(board, f'/assets/{unk}')
+            self.assertEqual(code, 404, f'unknown {unk} should 404')
+        # encoded traversal -> 404
+        for trav in ['/assets/../index.html', '/assets/%2e%2e/index.html', '/assets/%2Fetc/passwd', '/assets/%252e%252e/index.html', '/assets/vexel-laghari.webp%00', '/assets/', '/assets/vexel-laghari.webp/extra', '/assets/%2e%2e%2findex.html']:
+            code, _, _ = self._mock_handler_for_board(board, trav)
+            self.assertEqual(code, 404, f'traversal {trav} should 404')
+        # query string stripped
+        code, ctype, _ = self._mock_handler_for_board(board, '/assets/floor-audio.js?x=1&y=2')
+        self.assertEqual(code, 200)
+        self.assertEqual(ctype, 'application/javascript')
+        # filename symlink escaping assets -> 404
+        outside = self.directory / 'outside-secret-fixture.txt'
+        outside.write_text('secret')
+        target = assets / 'vexel-laghari.webp'
+        target.unlink()
+        target.symlink_to(outside)
+        try:
+            code, _, _ = self._mock_handler_for_board(board, '/assets/vexel-laghari.webp')
+            self.assertEqual(code, 404, 'filename symlink outside should 404')
+        finally:
+            target.unlink()
+            target.write_bytes(fixtures['vexel-laghari.webp'])
+        # symlinked assets directory escaping board -> 404
+        with tempfile.TemporaryDirectory(prefix='outside-assets-') as outside_dir:
+            outside_assets = Path(outside_dir) / 'evil-assets'
+            outside_assets.mkdir()
+            (outside_assets / 'vexel-laghari.webp').write_bytes(b'evil')
+            # replace assets dir with symlink
+            import shutil
+            shutil.rmtree(assets)
+            assets.symlink_to(outside_assets)
+            try:
+                code, _, _ = self._mock_handler_for_board(board, '/assets/vexel-laghari.webp')
+                self.assertEqual(code, 404, 'symlinked assets dir escaping board should 404')
+            finally:
+                assets.unlink()
+                assets.mkdir()
+                for name, data in fixtures.items():
+                    (assets / name).write_bytes(data)
+
 
 if __name__=='__main__':
     unittest.main()

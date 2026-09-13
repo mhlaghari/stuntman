@@ -29,6 +29,7 @@ esac
 [ "$#" -le 1 ] || { echo "usage: scaffold [--host claude|codex|both] [project_dir]" >&2; exit 2; }
 DIR="${1:-$PWD}"
 [ -d "$DIR" ] || { echo "error: no such project directory: $DIR" >&2; exit 1; }
+command -v python3 >/dev/null 2>&1 || { echo "error: python3 is required for the agent roster step but was not found on PATH" >&2; exit 1; }
 START="<!-- stuntman:scaffold:start -->"
 OLD_START="<!-- stuntman:handoff:start -->"   # pre-0.5 marker
 
@@ -83,7 +84,19 @@ else
 fi
 done
 
-# 2. HANDOFF.md — the session baton
+# 2. Agent roster — one inventory snapshot shared by every selected contract.
+ROSTER_HELPER="$(dirname "$0")/stuntman_roster.py"
+if [ -f "$ROSTER_HELPER" ]; then
+  ROSTER_ARGS=()
+  for CONTRACT in "${CONTRACTS[@]}"; do
+    ROSTER_ARGS+=("$DIR/$CONTRACT")
+  done
+  python3 "$ROSTER_HELPER" "${ROSTER_ARGS[@]}"
+else
+  echo "warning: agent roster helper not found at $ROSTER_HELPER — roster skipped" >&2
+fi
+
+# 3. HANDOFF.md — the session baton
 make "$DIR/HANDOFF.md" "HANDOFF.md" <<'EOF'
 # HANDOFF
 
@@ -104,7 +117,7 @@ _Anything that cost time — traps, non-obvious constraints._
 _Session date + one-line summary._
 EOF
 
-# 3. STATUS.md — the board
+# 4. STATUS.md — the board
 make "$DIR/STATUS.md" "STATUS.md" <<'EOF'
 # STATUS
 
@@ -127,7 +140,7 @@ _Anything stuck, and on what._
 _Session date._
 EOF
 
-# 4. SPEC.md — the contract
+# 5. SPEC.md — the contract
 make "$DIR/SPEC.md" "SPEC.md" <<'EOF'
 # SPEC
 
@@ -152,7 +165,7 @@ _Unresolved choices — each with the options and the current lean._
 - _(date)_ — created.
 EOF
 
-# 5. STRATEGY.md — the honest why
+# 6. STRATEGY.md — the honest why
 make "$DIR/STRATEGY.md" "STRATEGY.md" <<'EOF'
 # STRATEGY
 

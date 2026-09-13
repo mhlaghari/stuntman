@@ -60,7 +60,12 @@ Run graphify over `$VAULT/wiki` (the notes, not the project code — keeps it fa
 altitude). The scaffold includes a `$VAULT/.graphifyignore` that keeps navigation pages
 (index/hot/log/MOC/Dashboard/templates) OUT of the graph — they link to everything and would
 become the top god nodes, hairballing the whole graph. graphify's `detect()` honors it
-automatically, including on later `graphify update` runs; never hand-add those pages back. Preferred: invoke the **`/graphify`** skill on `$VAULT/wiki`. If that skill isn't present,
+automatically; never hand-add those pages back. Do NOT use `graphify update` for notes:
+verified on graphify 0.5.0, `update` only rebuilds code (it imports
+`graphify.watch._rebuild_code`, prints "Re-extracting code files...", and directs doc
+changes to `/graphify --update`) — it never re-extracts Markdown notes. Refreshing notes
+means re-running the full semantic extraction pipeline below (or the `/wiki` skill itself).
+Preferred: invoke the **`/graphify`** skill on `$VAULT/wiki`. If that skill isn't present,
 run the pipeline directly with the saved interpreter: detect → semantic-extract the notes via
 available native subagents or sequential extraction → `build_from_json` → `cluster` → `report.generate` → `export.to_json` /
 `to_html`, and `export.to_canvas` into `$VAULT/graph.canvas`. Output lands in `$VAULT/graphify-out/`
@@ -90,8 +95,14 @@ when available, otherwise report that connection verification is pending.
 Show: the vault path, project/concept counts, and from `GRAPH_REPORT.md` the **God Nodes** and
 **Surprising Connections**. Tell the user to open `$VAULT` as a vault in Obsidian (graph view is
 pre-colored; `graph.canvas` is the community layout), that the `<name>` MCP is live next session,
-and the maintenance loop: re-run `/wiki` (or `graphify update wiki` from the vault) after meaningful
-work to refresh the graph. Optionally offer to add a "check the second brain before rebuilding"
+and the maintenance loop: re-run `/wiki` after meaningful work — agents refresh the affected
+notes and semantically rebuild their graph. Notes are maintained by agents, not on every file
+write; there is no background watcher (the hook only nudges). `graphify update` rebuilds code
+only (verified v0.5.0) and is insufficient for Markdown notes. The MCP loads `graph.json` at
+session start, so after a rebuild the existing connection may need a restart / new session —
+don't claim live auto-reloading. Existing vaults stay untouched: the scaffolder never clobbers
+(contracts and user notes are preserved idempotently); if explicitly asked to refresh an existing
+vault, review/update its old refresh advice without overwriting user notes. Optionally offer to add a "check the second brain before rebuilding"
 note to their global `~/.claude/CLAUDE.md`.
 
 ## Notes

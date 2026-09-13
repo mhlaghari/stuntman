@@ -253,10 +253,29 @@ probe, `codex-window`, `usages` and `floor` boards, `scaffold`, and `wiki` tools
 
 ## Floor — agents across projects
 
+![The Floor demo: pixel Dubai skyline, project bays, and expressive Vexel agents](docs/assets/floor-demo.jpg)
+
+Actual screenshot in demo mode. The skyline, guitar riffs, rock-sign headbanging,
+and optional completion/help tones turn the board into a Dubai studio.
+
 Use the floor skill to open `http://127.0.0.1:4517/`. Sessions with active hooks
-appear as Vexel avatars, grouped by project and labeled by host. Click a card
-to read its conversation. Idle or finished Claude Code/Codex sessions in tmux
-can receive prompts; workers, approvals, and other terminals are view-only.
+appear in an interactive pixel-art Dubai rooftop studio with custom sunset skyline
+panorama and five bundled Vexel model skins (Claude Code, Codex, Antigravity, OpenCode,
+and Muse / default). Workstations group agents by project; the header provides project filtering
+and an in-memory demo mode (`?demo=1`). Audio cues
+are strictly opt-in (volume defaults to 0.15), and motion animations are
+enabled by default with support for pause and reduced-motion preferences.
+Click an avatar to read its conversation in the slide-out drawer. Idle or finished
+Claude Code/Codex sessions in tmux can receive prompts; workers, approvals,
+and other terminals are view-only.
+
+The header uses one Laghari Labs lightning logo and links to
+[lagharilabs.com](https://lagharilabs.com). Working Vexels play guitar; thinking
+and needs-input agents headbang with rock horns; failures rage; completed tasks
+jump with a guitar, celebrate, and settle to idle. In a demo agent's drawer,
+try Guitar, Rock sign, Guitar jump, Angry, or Victory for an eight-second pose
+preview. Sound Desk samples preview each host's voice; alerts distinguish
+completion, help, and failure.
 
 The plugin bundles lifecycle hooks. Start a new session after installation;
 Codex asks you to review and trust hooks in `/hooks`. For a standalone install,
@@ -298,11 +317,11 @@ export STUNTMAN_MODEL="deepseek/deepseek-v4-flash"
 
 # Route C (codex): no proxy, reuses your own `codex login`
 export STUNTMAN_WORKER=codex
-export STUNTMAN_MODEL="gpt-5.4-codex"   # optional — omit to use codex's own default
+export STUNTMAN_MODEL="gpt-5.6-terra"   # optional — use an ID available in your Codex catalog
 
 # Route D (agy): no proxy, reuses your own Antigravity subscription
 export STUNTMAN_WORKER=agy
-export STUNTMAN_MODEL="gemini-3.7-flash-high"   # optional — any id from `agy models`
+export STUNTMAN_MODEL="gemini-3.8-flash-high"   # optional — any id from `agy models`
 
 # Route E (muse): no proxy, reuses your own `muse login` (Meta account)
 export STUNTMAN_WORKER=muse                     # STUNTMAN_MODEL optional
@@ -361,7 +380,7 @@ weekly utilization plus reset times as one JSON line.
 **`/handoff`** make a project survive the **context** boundary — clearing
 context, or starting fresh tomorrow.
 
-**`/scaffold`** — run once. It writes a contract into your `CLAUDE.md` (a "read
+**`/scaffold`** writes a contract into `CLAUDE.md`, `AGENTS.md`, or both (a "read
 this first" list + a "before you stop" process contract) and creates the docs it
 references — four **living documents** — then fills them in from your project:
 
@@ -370,9 +389,18 @@ references — four **living documents** — then fills them in from your projec
 - **`SPEC.md`** — the contract: what this is, the load-bearing principles, where it's going.
 - **`STRATEGY.md`** — the honest why / direction.
 
-Each self-declares as a living doc with a changelog. It's idempotent and never
-clobbers existing content. The contract then keeps them current — each session
+Each self-declares as a living doc with a changelog. Existing memory and user rules
+are preserved. The contract then keeps them current — each session
 refreshes the docs (and `README.md`, when the surface changes) before stopping.
+
+Scaffolding also adds a managed **agent roster**: all five worker backends with
+installed/missing status, discovered OpenCode and Antigravity model IDs, and
+Codex model slugs from its local cache. **Fable and GPT/Astra write specifications
+and review; other models execute.** Your explicit model choices take precedence.
+This records roles and availability; it does not switch your active host or log
+in to providers. Installed CLIs and cached catalogs do not prove access or pricing.
+Rerun `/scaffold` to refresh only its roster block; keep personal overrides outside
+the `stuntman:agents` markers. Discovery makes no model inference calls.
 
 **`/handoff`** (or just say *"execute handoff"*) — run at the start of any
 session. It reads `HANDOFF.md`, `STATUS.md`, `README.md`, and whatever else the
@@ -416,6 +444,40 @@ One shot, auto-detecting scope:
 
 Idempotent (safe to re-run as projects evolve) and **notes only** — your project
 code is never touched.
+
+**Updates are agent-driven, not continuous synchronization.** Agents maintain
+notes after meaningful work; the Stop hook only reminds them when a matching
+project note is stale. Rerun `/wiki` to refresh notes and semantically rebuild the
+graph. In the verified Graphify 0.5.0, `graphify update wiki` rebuilds code only,
+so it is insufficient for Markdown notes. Restart the graph MCP connection or
+start a new session to load a rebuilt graph.
+
+## Free models, routing, and Windows
+
+Claude Code with Fable or Codex with Astra can plan and review while OpenCode
+executes through the existing Stuntman wrapper. Discover models with
+`opencode models`, check the provider's current price, then pin the exact ID:
+
+```bash
+# Example verified on 2026-09-14; free catalogs can change.
+STUNTMAN_WORKER=opencode \
+STUNTMAN_MODEL=opencode/muse-spark-1.3-contributor-free \
+"$STUNTMAN_ROOT/bin/stunt" exec "$(cat /tmp/stunt-spec.md)"
+```
+
+OpenCode lists this model as free for a limited time in its
+[Zen pricing](https://opencode.ai/docs/zen/#pricing). No automatic paid fallback
+is added by Stuntman. OmniRoute can serve as an optional OpenCode provider;
+it is not required for this direct route.
+
+Stuntman is **verified on macOS**. Windows users can try the Bash/Python workflow
+inside WSL, but the complete Stuntman workflow has not been tested there. Native
+PowerShell support is not implemented; Floor's process checks, file locking,
+and tmux prompting require a Unix environment. Vault Markdown is portable, while
+interpreter paths and MCP configuration need setting up on each machine.
+
+See the [runtime review](docs/runtime-review.md) for the vault maintenance loop,
+Windows support matrix, and the distinction between OmniRoute and OmniRouter.
 
 ## From a blank page to a launch plan
 

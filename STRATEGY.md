@@ -24,6 +24,20 @@ revisit before any big direction call._
 
 ## Direction
 
+- Keep strong planners separate from interchangeable executors. Scaffold records
+  Fable/GPT-Astra roles and actual CLI catalogs; direct free OpenCode delegation
+  works without adding another router. Evaluate OmniRoute only when provider
+  failover justifies its configuration and verification cost.
+- Make portability and memory claims precise: vault notes are agent-maintained,
+  graph refresh is semantic, and WSL needs a real end-to-end validation before
+  declaring Windows support. See `docs/runtime-review.md`.
+
+- Keep `/floor` useful for supervising real work: clear project grouping, visible
+  attention states, expressive Vexels, and optional sound cues. The September 14
+  visual review favored the earlier detailed Dubai skyline and rooftop layout;
+  preserve that choice in future polish. Demo exploration should stay separate
+  from live status and prompt delivery.
+
 - Support Claude Code and Codex through the same eight skills and worker wrapper.
   Host-specific memory files and quota/scheduling capabilities are explicit;
   avoid duplicating the product into separate implementations.
@@ -43,6 +57,8 @@ revisit before any big direction call._
 - Does the doc system want a tiered (minimal / full) mode for tiny repos?
 
 ## Changelog
+- 2026-09-14 — Runtime review implemented managed scaffold rosters, exercised a free OpenCode worker, corrected wiki refresh instructions, and documented optional OmniRoute/WSL follow-ups.
+- 2026-09-14 — Floor polish validated through delegated implementation, host review, and user visual feedback; retained the preferred rooftop composition.
 - 2026-09-05 — Added Codex host compatibility while retaining Claude Code support; shared workflows with capability-aware execution.
 - 2026-06-29 — v2 "Film Crew" direction validated via the bake-off; "free gate iterates, Opus judges once" is the new moat.
 - 2026-06-19 — created. Honest read at v0.6 (four commands + the living-doc system).

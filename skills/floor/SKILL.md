@@ -25,6 +25,17 @@ It prints the board URL. Open that URL with the available browser tool or give
 it to the user. For a terminal glance, run `"$STUNTMAN_ROOT/bin/floor" --json`
 and summarize who is working, who needs input, and who finished.
 
+The board renders a pixel-art Dubai rooftop studio with a panorama skyline
+at sunset and five bundled Vexel skins mapped to hosts: Claude Code (`claude`),
+Codex (`codex`), Antigravity (`gemini`), OpenCode (`deepseek`), and Muse / default
+(`laghari`). Use the header controls to filter by project workstation or toggle
+the in-memory Demo world (also available directly via `?demo=1`). Audio cues for
+done, needs-input, and failure events are strictly opt-in via the Sound toggle or
+Sound Desk samples. Motion can be paused with the Motion button or via system
+`prefers-reduced-motion`. Working agents play guitar, thinking/input agents
+headbang with rock horns, failures rage, and completed tasks jump then celebrate.
+Demo drawers include eight-second pose previews that do not change live state.
+
 ## Event setup
 
 Plugin installs bundle the recorder in `hooks/hooks.json`. Start a new session
@@ -49,8 +60,8 @@ completion, and failure events work independently of host hook trust.
 Click an agent to read its latest conversation. The server reads public
 Claude/Codex transcript messages, omitting reasoning, system content, and tool
 results. Worker cards can show their final summary even without a transcript.
-Subagents are matched by their actual IDs; their small avatars are hue-shifted
-placeholders until separate son/daughter rigs exist.
+Subagents are matched by their actual IDs and shown as labeled chips; separate
+son/daughter rigs remain a future addition.
 
 The prompt box is enabled only for an idle or finished interactive Claude
 Code or Codex session in tmux. Before sending, the server verifies the recorded

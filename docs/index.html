@@ -207,6 +207,15 @@
   .install-note{text-align:center;color:var(--muted);font-size:14px;margin-top:30px}
   .install-note .mono{color:var(--amber)}
 
+  /* ---------- FLOOR ---------- */
+  .floor-shot{max-width:960px;margin:54px auto 0}
+  .floor-shot a{display:block;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .floor-shot img{display:block;width:100%;height:auto}
+  .floor-shot figcaption{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--faint);text-align:center}
+  .floor-links{max-width:640px;margin:26px auto 0;text-align:center;color:var(--muted);font-size:14px}
+  .floor-links a{color:var(--amber);border-bottom:1px solid rgba(255,179,71,.35)}
+  .floor-links a:hover{border-bottom-color:var(--amber)}
+
   /* ---------- FOOTER ---------- */
   footer{border-top:1px solid var(--line);padding:64px 0 48px;background:var(--black)}
   .foot-grid{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
@@ -460,6 +469,21 @@
         <div><b>See your agents across projects.</b> Claude Code, Codex, and Stuntman workers share one live Vexel board. Read conversations, see who needs you, and prompt ready tmux sessions. <span style="opacity:.55">— the agent floor · new in v0.13</span></div>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="floor" style="background:#0b0b0d;border-top:1px solid var(--line-2)">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">The Floor · Dubai studio</div>
+      <h2 class="sec">Your crew, after hours.</h2>
+      <p class="sec-sub">A pixel Dubai skyline, expressive Vexel agents, and a clear view of who needs you.</p>
+    </div>
+    <figure class="floor-shot reveal" data-d="1">
+      <a href="assets/floor-demo.jpg"><img src="assets/floor-demo.jpg" alt="The Floor board in demo mode: project bays with expressive Vexel agents playing guitar and headbanging under a pixel Dubai skyline at sunset" width="1072" height="768" loading="lazy"></a>
+      <figcaption>Actual Floor screenshot in demo mode. Project bays, guitar and headbang animations, and opt-in completion and help tones.</figcaption>
+    </figure>
+    <p class="floor-links reveal" data-d="2">The Floor ships with Stuntman — see <a href="https://github.com/mhlaghari/stuntman#floor--agents-across-projects" title="Read the Floor section of the Stuntman README">the Floor section of the README</a> for setup details and the <a href="https://github.com/mhlaghari/stuntman/blob/main/docs/runtime-review.md" title="Read the Floor runtime review">runtime review</a> for how it behaves live.</p>
   </div>
 </section>
 

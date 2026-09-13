@@ -20,9 +20,23 @@ class CompatibilityTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='stuntman tests ')
         self.addCleanup(self.temp.cleanup)
+        self.isol = tempfile.TemporaryDirectory(prefix='stuntman isol ')
+        self.addCleanup(self.isol.cleanup)
         self.project = Path(self.temp.name)
         self.env = os.environ.copy()
         self.env.pop('STUNTMAN_HOST', None)
+        # Isolate roster discovery: shadow every worker CLI with a failing
+        # fake (no live `models` calls) and point Codex at an empty cache dir.
+        fakebin = Path(self.isol.name) / 'fakebin'
+        fakebin.mkdir(parents=True, exist_ok=True)
+        for name in ('claude', 'opencode', 'codex', 'agy', 'muse'):
+            fake = fakebin / name
+            fake.write_text('#!/bin/sh\nexit 1\n')
+            fake.chmod(0o755)
+        codex_home = Path(self.isol.name) / 'codex-home'
+        codex_home.mkdir(parents=True, exist_ok=True)
+        self.env['PATH'] = str(fakebin) + os.pathsep + self.env.get('PATH', '')
+        self.env['CODEX_HOME'] = str(codex_home)
 
     def scaffold(self, *args):
         result = run(ROOT / 'bin/scaffold', *args, self.project, env=self.env)
@@ -41,6 +55,8 @@ class CompatibilityTests(unittest.TestCase):
         self.assertEqual(target.read_text(), 'existing source must survive\n')
         self.assertFalse((helper_dir / 'stunt').is_symlink())
         self.assertEqual((helper_dir / 'stunt').read_bytes(), (ROOT / 'bin/stunt').read_bytes())
+        self.assertEqual((helper_dir / 'stuntman_roster.py').read_bytes(),
+                         (ROOT / 'bin/stuntman_roster.py').read_bytes())
         self.assertTrue((helper_dir / 'stuntman_floor.py').is_file())
         self.assertTrue((home / '.claude/skills/floor/board/assets/vexel-laghari.webp').is_file())
 
@@ -82,7 +98,11 @@ class CompatibilityTests(unittest.TestCase):
         original = '<!-- stuntman:handoff:start -->\nExisting contract\n'
         (self.project / 'AGENTS.md').write_text(original)
         self.scaffold('--host', 'codex')
-        self.assertEqual((self.project / 'AGENTS.md').read_text(), original)
+        text = (self.project / 'AGENTS.md').read_text()
+        self.assertTrue(text.startswith(original))
+        self.assertEqual(text.count('<!-- stuntman:handoff:start -->'), 1)
+        self.assertEqual(text.count('<!-- stuntman:agents:start -->'), 1)
+        self.assertEqual(text.count('<!-- stuntman:agents:end -->'), 1)
 
     def test_wiki_supports_both_hosts_and_is_idempotent(self):
         for host, names in [('codex', ['AGENTS.md']), ('claude', ['CLAUDE.md']),

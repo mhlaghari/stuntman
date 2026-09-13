@@ -23,10 +23,21 @@ Idempotent and non-destructive. It:
 - writes a contract block (`<!-- stuntman:scaffold:start … end -->`) into
   the host's instruction file (`AGENTS.md`, `CLAUDE.md`, or both) — created if absent, appended if present, skipped if already there
   (recognizes the pre-0.5 `stuntman:handoff` marker too). Never rewrites
-  existing content.
+  existing memory or user-owned content.
 - creates the living docs it references — `HANDOFF.md` (the session baton),
   `STATUS.md` (the board), `SPEC.md` (the contract), `STRATEGY.md` (the honest
   why) — each only if missing. Each self-declares as a living doc.
+- appends or refreshes a managed agent roster block
+  (`<!-- stuntman:agents:start … end -->`) in the same instruction file(s) —
+  one full inventory snapshot shared by every selected host. Rerunning
+  refreshes only that block; memory content is untouched, and user overrides
+  persist outside the block. The roster states role preferences — Fable in
+  Claude Code and Astra/GPT in Codex for spec writing and review, everything
+  else executing through `stunt` — which are preferences, not availability or
+  login proof. Installed means the CLI is on `PATH`, not that it is
+  authenticated. Discovery runs `opencode models` / `agy models` with a short
+  timeout and reads the local Codex model cache; it makes no model inference
+  calls. Refreshing the snapshot never installs or configures models.
 
 ## What to do
 

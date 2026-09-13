@@ -48,7 +48,10 @@ every session starts informed. Scaffolded by stuntman `/wiki`.
 - **Start:** read this file → `wiki/hot.md` (recent context) → the relevant `wiki/projects/<name>.md`.
 - **End:** update `wiki/hot.md`; capture reusable fixes in `wiki/lessons-learned/` or `wiki/patterns/`
   (this is what lets OTHER projects find the solution later); update `wiki/index.md` if notes were added;
-  append a dated entry to `wiki/log.md`; refresh the graph: `graphify update wiki`.
+  append a dated entry to `wiki/log.md`. After meaningful changes, rerun the Stuntman /wiki skill to
+  refresh the affected notes and semantically rebuild their graph; graphify update wiki only rebuilds
+  code and is insufficient for Markdown notes.
+  Notes are maintained by agents; there is no background watcher, and the Stuntman Stop hook only nudges.
 
 ## Structure
 - `wiki/index.md` — master catalog (start here)

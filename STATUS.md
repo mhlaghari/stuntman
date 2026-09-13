@@ -3,9 +3,28 @@
 _The board — a **living doc**. Where the project stands right now; refresh it
 every session._
 
+## Delivery — 2026-09-14
+
+| Area | Status |
+| --- | --- |
+| Floor scene | Approved detailed Dubai skyline and project rooftop bays retained. |
+| Branding and controls | One header logo, lagharilabs.com, and project/Demo controls in the header. Five expressive Vexel skins. |
+| Animation/audio | Guitar, rock-sign headbanging, rage, jump/victory; demo pose previews; opt-in voices and completion/help/failure cues. |
+| Live interaction | Stable DOM/focus, drafts, cancellation, live/demo polling, guarded tmux sending verified. |
+| Scaffold | Managed agent roster, Fable/GPT-Astra planner roles, bounded model discovery, preservation and idempotence tests. |
+| Wiki review | Agent-driven notes and semantic graph refresh documented; incorrect code-only update advice fixed. |
+| OpenCode | Free Muse Spark 1.3 Contributor route used for implementation and review feedback through Stuntman. |
+| Windows/router review | WSL remains unverified; native Windows unsupported end to end. OmniRoute investigated and documented, not installed. |
+| Validation | 46 Python + 22 world + 26 audio checks pass; syntax and HTTP asset checks pass. |
+| Website/repo | User authorized commit/push; real demo screenshot included in README and existing GitHub Pages Floor showcase. |
+
+Next: add the user's video when provided. WSL validation and an isolated OmniRoute
+trial are optional future work. No further Floor redesign is queued. No plugin
+reinstall or version bump is part of this source/site delivery.
+
 ## Built
 
-**v0.13.0** — eight skills for Claude Code and Codex, shared helpers, project
+**v0.13.0 release baseline** — eight skills for Claude Code and Codex, shared helpers, project
 memory, and a local agent board.
 
 - **Codex compatibility:** native manifest and marketplace, CLI installation,
@@ -17,7 +36,7 @@ memory, and a local agent board.
   worker failure state, keyboard/mobile/reduced-motion support. Prompting
   requires an idle/done foreground TUI in tmux and verified process identity;
   other sessions are view-only. Origin/token/size checks protect local input.
-- **Validation:** 31 offline tests, plugin/skill validators, and shell checks
+- **Release-baseline validation (2026-09-05):** 31 offline tests, plugin/skill validators, and shell checks
   pass. Fresh Codex discovery finds eight enabled skills with no load errors.
   Browser checks pass at desktop, 390px, and 320px widths, including keyboard,
   drafts, failed sends, reduced motion, escaping, and empty/reconnect states.
@@ -109,6 +128,10 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-09-14 — Floor visual/audio work completed and verified locally. Restored the
+preferred skyline layout, kept new branding and all expressive rock animations;
+80 tests pass. No commit or release made.
 
 2026-09-05 — Combined Codex host support and the completed floor draft in v0.13.0.
 

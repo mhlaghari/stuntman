@@ -32,7 +32,7 @@ cp "$HERE/skills/handoff/SKILL.md" "$HOME/.claude/skills/handoff/SKILL.md"
 cp "$HERE/skills/wiki/SKILL.md" "$HOME/.claude/skills/wiki/SKILL.md"
 cp "$HERE/skills/usages/SKILL.md" "$HOME/.claude/skills/usages/SKILL.md"
 cp "$HERE/skills/launch/"* "$HOME/.claude/skills/launch/"
-for helper in floor floor-hook stuntman-floor-run stuntman_floor.py stunt window codex-window scaffold wiki usages; do
+for helper in floor floor-hook stuntman-floor-run stuntman_floor.py stunt window codex-window scaffold stuntman_roster.py wiki usages; do
   # Replace the link itself, never write through a symlink into a source checkout.
   rm -f "$HOME/.local/bin/$helper"
   cp "$HERE/bin/$helper" "$HOME/.local/bin/$helper"

@@ -36,6 +36,32 @@ needs intelligence and cheap or automatic mechanisms carry the rest.
 - **Out (for now):** hosting the worker proxy itself; non-macOS credential paths
   beyond the `~/.claude/.credentials.json` fallback; a desktop agent launcher.
 
+## Floor experience
+
+The local Floor groups real sessions by project in a pixel Dubai rooftop studio.
+Retain the user's preferred detailed skyscraper panorama and rooftop bays, with
+a single Laghari Labs lightning logo in the header and lagharilabs.com branding.
+Project filtering and Demo controls share that header. Expressive
+Vexels use guitar, rock-sign headbanging, rage, and completion celebrations.
+Animation must preserve the agent's actual status; pose previews and simulated
+state changes belong to the clearly labeled demo. Sound is opt-in, initial and
+reconnect snapshots are silent, and motion respects pause/reduced-motion settings.
+Conversation viewing and prompting retain the existing local trust boundaries.
+
+## Agent roles and portable memory
+
+Scaffolded host instructions include a managed roster of all five worker backends
+and bounded model discovery. Fable and GPT/Astra are preferred spec writers and
+reviewers; other models execute. User overrides win. A catalog is a snapshot,
+not an entitlement or price promise, and scaffold must never switch the active
+host or silently choose a paid fallback. Refresh only Stuntman's own roster block;
+preserve user instructions and memory documents.
+
+Wiki maintenance is agent-driven. Markdown changes require semantic extraction
+and a rebuilt graph, not Graphify's code-only update. The Stop hook reminds;
+it does not synchronize vault contents. macOS is verified; native Windows support
+and full WSL validation are outside the current delivery.
+
 ## Open decisions
 
 - Whether `/scaffold`'s doc set should be tiered (minimal vs full) by project size
@@ -51,6 +77,8 @@ judgment + a surgical fix; **pick the cheapest worker that lands _close_**; veri
 (never "tags present"); feedback style scales with worker tier; own the cost accounting (provider rates).
 
 ## Changelog
+- 2026-09-14 — Added scaffolded agent roles/catalog snapshots, clarified wiki graph maintenance and Windows support, and published the approved Floor screenshot in repo/site.
+- 2026-09-14 — Recorded the preferred Floor composition, expressive animations, and opt-in sound/demo behavior.
 - 2026-09-05 — Added Codex as an orchestrator host; shared skills and independent worker selection, explicit quota/scheduling limits, dual memory contracts.
 - 2026-06-29 — v2 "Film Crew" direction validated via the Milky Way bake-off; design principles locked.
 - 2026-06-19 — created. The v0.6 four-command shape + load-bearing principles.
