@@ -29,7 +29,7 @@ revisit before any big direction call._
   works without adding another router. Evaluate OmniRoute only when provider
   failover justifies its configuration and verification cost.
 - Make portability and memory claims precise: vault notes are agent-maintained,
-  graph refresh is semantic, and WSL needs a real end-to-end validation before
+  graph refresh must handle Markdown, and WSL needs a real end-to-end validation before
   declaring Windows support. See `docs/runtime-review.md`.
 
 - Keep `/floor` useful for supervising real work: clear project grouping, visible
@@ -57,6 +57,7 @@ revisit before any big direction call._
 - Does the doc system want a tiered (minimal / full) mode for tiny repos?
 
 ## Changelog
+- 2026-09-14 — Personal-vault sync confirmed that custom mechanical Markdown graph refresh can coexist with semantic extraction; scheduled automation needs separate health verification.
 - 2026-09-14 — Runtime review implemented managed scaffold rosters, exercised a free OpenCode worker, corrected wiki refresh instructions, and documented optional OmniRoute/WSL follow-ups.
 - 2026-09-14 — Floor polish validated through delegated implementation, host review, and user visual feedback; retained the preferred rooftop composition.
 - 2026-09-05 — Added Codex host compatibility while retaining Claude Code support; shared workflows with capability-aware execution.

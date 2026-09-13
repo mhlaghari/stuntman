@@ -57,8 +57,10 @@ not an entitlement or price promise, and scaffold must never switch the active
 host or silently choose a paid fallback. Refresh only Stuntman's own roster block;
 preserve user instructions and memory documents.
 
-Wiki maintenance is agent-driven. Markdown changes require semantic extraction
-and a rebuilt graph, not Graphify's code-only update. The Stop hook reminds;
+Wiki maintenance is agent-driven. Markdown changes require Markdown-aware
+extraction and a rebuilt graph, not Graphify's code-only update. Full semantic
+extraction adds inferred relationships; a custom vault helper can refresh explicit
+frontmatter/wikilink relationships mechanically. The Stop hook reminds;
 it does not synchronize vault contents. macOS is verified; native Windows support
 and full WSL validation are outside the current delivery.
 
@@ -77,6 +79,7 @@ judgment + a surgical fix; **pick the cheapest worker that lands _close_**; veri
 (never "tags present"); feedback style scales with worker tier; own the cost accounting (provider rates).
 
 ## Changelog
+- 2026-09-14 — Clarified custom Markdown-aware vault refresh versus full semantic extraction after syncing the existing personal vault.
 - 2026-09-14 — Added scaffolded agent roles/catalog snapshots, clarified wiki graph maintenance and Windows support, and published the approved Floor screenshot in repo/site.
 - 2026-09-14 — Recorded the preferred Floor composition, expressive animations, and opt-in sound/demo behavior.
 - 2026-09-05 — Added Codex as an orchestrator host; shared skills and independent worker selection, explicit quota/scheduling limits, dual memory contracts.

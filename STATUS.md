@@ -16,7 +16,8 @@ every session._
 | OpenCode | Free Muse Spark 1.3 Contributor route used for implementation and review feedback through Stuntman. |
 | Windows/router review | WSL remains unverified; native Windows unsupported end to end. OmniRoute investigated and documented, not installed. |
 | Validation | 46 Python + 22 world + 26 audio checks pass; syntax and HTTP asset checks pass. |
-| Website/repo | User authorized commit/push; real demo screenshot included in README and existing GitHub Pages Floor showcase. |
+| Website/repo | `1025c18` pushed to main; GitHub Pages built that revision. Public Floor section and byte-identical JPEG verified. |
+| Personal vault | Stuntman page, index/hot/log, and graph-refresh lesson updated; Markdown-aware helper refreshed graph JSON/HTML/canvas. Existing scheduled graph job reports exit 78 and needs a separate repair. |
 
 Next: add the user's video when provided. WSL validation and an isolated OmniRoute
 trial are optional future work. No further Floor redesign is queued. No plugin

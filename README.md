@@ -452,6 +452,10 @@ graph. In the verified Graphify 0.5.0, `graphify update wiki` rebuilds code only
 so it is insufficient for Markdown notes. Restart the graph MCP connection or
 start a new session to load a rebuilt graph.
 
+Existing vaults may have a separate Markdown-aware refresh helper and scheduled
+ingestion. Those are custom automation, not installed by Stuntman's scaffolder;
+check their recent results before assuming the notes or graph are current.
+
 ## Free models, routing, and Windows
 
 Claude Code with Fable or Codex with Astra can plan and review while OpenCode

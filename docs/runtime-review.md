@@ -65,8 +65,16 @@ The vault has three separate layers:
 The Stuntman Stop hook can nudge when a project's `updated:` date trails its latest
 commit by more than seven days. It does not rewrite the note. Existing vault
 contracts are preserved by the scaffolder; their old refresh wording needs a
-deliberate update when maintaining those vaults. This review did not modify a
-separate personal vault or install a watcher.
+deliberate update when maintaining those vaults.
+
+The existing personal vault already had a Markdown-aware frontmatter/wikilink
+refresh helper and separate scheduled jobs. Its Stuntman page and graph were
+refreshed through that helper during this review. This is distinct from a full
+semantic re-extraction: unchanged pages retain
+their curated graph contributions, while changed pages get their explicit links
+re-extracted. Custom schedules also need health checks; a configured interval alone
+does not establish successful execution. Stuntman's generic scaffolder installs
+neither those schedules nor that custom helper.
 
 ## Windows support
 

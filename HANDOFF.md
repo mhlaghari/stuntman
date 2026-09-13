@@ -7,6 +7,11 @@ real screenshot to the repository and existing website, and completing the queue
 Stuntman runtime review. This delivery uses `main` and the existing GitHub Pages
 source `docs/`; it does not reinstall the plugin or create a separate hosted site.
 
+**Delivery verified:** commit `1025c181ab63e6ab75ef41b5d71d5c6353c42a08`
+is on `origin/main`. GitHub Pages reports that revision built successfully;
+the public Floor section is present and its JPEG returns HTTP 200 with bytes
+identical to the repository asset.
+
 ### What changed
 
 - **Approved Floor:** detailed Dubai skyscraper panorama and project rooftop bays,
@@ -30,8 +35,11 @@ source `docs/`; it does not reinstall the plugin or create a separate hosted sit
   The legacy installer includes the new helper. No model inference in discovery.
 - **Wiki:** corrected generated and skill instructions: Graphify 0.5.0's
   `graphify update` rebuilds code, not Markdown semantics. Agents maintain notes;
-  `/wiki` rebuilds their graph; the Stop hook only nudges. Existing personal vaults
-  were not rewritten. Restart the graph MCP/new session after a rebuild.
+  `/wiki` rebuilds their graph; the Stop hook only nudges. The post-delivery hook
+  then requested a personal-vault sync: its Stuntman page, index, hot cache, log,
+  and existing graph-refresh lesson were updated. The vault's own Markdown-aware
+  helper refreshed graph JSON, HTML, and canvas. Restart the graph MCP/new session
+  after a rebuild; the current connection was not claimed to reload automatically.
 - **Runtime review:** `docs/runtime-review.md` records verified direct OpenCode
   delegation, the Windows/WSL support boundary, and cited research distinguishing
   OmniRoute from OmniRouter. Native Windows is not supported end to end; WSL is
@@ -49,8 +57,7 @@ real installed catalogs in a disposable project for both hosts.
 - 46 Python tests and 48 JavaScript checks (22 world + 26 audio) pass.
 - Shell syntax, whitespace, asset HTTP/MIME/body checks, and screenshot dimensions
   checked; the approved demo was inspected in Safari. No real prompts were sent
-  from the Floor during verification. Site rendering/publication is checked as
-  part of the authorized push.
+  from the Floor during verification. Site rendering and public deployment passed.
 - Worker accounting is saved in `/tmp/stuntman-review-20260914/`; OpenCode reports
   usage and zero cost for the selected free route. Host usage is separate.
 
@@ -60,6 +67,12 @@ Add the user's video to the existing Floor showcase when supplied. No redesign
 is queued. An optional future task could validate Stuntman end to end in WSL or
 trial an isolated OmniRoute provider configuration; neither is claimed complete.
 Child-specific Vexel rigs and optional server auto-start remain deferred.
+
+The personal vault has separately configured four-hour graph refresh and nightly
+03:30 ingest jobs. Read-only launchd inspection found the graph job's last exit
+was 78 (EX_CONFIG); the ingest job's current record had zero runs. Manual graph
+refresh passed. Repairing scheduled automation is a separate follow-up; no job,
+privacy, power, or authentication settings were changed here.
 
 Local Floor: `http://127.0.0.1:4517/?demo=1` (live: `/`). If stopped, run
 `./bin/floor --no-open`. The installed plugin cache remains the earlier version;
