@@ -12,6 +12,7 @@ every session._
 | Animation/audio | Guitar, rock-sign headbanging, rage, jump/victory; demo pose previews; opt-in voices and completion/help/failure cues. |
 | Live interaction | Stable DOM/focus, drafts, cancellation, live/demo polling, guarded tmux sending verified. |
 | Scaffold | Managed agent roster, Fable/GPT-Astra planner roles, bounded model discovery, preservation and idempotence tests. |
+| Delegation policy | Role instructions shipped; automatic worker selection, retry/fallback policy, and recorded escalation remain planned. Latest discussion reaffirmed delegating implementation by default. |
 | Wiki review | Agent-driven notes and semantic graph refresh documented; incorrect code-only update advice fixed. |
 | OpenCode | Free Muse Spark 1.3 Contributor route used for implementation and review feedback through Stuntman. |
 | Windows/router review | WSL remains unverified; native Windows unsupported end to end. OmniRoute investigated and documented, not installed. |
@@ -19,8 +20,9 @@ every session._
 | Website/repo | `1025c18` pushed to main; GitHub Pages built that revision. Public Floor section and byte-identical JPEG verified. |
 | Personal vault | Stuntman page, index/hot/log, and graph-refresh lesson updated; Markdown-aware helper refreshed graph JSON/HTML/canvas. Existing scheduled graph job reports exit 78 and needs a separate repair. |
 
-Next: add the user's video when provided. WSL validation and an isolated OmniRoute
-trial are optional future work. No further Floor redesign is queued. No plugin
+Recommended next: implement runtime delegation policy using the working direct
+OpenCode route. Add the user's video when provided. WSL validation and an isolated
+OmniRoute trial are optional future work. No further Floor redesign is queued. No plugin
 reinstall or version bump is part of this source/site delivery.
 
 ## Built

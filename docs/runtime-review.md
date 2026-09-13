@@ -13,6 +13,13 @@ and **GPT/Astra in Codex** in charge of specifications and review. Other models
 execute bounded work through `stunt`. Explicit user choices override these defaults.
 The inventory does not select a new active model or configure credentials.
 
+The recommended next development step is runtime worker selection, bounded
+retries, approved fallback choices, and recorded escalation. These controls are
+planned, not delivered by the roster. The intended workflow uses one Fable/Astra
+lead for specs and review, delegates routine work, and reserves lead implementation
+for exceptional difficulty. Direct OpenCode is the starting route; OmniRoute can
+be evaluated if cross-provider failover becomes necessary.
+
 | Worker backend | Inventory source | What it establishes |
 | --- | --- | --- |
 | `claude` | CLI presence; proxy preflight instructions | Proxy executor exists as a supported route; Fable in the host is a separate role. |

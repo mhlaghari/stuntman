@@ -28,6 +28,10 @@ revisit before any big direction call._
   Fable/GPT-Astra roles and actual CLI catalogs; direct free OpenCode delegation
   works without adding another router. Evaluate OmniRoute only when provider
   failover justifies its configuration and verification cost.
+- Next, make worker selection, bounded retries, and explicit escalation part of
+  execution. Use one lead per task and send it focused diffs/check results.
+  Evaluate a small backup worker pool before expanding provider infrastructure;
+  role instructions alone do not enforce the delegation policy.
 - Make portability and memory claims precise: vault notes are agent-maintained,
   graph refresh must handle Markdown, and WSL needs a real end-to-end validation before
   declaring Windows support. See `docs/runtime-review.md`.
@@ -57,6 +61,7 @@ revisit before any big direction call._
 - Does the doc system want a tiered (minimal / full) mode for tiny repos?
 
 ## Changelog
+- 2026-09-14 — Recommended runtime delegation policy as the next development task; direct OpenCode first, OmniRoute conditional on a provider-failover need.
 - 2026-09-14 — Personal-vault sync confirmed that custom mechanical Markdown graph refresh can coexist with semantic extraction; scheduled automation needs separate health verification.
 - 2026-09-14 — Runtime review implemented managed scaffold rosters, exercised a free OpenCode worker, corrected wiki refresh instructions, and documented optional OmniRoute/WSL follow-ups.
 - 2026-09-14 — Floor polish validated through delegated implementation, host review, and user visual feedback; retained the preferred rooftop composition.

@@ -14,6 +14,12 @@ identical to the repository asset.
 
 ### What changed
 
+- **Latest direction:** the user reaffirmed that Fable and Astra should plan,
+  write specifications, and review, with implementation delegated by default and
+  lead-model implementation reserved for exceptionally hard work. The recommended
+  next step is runtime worker selection, bounded retries, approved fallbacks, and
+  recorded escalation reasons. This discussion changed documentation only;
+  automatic routing/enforcement is not implemented and OmniRoute is not installed.
 - **Approved Floor:** detailed Dubai skyscraper panorama and project rooftop bays,
   one supplied Laghari Labs lightning logo, **lagharilabs.com**, and project/demo
   controls in the header. Keep this composition; the tall project-building
@@ -63,9 +69,17 @@ real installed catalogs in a disposable project for both hosts.
 
 ### Next step
 
+Recommended next development task: specify and implement delegation policy in
+Stuntman's execution path. Use one Fable/Astra lead per task, delegate routine
+exploration/implementation/tests/docs, run deterministic checks before lead review,
+and escalate with a recorded reason after bounded worker attempts. The scaffold
+currently records instructions; it does not enforce automatic worker routing.
+Start with the tested direct OpenCode route and evaluate a small backup pool;
+current free availability/pricing must be checked, with no silent paid fallback.
+OmniRoute remains an optional provider-failover layer to evaluate later.
+
 Add the user's video to the existing Floor showcase when supplied. No redesign
-is queued. An optional future task could validate Stuntman end to end in WSL or
-trial an isolated OmniRoute provider configuration; neither is claimed complete.
+is queued. Full WSL validation remains optional future work.
 Child-specific Vexel rigs and optional server auto-start remain deferred.
 
 The personal vault has separately configured four-hour graph refresh and nightly

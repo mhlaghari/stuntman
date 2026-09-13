@@ -402,6 +402,10 @@ in to providers. Installed CLIs and cached catalogs do not prove access or prici
 Rerun `/scaffold` to refresh only its roster block; keep personal overrides outside
 the `stuntman:agents` markers. Discovery makes no model inference calls.
 
+The roster records role instructions. Automatic worker selection, retry/fallback
+rules, and escalation tracking are planned; the current runner executes the
+backend and model selected for each call.
+
 **`/handoff`** (or just say *"execute handoff"*) — run at the start of any
 session. It reads `HANDOFF.md`, `STATUS.md`, `README.md`, and whatever else the
 contract lists, then picks up exactly where the last session left off — zero

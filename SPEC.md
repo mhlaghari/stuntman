@@ -57,6 +57,13 @@ not an entitlement or price promise, and scaffold must never switch the active
 host or silently choose a paid fallback. Refresh only Stuntman's own roster block;
 preserve user instructions and memory documents.
 
+**Planned execution policy:** one Fable/Astra lead plans, writes acceptance
+criteria, and reviews; workers handle routine exploration, implementation, tests,
+and documentation. Add worker selection, bounded retries, approved fallback
+choices, and explicit escalation reasons within Stuntman's execution path.
+Lead-model implementation is reserved for exceptionally hard work. These runtime
+controls are not implemented by the current roster or instruction files.
+
 Wiki maintenance is agent-driven. Markdown changes require Markdown-aware
 extraction and a rebuilt graph, not Graphify's code-only update. Full semantic
 extraction adds inferred relationships; a custom vault helper can refresh explicit
@@ -79,6 +86,7 @@ judgment + a surgical fix; **pick the cheapest worker that lands _close_**; veri
 (never "tags present"); feedback style scales with worker tier; own the cost accounting (provider rates).
 
 ## Changelog
+- 2026-09-14 — Recorded the user's delegation-by-default direction and marked runtime routing/retry/escalation controls as planned.
 - 2026-09-14 — Clarified custom Markdown-aware vault refresh versus full semantic extraction after syncing the existing personal vault.
 - 2026-09-14 — Added scaffolded agent roles/catalog snapshots, clarified wiki graph maintenance and Windows support, and published the approved Floor screenshot in repo/site.
 - 2026-09-14 — Recorded the preferred Floor composition, expressive animations, and opt-in sound/demo behavior.
