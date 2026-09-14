@@ -15,7 +15,8 @@ every session._
 | Delegation policy | Role instructions shipped; automatic worker selection, retry/fallback policy, and recorded escalation remain planned. Latest discussion reaffirmed delegating implementation by default. |
 | Wiki review | Agent-driven notes and semantic graph refresh documented; incorrect code-only update advice fixed. |
 | OpenCode | Free Muse Spark 1.3 Contributor route used for implementation and review feedback through Stuntman. |
-| Windows/router review | WSL remains unverified; native Windows unsupported end to end. OmniRoute investigated and documented, not installed. |
+| Plugin release | **v0.13.1** ships this Floor to installs (0.13.0 installs never received it: `/plugin` compares the manifest version, which had not moved). Includes the Windows floor fix `202a62e`, previously only on `fix/windows-floor-support`, and CRLF-preserving roster writes. |
+| Windows/router review | WSL remains unverified. Native Windows: floor board and hooks run (view-only, no tmux); 18 tests that exec shebang scripts and 3 symlink fixtures still fail on Windows, harness-only. OmniRoute investigated and documented, not installed. |
 | Validation | 46 Python + 36 world + 26 audio checks pass (108 total); syntax/whitespace pass. Safari verified hide/restore, combined filters, Show all, and former demo URL rendering real agents. |
 | Website/repo | Earlier visual delivery `1025c18` built on GitHub Pages. Follow-up docs describe live-only filtering and label the retained JPEG as an earlier staged preview. |
 | Documentation delivery | Delegation policy and next steps committed and pushed as `16f32f1`; remote SHA verified. README screenshot and public image rechecked. |
@@ -23,8 +24,9 @@ every session._
 
 Recommended next: implement runtime delegation policy using the working direct
 OpenCode route. Add the user's video when provided. WSL validation and an isolated
-OmniRoute trial are optional future work. No further Floor redesign is queued. No plugin
-reinstall or version bump is part of this source/site delivery.
+OmniRoute trial are optional future work. No further Floor redesign is queued. Future
+changes meant for installed copies need a manifest version bump in both
+`.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`.
 
 Earlier post-push audit: no tracked changes remained. Three preserved, pre-existing
 untracked duplicate files cause the Stop hook to repeat its memory warning after
@@ -136,6 +138,12 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-09-14 — v0.13.1: the new Floor never reached installs because the manifest
+version stayed 0.13.0, and today's `main` crashed on Windows (`import fcntl`; the
+hook swallowed it silently). Cherry-picked the Windows floor fix onto `main`, made
+roster writes keep CRLF line endings (two new tests), bumped both manifests.
+Windows run: 29 passed, 2 skipped, 21 harness-only failures (was: collection error).
 
 2026-09-14 — Removed Demo World; added independent status visibility toggles and
 Show all reset alongside project filtering. One OpenCode/Muse review round fixed

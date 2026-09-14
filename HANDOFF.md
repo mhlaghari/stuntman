@@ -2,6 +2,35 @@
 
 ## Current handoff — 2026-09-14
 
+**Latest: v0.13.1 plugin release (Windows session).** The Dubai Floor pushed
+earlier today never reached installed copies: `/plugin` reported "already at the
+latest version (0.13.0)" because it compares the manifest version, and no bump was
+made. Worse, today's `main` could not run on Windows: `bin/stuntman_floor.py`
+imported `fcntl` unconditionally. The Windows fix existed only as `202a62e` on
+`fix/windows-floor-support` (and as a hand-patched plugin cache on the Windows
+box), so a bare version bump would have overwritten that cache, the board would
+not start, and `floor-hook` (which swallows exceptions) would silently stop
+recording every session.
+
+What changed: cherry-picked `202a62e` onto `main`; `bin/stuntman_roster.py`
+`apply_block` now keeps the line endings of the file on append and of the replaced
+block on refresh (CRLF checkouts previously got bare-LF blocks spliced in and were
+rewritten on every scaffold run; two platform-independent tests added); bumped
+`.claude-plugin/plugin.json` to `0.13.1` and `.codex-plugin/plugin.json` to
+`0.13.1+codex.20260914105507`.
+
+Validation on Windows: 29 passed, 2 skipped. The 21 remaining failures are test
+harness only: 18 `WinError 193` (tests exec shebang scripts such as `bin/scaffold`
+directly) and 3 `WinError 1314` (symlink fixtures need a privilege). Before this
+change the suite could not collect `tests/test_floor.py` on Windows at all. Not
+re-run on macOS/Linux this session; the roster change is a no-op for LF files.
+
+Next step: run `/plugin` on each machine to pick up 0.13.1 and restart sessions
+so hooks load from the new cache. Optional: make the Windows-failing tests invoke
+scripts through `sys.executable`/`bash`, and skip symlink fixtures without the
+privilege. Gotcha: **every change meant for installs needs a version bump in both
+manifests**; source/site-only deliveries leave installs on the old cache.
+
 **Latest Floor follow-up:** removed Demo World and its simulated agents, drawer
 actions, pose overrides, and demo URL behavior. The Dubai skyline and expressive
 live animations remain. Header status buttons hide/restore Working (running and
