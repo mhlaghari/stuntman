@@ -303,6 +303,12 @@ def render_block(inv):
     return "\n".join(lines) + "\n"
 
 
+def _line_ending(text):
+    """CRLF when most line breaks in text are CRLF, else LF."""
+    crlf = text.count("\r\n")
+    return "\r\n" if crlf and crlf * 2 > text.count("\n") else "\n"
+
+
 def apply_block(path, block):
     """Apply block to one file. Returns 'appended'|'replaced'|'skipped'."""
     with open(path, "rb") as fh:
@@ -315,12 +321,15 @@ def apply_block(path, block):
     n_start = text.count(START)
     n_end = text.count(END)
     if n_start == 0 and n_end == 0:
+        # Match the file's line endings so a CRLF file never gains bare LFs.
+        eol = _line_ending(text)
+        framed = block.replace("\n", eol)
         if text == "":
-            new_text = block
+            new_text = framed
         elif text.endswith("\n"):
-            new_text = text + "\n" + block
+            new_text = text + eol + framed
         else:
-            new_text = text + "\n\n" + block
+            new_text = text + eol + eol + framed
         with open(path, "wb") as fh:
             fh.write(new_text.encode("utf-8"))
         return "appended"
@@ -330,7 +339,10 @@ def apply_block(path, block):
         # Replace only the managed block; pre/post bytes pass through
         # untouched (no trailing-newline fixup — a suffix without a final
         # newline, or CRLF line endings, must survive a refresh byte-for-byte).
-        new_text = pre + block.rstrip("\n") + post
+        # The new block keeps the line endings of the block it replaces, so a
+        # CRLF checkout refreshes idempotently instead of mixing endings.
+        eol = _line_ending(text[text.index(START): text.index(END) + len(END)])
+        new_text = pre + block.rstrip("\n").replace("\n", eol) + post
         with open(path, "wb") as fh:
             fh.write(new_text.encode("utf-8"))
         return "replaced"

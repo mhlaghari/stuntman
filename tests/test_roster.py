@@ -185,6 +185,44 @@ class RosterBlockTests(unittest.TestCase):
         self.assertEqual(raw.count(START.encode()), 1)
         self.assertIn(b"gemini-3.7-flash-high", raw)
 
+    def test_crlf_file_gets_crlf_roster_and_refresh_is_idempotent(self):
+        target = self.project / "CLAUDE.md"
+        target.write_bytes(b"USER PREFIX\r\nsecond line\r\n")
+        inv = {"installed": {b: False for b in roster.BACKENDS},
+               "catalogs": {"opencode": {"ids": [], "ok": False},
+                            "agy": {"ids": [], "ok": False},
+                            "codex": {"ids": [], "ok": False}}}
+        block = roster.render_block(inv)
+        self.assertEqual(roster.apply_block(str(target), block), "appended")
+        appended = target.read_bytes()
+        self.assertTrue(appended.startswith(b"USER PREFIX\r\nsecond line\r\n"))
+        self.assertNotIn(b"\n", appended.replace(b"\r\n", b""))
+        self.assertEqual(roster.apply_block(str(target), block), "replaced")
+        self.assertEqual(target.read_bytes(), appended)
+
+    def test_crlf_block_stays_crlf_on_refresh(self):
+        target = self.project / "CLAUDE.md"
+        inv_a = {"installed": {b: False for b in roster.BACKENDS},
+                 "catalogs": {"opencode": {"ids": [], "ok": False},
+                              "agy": {"ids": [], "ok": False},
+                              "codex": {"ids": [], "ok": False}}}
+        block_a = roster.render_block(inv_a).replace("\n", "\r\n")
+        pre = b"USER PREFIX\r\n"
+        post = b"\r\nUSER SUFFIX\r\n"
+        target.write_bytes(pre + block_a.encode() + post)
+        inv_b = {"installed": {b: True for b in roster.BACKENDS},
+                 "catalogs": {"opencode": {"ids": ["openai/gpt-5"], "ok": True,
+                                           "truncated": False},
+                              "agy": {"ids": [], "ok": False},
+                              "codex": {"ids": [], "ok": False}}}
+        block_b = roster.render_block(inv_b)
+        self.assertEqual(roster.apply_block(str(target), block_b), "replaced")
+        raw = target.read_bytes()
+        self.assertTrue(raw.startswith(pre))
+        self.assertTrue(raw.endswith(post))
+        self.assertIn(b"openai/gpt-5", raw)
+        self.assertNotIn(b"\n", raw.replace(b"\r\n", b""))
+
     def test_malformed_markers_preserve_file(self):
         cases = [
             "a\n" + START + "\nbody\n" + START + "\nmore\n" + END + "\nb\n",
