@@ -253,16 +253,19 @@ probe, `codex-window`, `usages` and `floor` boards, `scaffold`, and `wiki` tools
 
 ## Floor — agents across projects
 
-![The Floor demo: pixel Dubai skyline, project bays, and expressive Vexel agents](docs/assets/floor-demo.jpg)
+![The Floor: pixel Dubai skyline, project bays, and expressive Vexel agents](docs/assets/floor-demo.jpg)
 
-Actual screenshot in demo mode. The skyline, guitar riffs, rock-sign headbanging,
-and optional completion/help tones turn the board into a Dubai studio.
+Earlier staged preview of the Dubai Floor — skyline, project bays, and expressive
+Vexel agents. The live board shows your real agents with project and status filters,
+a `Show all` reset, and optional completion and help tones. Current live Floor has no demo mode.
 
 Use the floor skill to open `http://127.0.0.1:4517/`. Sessions with active hooks
 appear in an interactive pixel-art Dubai rooftop studio with custom sunset skyline
 panorama and five bundled Vexel model skins (Claude Code, Codex, Antigravity, OpenCode,
 and Muse / default). Workstations group agents by project; the header provides project filtering
-and an in-memory demo mode (`?demo=1`). Audio cues
+plus status visibility filters (Working, Needs you, Done, Failed, Idle, Silent, Left, Other)
+with a `Show all` reset and a `Showing N of M agents` counter. Click a status to hide it;
+click again to restore it. Show all clears both project and status filters. Audio cues
 are strictly opt-in (volume defaults to 0.15), and motion animations are
 enabled by default with support for pause and reduced-motion preferences.
 Click an avatar to read its conversation in the slide-out drawer. Idle or finished
@@ -272,9 +275,7 @@ and other terminals are view-only.
 The header uses one Laghari Labs lightning logo and links to
 [lagharilabs.com](https://lagharilabs.com). Working Vexels play guitar; thinking
 and needs-input agents headbang with rock horns; failures rage; completed tasks
-jump with a guitar, celebrate, and settle to idle. In a demo agent's drawer,
-try Guitar, Rock sign, Guitar jump, Angry, or Victory for an eight-second pose
-preview. Sound Desk samples preview each host's voice; alerts distinguish
+jump with a guitar, celebrate, and settle to idle. Sound Desk samples preview each host's voice; alerts distinguish
 completion, help, and failure.
 
 The plugin bundles lifecycle hooks. Start a new session after installation;
@@ -603,4 +604,5 @@ MIT
 
 ## Changelog
 
+- 2026-09-14 — Floor is live-only: removed Demo World, added status visibility filters with Show all and Showing N of M counter.
 - 2026-09-05 — Added Codex plugin packaging, shared host-aware skills, AGENTS.md memory, native launch phases, and a local Codex quota probe.

@@ -151,19 +151,6 @@ header.studio-header {
   box-shadow: 0 0 6px var(--mint);
 }
 
-.status-badge.demo {
-  border-color: var(--gold);
-  color: var(--gold);
-}
-
-.status-badge.demo::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: var(--gold);
-}
-
 .status-badge.offline {
   border-color: var(--coral);
   color: var(--coral);
@@ -269,22 +256,96 @@ header.studio-header {
   outline: none;
 }
 
-.btn-demo {
+/* ── Header status visibility filters (second row) ── */
+.header-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-dark);
+}
+
+.filter-label {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip-toggle {
   background: var(--midnight);
-  color: var(--gold);
+  color: var(--cream);
   border: 2px solid var(--gold);
   padding: 3px 10px;
   font-size: 11px;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   cursor: pointer;
   text-transform: uppercase;
   font-weight: bold;
   white-space: nowrap;
+  min-height: 30px;
 }
 
-.btn-demo:hover {
+.chip-toggle.active {
   background: var(--gold);
   color: var(--midnight);
+}
+
+.chip-toggle:not(.active) {
+  background: var(--midnight);
+  color: var(--dim);
+  border-color: var(--line-bright);
+  font-weight: normal;
+}
+
+.chip-toggle:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.chip-toggle.active:hover {
+  color: var(--midnight);
+}
+
+.btn-show-all {
+  background: var(--plum);
+  color: var(--cream);
+  border: 2px solid var(--line-bright);
+  padding: 3px 10px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-transform: uppercase;
+  white-space: nowrap;
+  min-height: 30px;
+}
+
+.btn-show-all:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.btn-show-all:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.filter-count {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 /* ── Rooftop World Scene ── */
@@ -1260,32 +1321,6 @@ header.studio-header {
   color: var(--coral);
 }
 
-/* Demo action bar inside drawer */
-.drawer-demo-bar {
-  background: #180914;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--line-dark);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-}
-
-.btn-demo-action {
-  background: var(--plum);
-  border: 1px solid var(--gold);
-  color: var(--gold);
-  font-size: 10px;
-  padding: 2px 6px;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-
-.btn-demo-action:hover {
-  background: var(--gold);
-  color: var(--midnight);
-}
-
 #dlog {
   flex: 1;
   overflow-y: auto;
@@ -1439,16 +1474,14 @@ body.motion-paused .actor-mover {
 
 /* Branding and accessible controls retained with the original rooftop layout. */
 .brand-domain { color: var(--mint); font-size: 12px; text-underline-offset: 3px; }
-.btn-sample, .btn-drawer-action, .btn-demo-action, .btn-close, .btn-manifest-view,
-.btn-toggle, .btn-demo { min-height: 30px; font-size: 11px; }
+.btn-sample, .btn-drawer-action, .btn-close, .btn-manifest-view,
+.btn-toggle, .chip-toggle, .btn-show-all { min-height: 30px; font-size: 11px; }
 .sound-status { font-size: 11px; }
-.demo-pose-row { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
-.drawer-demo-bar { flex-wrap: wrap; }
 .slot-badges, .slot-subagents { flex-wrap: wrap; max-width: 100%; }
 .zone-cwd { display: none; }
 @media (max-width: 600px) {
-  .btn-sample, .btn-drawer-action, .btn-demo-action, .btn-close, .btn-manifest-view,
-  .btn-toggle, .btn-demo { min-height: 36px; font-size: 12px; }
+  .btn-sample, .btn-drawer-action, .btn-close, .btn-manifest-view,
+  .btn-toggle, .chip-toggle, .btn-show-all { min-height: 36px; font-size: 12px; }
   .sound-status { font-size: 12px; }
   .header-controls { justify-content: flex-start; }
   .project-select { min-height: 36px; font-size: 12px; }

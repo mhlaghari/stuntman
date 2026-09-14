@@ -2,6 +2,16 @@
 
 ## Current handoff — 2026-09-14
 
+**Latest Floor follow-up:** removed Demo World and its simulated agents, drawer
+actions, pose overrides, and demo URL behavior. The Dubai skyline and expressive
+live animations remain. Header status buttons hide/restore Working (running and
+thinking), Needs you, Done, Failed, Idle, Silent, Left, and Other. Show all resets
+both status and project selections. The counter, bays, manifest, and attention
+sidebar reflect visible agents; audio still observes the full live snapshot.
+Filters survive status transitions and temporarily missing projects. An old
+`?demo=1` link now opens the live board. README/site keep the earlier staged
+screenshot with an accurate caption; no private live screenshot was published.
+
 The user approved the Floor and authorized committing and pushing it, adding a
 real screenshot to the repository and existing website, and completing the queued
 Stuntman runtime review. This delivery uses `main` and the existing GitHub Pages
@@ -25,17 +35,17 @@ and the live website's JPEG still matches the repository asset byte-for-byte.
   recorded escalation reasons. This discussion changed documentation only;
   automatic routing/enforcement is not implemented and OmniRoute is not installed.
 - **Approved Floor:** detailed Dubai skyscraper panorama and project rooftop bays,
-  one supplied Laghari Labs lightning logo, **lagharilabs.com**, and project/demo
+  one supplied Laghari Labs lightning logo, **lagharilabs.com**, and project/status
   controls in the header. Keep this composition; the tall project-building
   experiment was rejected. Five exact expressive Vexel atlases are retained.
 - Working agents riff on guitar; thinking/needs-input agents headbang with rock
   horns; failures rage; completion starts with a guitar jump, then victory, then
-  idle. No continuous running. Demo drawers include eight-second pose previews.
+  idle. No continuous running. The latest follow-up removed demo pose previews.
 - Audio remains opt-in with five voices and separate done/help/failure cues.
   Initial/reconnect snapshots are silent. Pause/reduced-motion, stable keyed DOM,
   focus/drafts, transcript cancellation, and guarded tmux prompting are retained.
-- **Screenshot:** `docs/assets/floor-demo.jpg` is an actual Safari capture of the
-  approved public demo, linked from README and a new Floor showcase on the site.
+- **Screenshot:** `docs/assets/floor-demo.jpg` is an earlier Safari capture of the
+  now-retired demo, linked from README and the Floor showcase on the site.
   It contains simulated projects only. The user plans to supply a video later.
 - **Scaffold:** `bin/stuntman_roster.py` adds a managed inventory block to selected
   `CLAUDE.md` / `AGENTS.md`. Fable and GPT/Astra are preferred spec writers/reviewers;
@@ -64,7 +74,17 @@ Host review corrected overbroad cache parsing and trailing-newline preservation
 through same-session feedback. The source scaffold was also exercised against
 real installed catalogs in a disposable project for both hosts.
 
-- 46 Python tests and 48 JavaScript checks (22 world + 26 audio) pass.
+The live-filter follow-up was also implemented by
+`opencode/muse-spark-1.3-contributor-free`, session
+`ses_f62020361ffek4gLbNcD30ezik`. One review round fixed project selection across
+empty snapshots, avoided repeated unchanged live-region announcements, and
+clarified captions. Host verification passed 36 world + 26 audio + 46 Python
+checks (108 total), plus JavaScript syntax and whitespace checks. Safari verified
+Done/Working hide and restore, combined filters, empty-result guidance, project
+selection and Show all reset, and real agents at the former demo URL. No prompts
+were sent during these UI checks. Artifacts: `/tmp/stuntman-floor-filters-20260914/`.
+
+- Earlier delivery: 46 Python tests and 48 JavaScript checks (22 world + 26 audio) passed.
 - Shell syntax, whitespace, asset HTTP/MIME/body checks, and screenshot dimensions
   checked; the approved demo was inspected in Safari. No real prompts were sent
   from the Floor during verification. Site rendering and public deployment passed.
@@ -92,7 +112,7 @@ was 78 (EX_CONFIG); the ingest job's current record had zero runs. Manual graph
 refresh passed. Repairing scheduled automation is a separate follow-up; no job,
 privacy, power, or authentication settings were changed here.
 
-Local Floor: `http://127.0.0.1:4517/?demo=1` (live: `/`). If stopped, run
+Local Floor: `http://127.0.0.1:4517/`. If stopped, run
 `./bin/floor --no-open`. The installed plugin cache remains the earlier version;
 this task publishes source/site changes, not a plugin reinstall.
 

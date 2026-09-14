@@ -2,8 +2,9 @@
 
 Reviewed 2026-09-14 against this checkout, installed CLI catalogs, and the linked
 upstream documentation. The approved Floor keeps its detailed Dubai skyline,
-one header logo, project filter and demo controls in the header, and expressive
-guitar, headbang, rage, and completion poses.
+one header logo, project and status visibility filters with Show all in the
+header, and expressive guitar, headbang, rage, and completion poses. The board
+is live-only with no demo mode.
 
 ## Planner and executor roles
 

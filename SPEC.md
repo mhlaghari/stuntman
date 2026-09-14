@@ -41,10 +41,12 @@ needs intelligence and cheap or automatic mechanisms carry the rest.
 The local Floor groups real sessions by project in a pixel Dubai rooftop studio.
 Retain the user's preferred detailed skyscraper panorama and rooftop bays, with
 a single Laghari Labs lightning logo in the header and lagharilabs.com branding.
-Project filtering and Demo controls share that header. Expressive
+The header provides project filtering plus status visibility filters (Working
+covers running and thinking; plus Needs you, Done, Failed, Idle, Silent, Left,
+Other) with a Show all reset and a Showing N of M counter. The board is
+live-only with no demo mode. Expressive
 Vexels use guitar, rock-sign headbanging, rage, and completion celebrations.
-Animation must preserve the agent's actual status; pose previews and simulated
-state changes belong to the clearly labeled demo. Sound is opt-in, initial and
+Animation must preserve the agent's actual status. Sound is opt-in, initial and
 reconnect snapshots are silent, and motion respects pause/reduced-motion settings.
 Conversation viewing and prompting retain the existing local trust boundaries.
 
@@ -86,6 +88,7 @@ judgment + a surgical fix; **pick the cheapest worker that lands _close_**; veri
 (never "tags present"); feedback style scales with worker tier; own the cost accounting (provider rates).
 
 ## Changelog
+- 2026-09-14 — Floor is live-only with status/project filters, Show all, and retained sound/animation; demo mode and pose previews removed.
 - 2026-09-14 — Recorded the user's delegation-by-default direction and marked runtime routing/retry/escalation controls as planned.
 - 2026-09-14 — Clarified custom Markdown-aware vault refresh versus full semantic extraction after syncing the existing personal vault.
 - 2026-09-14 — Added scaffolded agent roles/catalog snapshots, clarified wiki graph maintenance and Windows support, and published the approved Floor screenshot in repo/site.

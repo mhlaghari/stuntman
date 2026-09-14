@@ -103,12 +103,71 @@
     return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
   }
 
-  function filterRooms(rooms, projectFilter) {
+  function filterRooms(rooms, projectFilter, selectedGroups) {
     if (!Array.isArray(rooms)) return [];
-    if (!projectFilter || projectFilter === 'ALL') return rooms.slice();
-    return rooms.filter(function (room) {
+    const hasStatusFilter = selectedGroups !== undefined && selectedGroups !== null;
+    let normalized = null;
+    if (hasStatusFilter) {
+      normalized = normalizeSelectedGroups(selectedGroups);
+    }
+    function roomMatchesProject(room) {
+      if (!projectFilter || projectFilter === 'ALL') return true;
       return (room.cwd || '') === projectFilter;
-    });
+    }
+    if (!hasStatusFilter) {
+      if (!projectFilter || projectFilter === 'ALL') return rooms.slice();
+      return rooms.filter(roomMatchesProject);
+    }
+    const out = [];
+    for (let i = 0; i < rooms.length; i++) {
+      const room = rooms[i];
+      if (!room || !roomMatchesProject(room)) continue;
+      const agents = Array.isArray(room.agents) ? room.agents : [];
+      const kept = [];
+      for (let j = 0; j < agents.length; j++) {
+        if (normalized.has(statusGroupFor(agents[j]))) kept.push(agents[j]);
+      }
+      if (kept.length === 0) continue;
+      const copy = Object.assign({}, room);
+      copy.agents = kept;
+      out.push(copy);
+    }
+    return out;
+  }
+
+  const STATUS_GROUPS = ['working', 'needs_input', 'done', 'failed', 'idle', 'ghost', 'ended', 'other'];
+
+  function statusGroupFor(agentOrState) {
+    const s = agentOrState && typeof agentOrState === 'object' ? agentOrState.state : agentOrState;
+    if (s === 'running' || s === 'thinking') return 'working';
+    if (s === 'needs_input') return 'needs_input';
+    if (s === 'done') return 'done';
+    if (s === 'failed') return 'failed';
+    if (s === 'idle') return 'idle';
+    if (s === 'ghost') return 'ghost';
+    if (s === 'ended') return 'ended';
+    return 'other';
+  }
+
+  function normalizeSelectedGroups(selected) {
+    if (selected instanceof Set) return new Set(selected);
+    if (Array.isArray(selected)) return new Set(selected);
+    if (selected && typeof selected === 'object') {
+      const set = new Set();
+      for (let i = 0; i < STATUS_GROUPS.length; i++) {
+        if (selected[STATUS_GROUPS[i]]) set.add(STATUS_GROUPS[i]);
+      }
+      return set;
+    }
+    return new Set(STATUS_GROUPS);
+  }
+
+  function allGroupsSelected(selected) {
+    const n = normalizeSelectedGroups(selected);
+    for (let i = 0; i < STATUS_GROUPS.length; i++) {
+      if (!n.has(STATUS_GROUPS[i])) return false;
+    }
+    return true;
   }
 
   function collectAllAgents(rooms) {
@@ -165,153 +224,6 @@
     });
   }
 
-  // Predictable fixed Demo Rooms & Agents with natural, plain studio dialogue
-  function createDemoState() {
-    const now = Math.floor(Date.now() / 1000);
-    return {
-      startSec: now,
-      generated: now,
-      counts: { working: 2, needs_input: 1, done: 2 },
-      rooms: [
-        {
-          cwd: '/projects/stuntman',
-          name: 'stuntman',
-          agents: [
-            {
-              id: 'demo:codex:stuntman-1',
-              sid: 'demo-codex-1',
-              host: 'codex',
-              worker: false,
-              state: 'running',
-              tool: 'git diff',
-              msg: null,
-              say: 'Running the verification suite. All unit tests look green.',
-              age_s: 14,
-              initial_age_s: 14,
-              reach: 'tmux',
-              has_transcript: true,
-              children: [{ id: 'child-c1', desc: 'test-runner' }]
-            },
-            {
-              id: 'demo:muse:stuntman-2',
-              sid: 'demo-muse-2',
-              host: 'muse',
-              worker: true,
-              state: 'thinking',
-              tool: null,
-              msg: null,
-              say: 'The new avatar animations are ready. Want a look?',
-              age_s: 42,
-              initial_age_s: 42,
-              reach: 'none',
-              has_transcript: true,
-              children: []
-            }
-          ]
-        },
-        {
-          cwd: '/projects/avatar-rig',
-          name: 'avatar-rig',
-          agents: [
-            {
-              id: 'demo:agy:avatar-rig-3',
-              sid: 'demo-gemini-3',
-              host: 'agy',
-              worker: false,
-              state: 'needs_input',
-              tool: 'request_user_input',
-              msg: 'Need your sign-off on the layout spacing.',
-              say: 'Waiting for your review before placing the workstations.',
-              age_s: 18,
-              initial_age_s: 18,
-              reach: 'none',
-              has_transcript: true,
-              children: []
-            },
-            {
-              id: 'demo:claude:avatar-rig-4',
-              sid: 'demo-claude-4',
-              host: 'claude',
-              worker: false,
-              state: 'done',
-              tool: null,
-              msg: null,
-              say: 'Completed the rooftop scene build and verified the desk layout.',
-              age_s: 3, // < 8s for guitar jump leap
-              initial_age_s: 3,
-              reach: 'tmux',
-              has_transcript: true,
-              children: []
-            }
-          ]
-        },
-        {
-          cwd: '/projects/launchpad',
-          name: 'launchpad',
-          agents: [
-            {
-              id: 'demo:opencode:launchpad-5',
-              sid: 'demo-deepseek-5',
-              host: 'opencode',
-              worker: true,
-              state: 'failed',
-              tool: 'npm run build',
-              msg: 'Build step encountered an error: missing target file.',
-              say: 'Build failed while optimizing bundle.',
-              age_s: 58,
-              initial_age_s: 58,
-              reach: 'none',
-              has_transcript: true,
-              children: []
-            },
-            {
-              id: 'demo:claude:launchpad-6',
-              sid: 'demo-claude-6',
-              host: 'claude',
-              worker: false,
-              state: 'done',
-              tool: null,
-              msg: null,
-              say: 'Production release notes published and verified.',
-              age_s: 14, // 8..30s for victory celebration
-              initial_age_s: 14,
-              reach: 'tmux',
-              has_transcript: true,
-              children: [{ id: 'child-d1', desc: 'rollup-optimizer' }]
-            }
-          ]
-        }
-      ]
-    };
-  }
-
-  const DEMO_TRANSCRIPTS = {
-    'demo:codex:stuntman-1': [
-      { role: 'user', text: 'Run the end-to-end tests for the floor loop.' },
-      { role: 'assistant', text: 'Running the verification suite. All unit tests look green.', tools: ['git diff', 'pytest'] }
-    ],
-    'demo:muse:stuntman-2': [
-      { role: 'user', text: 'Review the avatar animation frames.' },
-      { role: 'assistant', text: 'The new avatar animations are ready. Want a look?' }
-    ],
-    'demo:agy:avatar-rig-3': [
-      { role: 'user', text: 'Check the layout spacing.' },
-      { role: 'assistant', text: 'Need your sign-off on the layout spacing.' }
-    ],
-    'demo:claude:avatar-rig-4': [
-      { role: 'user', text: 'Verify the rooftop scene layout.' },
-      { role: 'assistant', text: 'Completed the rooftop scene build and verified the desk layout.' }
-    ],
-    'demo:opencode:launchpad-5': [
-      { role: 'user', text: 'Start the production build.' },
-      { role: 'assistant', text: 'Build step encountered an error: missing target file.' }
-    ],
-    'demo:claude:launchpad-6': [
-      { role: 'user', text: 'Check deployment status.' },
-      { role: 'assistant', text: 'Production release notes published and verified.' }
-    ]
-  };
-
   // ── Browser Runtime ───────────────────────────────────────────────────
 
   function initBrowser(options) {
@@ -329,7 +241,6 @@
     const elStatusBadge = $('connection-status');
     const elBtnSound = $('btn-sound-toggle');
     const elBtnMotion = $('btn-motion-toggle');
-    const elBtnDemo = $('btn-demo-toggle');
     const elProjectSelect = $('project-filter-select');
     const elWorkstations = $('workstations-container');
     const elAttentionList = $('attention-list');
@@ -353,15 +264,20 @@
     const elDInput = $('dinput');
     const elDBtn = $('dbtn');
     const elDNote = $('dnote');
-    const elDemoControls = $('drawer-demo-controls');
-    const elBtnDemoCelebrate = $('btn-demo-celebrate');
-    const elBtnDemoHelp = $('btn-demo-help');
 
     // State Variables
-    let isDemo = false;
-    let demoState = null;
     let latestLiveState = null;
     let selectedProject = 'ALL';
+    let selectedProjectLabel = null;
+    let selectedGroups = new Set(STATUS_GROUPS);
+
+    function projectBasename(cwd) {
+      if (!cwd || typeof cwd !== 'string') return 'project';
+      const trimmed = cwd.replace(/[\\/]+$/, '');
+      if (!trimmed) return 'project';
+      const parts = trimmed.split(/[\\/]/);
+      return parts[parts.length - 1] || 'project';
+    }
     let currentDrawerSid = null;       // composite agent.id
     let currentDrawerAgent = null;     // live reference
     let currentDrawerReach = 'none';   // 'tmux' | 'none'
@@ -388,39 +304,7 @@
     const actorPositions = new Map();    // id -> { pos: number, dir: 1|-1 }
     const attentionDomCards = new Map(); // id -> button
     const manifestDomRows = new Map();   // id -> tr
-    const poseOverrides = new Map();     // id -> { anim, until }
-
-    function getResolvedAnim(agent) {
-      if (!agent) return 'anim-idle';
-      if (poseOverrides.has(agent.id)) {
-        const po = poseOverrides.get(agent.id);
-        if (Date.now() < po.until) {
-          return po.anim;
-        }
-        poseOverrides.delete(agent.id);
-      }
-      return animClassFor(agent);
-    }
-
-    function triggerPosePreview(agentId, anim) {
-      if (!agentId) return;
-      poseOverrides.set(agentId, { anim: anim, until: Date.now() + 8000 });
-      const cached = actorDomNodes.get(agentId);
-      if (cached && cached.sprite) {
-        cached.currentAnim = anim;
-        cached.sprite.className = 'sprite skin-' + cached.currentSkin + ' ' + anim;
-      }
-    }
-
-    // Check query param ?demo=1
-    let queryDemo = false;
-    try {
-      const search = options.query !== undefined ? options.query : window.location.search;
-      const params = new URLSearchParams(search);
-      if (params.get('demo') === '1') {
-        queryDemo = true;
-      }
-    } catch (_) {}
+    let lastEmptyKind = null;
 
     // Initialize FloorAudio
     if (window.FloorAudio && typeof window.FloorAudio.create === 'function') {
@@ -507,7 +391,7 @@
         }
 
         const agent = findAgentById(id) || { id: id, state: cached.root.dataset.state, age_s: cached.root.dataset.ageS };
-        const resolvedAnim = getResolvedAnim(agent);
+        const resolvedAnim = animClassFor(agent);
 
         if (cached.currentAnim !== resolvedAnim || cached.currentState !== agent.state) {
           cached.currentAnim = resolvedAnim;
@@ -648,95 +532,149 @@
       });
     }
 
-    // ── Demo Toggle & Initialization ──
-    function setDemoMode(active) {
-      if (isDemo === active && demoState !== null) return;
-      isDemo = active;
-      pollGeneration++;
-      poseOverrides.clear();
+    // ── Project + Status Visibility Filters ──
+    const elBtnShowAll = $('btn-show-all');
+    const elFilterCount = $('filter-count');
 
-      if (audioInstance) {
-        audioInstance.reset();
+    function isFilteringActive() {
+      if (selectedProject !== 'ALL') return true;
+      return !allGroupsSelected(selectedGroups);
+    }
+
+    function updateFilterControls(visibleCount, totalCount) {
+      const chips = typeof document !== 'undefined' && document.querySelectorAll
+        ? document.querySelectorAll('[data-status-group]')
+        : [];
+      for (let i = 0; i < chips.length; i++) {
+        const chip = chips[i];
+        const g = chip.getAttribute ? chip.getAttribute('data-status-group') : chip.dataset.statusGroup;
+        const on = selectedGroups.has(g);
+        chip.classList.toggle('active', on);
+        if (typeof chip.setAttribute === 'function') {
+          const nextPressed = on ? 'true' : 'false';
+          const curPressed = chip.getAttribute ? chip.getAttribute('aria-pressed') : null;
+          if (curPressed !== nextPressed) {
+            chip.setAttribute('aria-pressed', nextPressed);
+          }
+        }
       }
-
-      if (isDemo) {
-        isConnected = true;
-        demoState = createDemoState();
-        if (elBtnDemo) elBtnDemo.textContent = 'Exit Demo';
-        if (elStatusBadge) {
-          elStatusBadge.className = 'status-badge demo';
-          elStatusBadge.textContent = 'Demo Mode';
+      if (elBtnShowAll) {
+        const shouldDisable = !isFilteringActive();
+        if (elBtnShowAll.disabled !== shouldDisable) {
+          elBtnShowAll.disabled = shouldDisable;
         }
-        // Initialize demo baseline silently
-        if (audioInstance) {
-          const allDemo = collectAllAgents(demoState.rooms || []);
-          audioInstance.observe(allDemo.map(function (a) {
-            return { id: a.id, state: a.state, voice: voiceForAgent(a) };
-          }));
-        }
-      } else {
-        demoState = null;
-        isConnected = false;
-        if (elBtnDemo) elBtnDemo.textContent = 'Demo World';
-        if (elStatusBadge) {
-          elStatusBadge.className = 'status-badge connecting';
-          elStatusBadge.textContent = 'Connecting…';
-        }
-        // Trigger live poll immediately
-        tick();
       }
+      if (elFilterCount) {
+        const nextText = 'Showing ' + visibleCount + ' of ' + totalCount + ' agents';
+        if (elFilterCount.textContent !== nextText) {
+          elFilterCount.textContent = nextText;
+        }
+      }
+    }
 
-      closeDrawer();
+    function setStatusGroupVisible(group, visible) {
+      if (STATUS_GROUPS.indexOf(group) === -1) return;
+      if (visible) selectedGroups.add(group);
+      else selectedGroups.delete(group);
       updateView();
     }
 
-    if (elBtnDemo) {
-      elBtnDemo.addEventListener('click', function () {
-        setDemoMode(!isDemo);
+    function showAllFilters() {
+      selectedGroups = new Set(STATUS_GROUPS);
+      selectedProject = 'ALL';
+      selectedProjectLabel = null;
+      if (elProjectSelect) elProjectSelect.value = 'ALL';
+      updateView();
+    }
+
+    if (typeof document !== 'undefined' && document.querySelectorAll) {
+      document.querySelectorAll('[data-status-group]').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          const g = chip.getAttribute ? chip.getAttribute('data-status-group') : chip.dataset.statusGroup;
+          const currentlyOn = selectedGroups.has(g);
+          setStatusGroupVisible(g, !currentlyOn);
+        });
       });
+    }
+    if (elBtnShowAll) {
+      elBtnShowAll.addEventListener('click', showAllFilters);
     }
 
     // ── Project Filter ──
     if (elProjectSelect) {
       elProjectSelect.addEventListener('change', function () {
         selectedProject = elProjectSelect.value;
+        if (selectedProject && selectedProject !== 'ALL') {
+          let foundLabel = null;
+          const opts = elProjectSelect.options || [];
+          for (let oi = 0; oi < opts.length; oi++) {
+            if (opts[oi].value === selectedProject) {
+              foundLabel = opts[oi].text || '';
+              break;
+            }
+          }
+          if (foundLabel) {
+            selectedProjectLabel = foundLabel.replace(/\s*\(no agents\)\s*$/, '');
+          } else {
+            selectedProjectLabel = projectBasename(selectedProject);
+          }
+        } else {
+          selectedProjectLabel = null;
+        }
         updateView();
       });
     }
 
+    // Keep the user's project selection across empty snapshots: never reset to
+    // ALL here. A selected-but-absent project stays selected via a temporary
+    // retained option ("<label> (no agents)"); the suffix is removed on return.
     function updateProjectSelect(rooms) {
       if (!elProjectSelect) return;
       const formatted = formatRoomOptionLabels(rooms);
-      const prevVal = elProjectSelect.value || selectedProject;
-
-      // Check if options changed
-      const currentOpts = Array.from(elProjectSelect.options).map(function (o) { return o.value + ':' + o.text; }).join('|');
-      const newOptsStr = ['ALL:All Projects'].concat(formatted.map(function (f) { return f.cwd + ':' + f.label; })).join('|');
-      if (currentOpts === newOptsStr) return;
-
-      let html = '<option value="ALL">All Projects</option>';
-      const seen = new Set();
+      const labelByCwd = Object.create(null);
+      const seenOrder = [];
       for (let i = 0; i < formatted.length; i++) {
         const item = formatted[i];
-        if (!seen.has(item.cwd)) {
-          seen.add(item.cwd);
-          html += '<option value="' + escapeHtml(item.cwd) + '">' + escapeHtml(item.label) + '</option>';
+        if (!Object.prototype.hasOwnProperty.call(labelByCwd, item.cwd)) {
+          labelByCwd[item.cwd] = item.label;
+          seenOrder.push(item.cwd);
         }
       }
-      elProjectSelect.innerHTML = html;
 
-      if (seen.has(prevVal) || prevVal === 'ALL') {
-        elProjectSelect.value = prevVal;
-        selectedProject = prevVal;
-      } else {
-        elProjectSelect.value = 'ALL';
-        selectedProject = 'ALL';
+      if (selectedProject !== 'ALL' && Object.prototype.hasOwnProperty.call(labelByCwd, selectedProject)) {
+        selectedProjectLabel = labelByCwd[selectedProject];
       }
+
+      let retained = null;
+      if (selectedProject !== 'ALL' && !Object.prototype.hasOwnProperty.call(labelByCwd, selectedProject)) {
+        const base = selectedProjectLabel || projectBasename(selectedProject);
+        retained = { cwd: selectedProject, label: base + ' (no agents)' };
+      }
+
+      const entries = [{ cwd: 'ALL', label: 'All Projects' }];
+      for (let si = 0; si < seenOrder.length; si++) {
+        entries.push({ cwd: seenOrder[si], label: labelByCwd[seenOrder[si]] });
+      }
+      if (retained) entries.push(retained);
+
+      const newOptsStr = entries.map(function (e) { return e.cwd + ':' + e.label; }).join('|');
+      const currentOpts = Array.from(elProjectSelect.options || []).map(function (o) { return o.value + ':' + o.text; }).join('|');
+      if (currentOpts === newOptsStr) {
+        if (elProjectSelect.value !== selectedProject) elProjectSelect.value = selectedProject;
+        return;
+      }
+
+      let html = '';
+      for (let hi = 0; hi < entries.length; hi++) {
+        html += '<option value="' + escapeHtml(entries[hi].cwd) + '">' + escapeHtml(entries[hi].label) + '</option>';
+      }
+      elProjectSelect.innerHTML = html;
+      elProjectSelect.value = selectedProject;
     }
 
-    // Find agent by composite id in current state
+    // Find agent by composite id in current live state (full snapshot, unfiltered)
     function findAgentById(id) {
-      const state = isDemo ? demoState : latestLiveState;
+      const state = latestLiveState;
       if (!state || !Array.isArray(state.rooms)) return null;
       const all = collectAllAgents(state.rooms);
       for (let i = 0; i < all.length; i++) {
@@ -745,9 +683,9 @@
       return null;
     }
 
-    // Find room name for an agent
+    // Find room name for an agent (full snapshot, unfiltered)
     function findRoomNameForAgent(id) {
-      const state = isDemo ? demoState : latestLiveState;
+      const state = latestLiveState;
       if (!state || !Array.isArray(state.rooms)) return 'project';
       for (let i = 0; i < state.rooms.length; i++) {
         const r = state.rooms[i];
@@ -762,7 +700,7 @@
     function getOrCreateActorNode(agent, roomName) {
       const id = agent.id;
       const skin = skinFor(agent.host);
-      const shortSid = agent.sid.replace(/^(?:worker-|demo-)/, '').slice(0, 8);
+      const shortSid = String(agent.sid || '').replace(/^(?:worker-)/, '').slice(0, 8);
 
       if (actorDomNodes.has(id)) {
         const cached = actorDomNodes.get(id);
@@ -772,7 +710,7 @@
         cached.root.classList.toggle('ghosted', ['ghost', 'ended'].includes(agent.state));
         cached.root.classList.toggle('selected', currentDrawerSid === id);
 
-        const resolvedAnim = getResolvedAnim(agent);
+        const resolvedAnim = animClassFor(agent);
         if (cached.currentAnim !== resolvedAnim || cached.currentSkin !== skin) {
           cached.currentAnim = resolvedAnim;
           cached.currentSkin = skin;
@@ -854,7 +792,7 @@
       const mover = document.createElement('div');
       mover.className = 'actor-mover';
       const sprite = document.createElement('div');
-      const resolvedAnim = getResolvedAnim(agent);
+      const resolvedAnim = animClassFor(agent);
       sprite.className = 'sprite skin-' + skin + ' ' + resolvedAnim;
       mover.appendChild(sprite);
       stage.appendChild(mover);
@@ -972,23 +910,26 @@
 
     // ── Render Studio & World (Persistent Keyed DOM) ──
     function updateView() {
-      const currentState = isDemo ? demoState : latestLiveState;
+      const currentState = latestLiveState;
       if (!currentState) {
-        if (elWorkstations) {
+        updateFilterControls(0, 0);
+        if (elWorkstations && lastEmptyKind !== 'connecting') {
+          lastEmptyKind = 'connecting';
           elWorkstations.innerHTML = '<div class="empty-studio">' +
             '<h3>The studio is quiet</h3>' +
             '<p>Connecting to floor service at 127.0.0.1:4517…</p>' +
-            '<button class="btn-demo" id="btn-quick-demo">Explore Demo Studio</button>' +
             '</div>';
-          const qd = $('btn-quick-demo');
-          if (qd) qd.addEventListener('click', function () { setDemoMode(true); });
+          zoneDomNodes.clear();
         }
         return;
       }
 
       const allRooms = currentState.rooms || [];
       updateProjectSelect(allRooms);
-      const filteredRooms = filterRooms(allRooms, selectedProject);
+      const filteredRooms = filterRooms(allRooms, selectedProject, selectedGroups);
+      const allAgents = collectAllAgents(allRooms);
+      const visibleAgents = collectAllAgents(filteredRooms);
+      updateFilterControls(visibleAgents.length, allAgents.length);
 
       // Capture active focus to restore across DOM updates
       const activeEl = document.activeElement;
@@ -997,9 +938,9 @@
         activeActorId = activeEl.dataset.actorId;
       }
 
-      // Collect all current live agent IDs to evict stale nodes
+      // Collect all current live agent IDs (full snapshot) to evict stale nodes.
+      // Filtered-out agents keep their cached nodes so toggling back restores identity.
       const allLiveAgentIds = new Set();
-      const allAgents = collectAllAgents(allRooms);
       for (let i = 0; i < allAgents.length; i++) {
         allLiveAgentIds.add(allAgents[i].id);
       }
@@ -1013,15 +954,19 @@
       // 1. Workstations Grid in Rooftop Scene
       if (elWorkstations) {
         if (filteredRooms.length === 0) {
-          elWorkstations.innerHTML = '<div class="empty-studio">' +
-            '<h3>The studio is quiet</h3>' +
-            '<p>' + (allRooms.length > 0 ? 'No agents match the selected project filter.' : 'No agents on the floor yet. Start a session or run Stuntman.') + '</p>' +
-            '<button class="btn-demo" id="btn-empty-demo">Explore Demo Studio</button>' +
-            '</div>';
-          const ed = $('btn-empty-demo');
-          if (ed) ed.addEventListener('click', function () { setDemoMode(true); });
-          zoneDomNodes.clear();
+          const emptyKind = allAgents.length > 0 ? 'no-match' : 'no-live';
+          if (lastEmptyKind !== emptyKind) {
+            lastEmptyKind = emptyKind;
+            elWorkstations.innerHTML = '<div class="empty-studio">' +
+              '<h3>The studio is quiet</h3>' +
+              '<p>' + (emptyKind === 'no-match'
+                ? 'No agents match these filters. Use Show all to restore the floor.'
+                : 'No agents on the floor yet. Start a session with active hooks or run Stuntman.') + '</p>' +
+              '</div>';
+            zoneDomNodes.clear();
+          }
         } else {
+          lastEmptyKind = null;
           // Remove empty-studio markup if present
           if (elWorkstations.querySelector('.empty-studio')) {
             elWorkstations.innerHTML = '';
@@ -1117,12 +1062,31 @@
         }
       }
 
-      // 2. Attention Sidebar ('Needs you') - Keyed in-place update
-      const needsAttention = allAgents.filter(function (a) {
+      // 2. Attention Sidebar ('Needs you') - Keyed in-place update (filtered)
+      const fullAttention = allAgents.filter(function (a) {
         return a.state === 'needs_input' || a.state === 'failed';
       });
+      const visibleAttentionIds = new Set();
+      for (let vi = 0; vi < visibleAgents.length; vi++) {
+        if (visibleAgents[vi].state === 'needs_input' || visibleAgents[vi].state === 'failed') {
+          visibleAttentionIds.add(visibleAgents[vi].id);
+        }
+      }
+      const needsAttention = fullAttention.filter(function (a) { return visibleAttentionIds.has(a.id); });
+
+      function updateAttentionEmpty() {
+        const emptyText = elAttentionEmpty ? elAttentionEmpty.querySelector('.attention-empty-text') : null;
+        if (!emptyText) return;
+        const nextHtml = (fullAttention.length > 0 && needsAttention.length === 0)
+          ? '<b>No matching alerts</b><br>Change filters to see hidden agents.'
+          : '<b>All clear</b><br>Your crew has it from here.';
+        if (emptyText.innerHTML !== nextHtml) {
+          emptyText.innerHTML = nextHtml;
+        }
+      }
 
       if (elAttentionList && elAttentionEmpty) {
+        updateAttentionEmpty();
         if (needsAttention.length === 0) {
           elAttentionEmpty.style.display = 'flex';
           elAttentionList.style.display = 'none';
@@ -1137,7 +1101,7 @@
             const a = needsAttention[i];
             currentAttentionIds.add(a.id);
             const pName = findRoomNameForAgent(a.id);
-            const shortSid = a.sid.replace(/^(?:worker-|demo-)/, '').slice(0, 8);
+            const shortSid = String(a.sid || '').replace(/^(?:worker-)/, '').slice(0, 8);
             let card = attentionDomCards.get(a.id);
 
             if (!card) {
@@ -1202,17 +1166,32 @@
         }
       }
 
-      // 3. Manifest Table (Below World) - Keyed in-place update
-      const visibleAgents = collectAllAgents(filteredRooms);
-      if (elManifestWorking) elManifestWorking.textContent = currentState.counts.working || 0;
-      if (elManifestNeeds) elManifestNeeds.textContent = currentState.counts.needs_input || 0;
-      if (elManifestDone) elManifestDone.textContent = currentState.counts.done || 0;
+      // 3. Manifest Table (Below World) - Keyed in-place update (filtered counts + rows)
+      let manifestWorking = 0;
+      let manifestNeeds = 0;
+      let manifestDone = 0;
+      for (let ci = 0; ci < visibleAgents.length; ci++) {
+        const cs = visibleAgents[ci].state;
+        if (cs === 'running' || cs === 'thinking') manifestWorking++;
+        else if (cs === 'needs_input') manifestNeeds++;
+        else if (cs === 'done') manifestDone++;
+      }
+      if (elManifestWorking) elManifestWorking.textContent = manifestWorking;
+      if (elManifestNeeds) elManifestNeeds.textContent = manifestNeeds;
+      if (elManifestDone) elManifestDone.textContent = manifestDone;
 
       if (elManifestBody) {
         if (visibleAgents.length === 0) {
-          elManifestBody.innerHTML = '<tr class="manifest-empty"><td colspan="5" style="text-align:center; padding: 14px; color: var(--dim);">' +
-            'No agents currently visible on the floor.' +
-            '</td></tr>';
+          const manifestKind = allAgents.length > 0 ? 'no-match' : 'no-live';
+          const manifestText = manifestKind === 'no-match'
+            ? 'No agents match these filters. Use Show all to restore the floor.'
+            : 'No agents currently visible on the floor.';
+          const existingEmpty = elManifestBody.querySelector('.manifest-empty');
+          if (!existingEmpty || existingEmpty.textContent !== manifestText) {
+            elManifestBody.innerHTML = '<tr class="manifest-empty"><td colspan="5" style="text-align:center; padding: 14px; color: var(--dim);">' +
+              manifestText +
+              '</td></tr>';
+          }
           manifestDomRows.clear();
         } else {
           // Remove empty indicator if present
@@ -1224,7 +1203,7 @@
             const a = visibleAgents[i];
             currentManifestIds.add(a.id);
             const pName = findRoomNameForAgent(a.id);
-            const shortSid = a.sid.replace(/^(?:worker-|demo-)/, '').slice(0, 8);
+            const shortSid = String(a.sid || '').replace(/^(?:worker-)/, '').slice(0, 8);
             let tr = manifestDomRows.get(a.id);
 
             if (!tr) {
@@ -1320,7 +1299,8 @@
         }
       }
 
-      // Check drawer state sync on poll
+      // Check drawer state sync on poll (drawer keeps referring to real latest state;
+      // filtering an agent out does not close its open drawer)
       if (currentDrawerSid) {
         const updatedAgent = findAgentById(currentDrawerSid);
         if (updatedAgent) {
@@ -1329,7 +1309,7 @@
             currentDrawerReach = 'none';
           }
           updateSendAvailability();
-        } else if (!isDemo) {
+        } else {
           // Session ended or vanished from snapshot
           currentDrawerAgent = null;
           currentDrawerReach = 'none';
@@ -1347,54 +1327,32 @@
     function tick() {
       if (tickPromise) return tickPromise;
       const myGen = pollGeneration;
-      // Defer the body so even the synchronous demo branch releases an assigned guard.
       tickPromise = Promise.resolve().then(async function () {
         try {
-          if (!isDemo) {
-            const state = await jsonFetch('state.json');
-            if (myGen !== pollGeneration || isDemo) return; // Mode switched while fetch in flight
+          const state = await jsonFetch('state.json');
+          if (myGen !== pollGeneration) return;
 
-            isConnected = true;
-            latestLiveState = state;
+          isConnected = true;
+          latestLiveState = state;
 
-            // Full snapshot observed by FloorAudio before project filtering
-            const allLiveAgents = collectAllAgents(state.rooms || []);
-            if (audioInstance) {
-              const soundItems = allLiveAgents.map(function (a) {
-                return { id: a.id, state: a.state, voice: voiceForAgent(a) };
-              });
-              audioInstance.observe(soundItems);
-            }
+          // Full unfiltered snapshot observed by FloorAudio on successful live polls only.
+          // Filter toggles never trigger/silence/duplicate events.
+          const allLiveAgents = collectAllAgents(state.rooms || []);
+          if (audioInstance) {
+            const soundItems = allLiveAgents.map(function (a) {
+              return { id: a.id, state: a.state, voice: voiceForAgent(a) };
+            });
+            audioInstance.observe(soundItems);
+          }
 
-            if (elStatusBadge) {
-              elStatusBadge.className = 'status-badge live';
-              elStatusBadge.textContent = 'Live Floor';
-            }
-          } else {
-            // Demo mode active
-            isConnected = true;
-            if (demoState) {
-              const nowSec = Math.floor(Date.now() / 1000);
-              const elapsed = nowSec - (demoState.startSec || nowSec);
-              const allDemoAgents = collectAllAgents(demoState.rooms || []);
-              for (let i = 0; i < allDemoAgents.length; i++) {
-                const a = allDemoAgents[i];
-                if (a.initial_age_s !== undefined) {
-                  a.age_s = a.initial_age_s + elapsed;
-                }
-              }
-              if (audioInstance) {
-                const soundItems = allDemoAgents.map(function (a) {
-                  return { id: a.id, state: a.state, voice: voiceForAgent(a) };
-                });
-                audioInstance.observe(soundItems);
-              }
-            }
+          if (elStatusBadge) {
+            elStatusBadge.className = 'status-badge live';
+            elStatusBadge.textContent = 'Live Floor';
           }
 
           updateView();
         } catch (err) {
-          if (!isDemo && myGen === pollGeneration) {
+          if (myGen === pollGeneration) {
             isConnected = false;
             if (elStatusBadge) {
               elStatusBadge.className = 'status-badge offline';
@@ -1414,7 +1372,7 @@
 
     // ── Send Availability Calculation ──
     function canSendToCurrent() {
-      if (isDemo || !isConnected || !currentDrawerSid) return false;
+      if (!isConnected || !currentDrawerSid) return false;
       const latest = findAgentById(currentDrawerSid);
       if (!latest || latest.worker) return false;
       if (latest.reach !== 'tmux' || currentDrawerReach !== 'tmux') return false;
@@ -1424,17 +1382,6 @@
 
     function updateSendAvailability() {
       const allowed = canSendToCurrent();
-
-      if (isDemo) {
-        if (elDReach) {
-          elDReach.textContent = 'demo preview';
-          elDReach.className = 'reach';
-        }
-        if (elDBtn) elDBtn.disabled = true;
-        if (elDInput) elDInput.disabled = true;
-        if (elDNote) elDNote.textContent = 'Demo preview. No live session is connected.';
-        return;
-      }
 
       if (!currentDrawerAgent) {
         if (elDBtn) elDBtn.disabled = true;
@@ -1460,16 +1407,6 @@
       const targetId = currentDrawerSid;
       const myTransGen = transcriptGeneration;
       transcriptActive = true;
-
-      if (isDemo) {
-        transcriptActive = false;
-        const msgs = DEMO_TRANSCRIPTS[targetId] || [
-          { role: 'assistant', text: currentDrawerAgent.say || 'Session ready in demo preview.' }
-        ];
-        renderTranscriptMessages(msgs, isInitial);
-        updateSendAvailability();
-        return;
-      }
 
       try {
         const signal = transcriptAbortController ? transcriptAbortController.signal : null;
@@ -1564,15 +1501,11 @@
       currentDrawerReach = 'none'; // Set none until confirmed by transcript response!
 
       if (elDTitle) {
-        elDTitle.textContent = roomName + ' · ' + hostLabel(agent.host) + ' (' + agent.sid.replace(/^(?:worker-|demo-)/, '').slice(0, 8) + ')';
+        elDTitle.textContent = roomName + ' · ' + hostLabel(agent.host) + ' (' + String(agent.sid || '').replace(/^(?:worker-)/, '').slice(0, 8) + ')';
       }
 
       if (elDInput) {
         elDInput.value = drafts.get(agent.id) || '';
-      }
-
-      if (elDemoControls) {
-        elDemoControls.style.display = isDemo ? 'flex' : 'none';
       }
 
       if (elDrawer) elDrawer.classList.add('open');
@@ -1596,11 +1529,9 @@
       refreshTranscript(true);
 
       clearInterval(drawerPollTimer);
-      if (!isDemo) {
-        drawerPollTimer = setInterval(function () {
-          refreshTranscript(false);
-        }, 2500);
-      }
+      drawerPollTimer = setInterval(function () {
+        refreshTranscript(false);
+      }, 2500);
 
       if (elDClose) elDClose.focus();
     }
@@ -1657,81 +1588,6 @@
           audioInstance.sample(voice, cueState);
         }
       });
-    }
-
-    // Demo actions: Celebrate & Needs Help
-    if (elBtnDemoCelebrate) {
-      elBtnDemoCelebrate.addEventListener('click', function () {
-        if (!currentDrawerAgent || !isDemo || !demoState) return;
-        currentDrawerAgent.state = 'done';
-        currentDrawerAgent.age_s = 0;
-        currentDrawerAgent.initial_age_s = -(Math.floor(Date.now() / 1000) - (demoState.startSec || Math.floor(Date.now() / 1000)));
-        currentDrawerAgent.msg = null;
-        currentDrawerAgent.tool = null;
-        currentDrawerAgent.say = 'Just wrapped up the task. Ready for review.';
-        recalculateCounts(demoState);
-
-        // Sync baseline with FloorAudio (do NOT call enableAudio; respects Sound Off)
-        if (audioInstance) {
-          const allDemo = collectAllAgents(demoState.rooms || []);
-          audioInstance.observe(allDemo.map(function (a) {
-            return { id: a.id, state: a.state, voice: voiceForAgent(a) };
-          }));
-        }
-
-        updateView();
-        updateSendAvailability();
-      });
-    }
-
-    if (elBtnDemoHelp) {
-      elBtnDemoHelp.addEventListener('click', function () {
-        if (!currentDrawerAgent || !isDemo || !demoState) return;
-        currentDrawerAgent.state = 'needs_input';
-        currentDrawerAgent.msg = 'Need your review before proceeding.';
-        currentDrawerAgent.say = 'Paused waiting for your input.';
-        recalculateCounts(demoState);
-
-        // Sync baseline with FloorAudio (respects Sound Off)
-        if (audioInstance) {
-          const allDemo = collectAllAgents(demoState.rooms || []);
-          audioInstance.observe(allDemo.map(function (a) {
-            return { id: a.id, state: a.state, voice: voiceForAgent(a) };
-          }));
-        }
-
-        updateView();
-        updateSendAvailability();
-      });
-    }
-
-    // Programmatically inject demo pose preview controls inside elDemoControls
-    if (elDemoControls) {
-      const poses = [
-        { id: 'pose-riff', label: 'Guitar', anim: 'anim-riff' },
-        { id: 'pose-horns', label: 'Rock sign', anim: 'anim-horns' },
-        { id: 'pose-jump', label: 'Guitar jump', anim: 'anim-jump' },
-        { id: 'pose-failed', label: 'Angry', anim: 'anim-failed' },
-        { id: 'pose-victory', label: 'Victory', anim: 'anim-victory' }
-      ];
-      let poseRow = elDemoControls.querySelector('.demo-pose-row');
-      if (!poseRow) {
-        poseRow = document.createElement('div');
-        poseRow.className = 'demo-pose-row';
-        for (let i = 0; i < poses.length; i++) {
-          const p = poses[i];
-          const btn = document.createElement('button');
-          btn.id = p.id;
-          btn.className = 'btn-demo-action';
-          btn.textContent = p.label;
-          btn.addEventListener('click', function () {
-            if (!currentDrawerAgent || !isDemo) return;
-            triggerPosePreview(currentDrawerAgent.id, p.anim);
-          });
-          poseRow.appendChild(btn);
-        }
-        elDemoControls.appendChild(poseRow);
-      }
     }
 
     // ── Send Prompt with Strict Guards & Pre-await Capture ──
@@ -1852,23 +1708,29 @@
       }
     });
 
-    // Always install exactly one polling interval regardless of initial mode
-    if (queryDemo) {
-      setDemoMode(true);
-    } else {
-      tick();
-    }
+    // Live-only board: an old ?demo=1 URL still polls/renders real live state.
+    tick();
     const pollTimer = setInterval(tick, 2000);
 
     return {
       tick: tick,
-      setDemoMode: setDemoMode,
+      updateView: updateView,
       openDrawer: openDrawer,
       closeDrawer: closeDrawer,
       sendPrompt: sendPrompt,
-      getIsDemo: function () { return isDemo; },
-      getDemoState: function () { return demoState; },
       getCurrentDrawerSid: function () { return currentDrawerSid; },
+      getLiveState: function () { return latestLiveState; },
+      getSelectedProject: function () { return selectedProject; },
+      getSelectedProjectLabel: function () { return selectedProjectLabel; },
+      setSelectedProject: function (p) {
+        selectedProject = p;
+        if (p === 'ALL') selectedProjectLabel = null;
+        updateView();
+      },
+      getSelectedGroups: function () { return new Set(selectedGroups); },
+      setSelectedGroups: function (groups) { selectedGroups = normalizeSelectedGroups(groups); updateView(); },
+      setStatusGroupVisible: setStatusGroupVisible,
+      showAllFilters: showAllFilters,
       destroy: function () {
         stopMovementLoop();
         clearInterval(drawerPollTimer);
@@ -1885,7 +1747,8 @@
     formatAge: formatAge,
     escapeHtml: escapeHtml,
     voiceForAgent: voiceForAgent,
-    createDemoState: createDemoState,
+    statusGroupFor: statusGroupFor,
+    STATUS_GROUPS: STATUS_GROUPS.slice(),
     recalculateCounts: recalculateCounts,
     filterRooms: filterRooms,
     formatRoomOptionLabels: formatRoomOptionLabels,

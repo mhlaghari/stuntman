@@ -8,16 +8,16 @@ every session._
 | Area | Status |
 | --- | --- |
 | Floor scene | Approved detailed Dubai skyline and project rooftop bays retained. |
-| Branding and controls | One header logo, lagharilabs.com, and project/Demo controls in the header. Five expressive Vexel skins. |
-| Animation/audio | Guitar, rock-sign headbanging, rage, jump/victory; demo pose previews; opt-in voices and completion/help/failure cues. |
-| Live interaction | Stable DOM/focus, drafts, cancellation, live/demo polling, guarded tmux sending verified. |
+| Branding and controls | One header logo, lagharilabs.com, and project/status filters with Show all and visible/total counts. Five expressive Vexel skins. |
+| Animation/audio | Guitar, rock-sign headbanging, rage, jump/victory; opt-in voices and completion/help/failure cues. Demo world and pose previews removed. |
+| Live interaction | Live-only polling; status filters compose with project selection across bays, manifest, and attention sidebar. Selection survives empty snapshots. Stable DOM/focus, drafts, cancellation, and guarded tmux sending retained. |
 | Scaffold | Managed agent roster, Fable/GPT-Astra planner roles, bounded model discovery, preservation and idempotence tests. |
 | Delegation policy | Role instructions shipped; automatic worker selection, retry/fallback policy, and recorded escalation remain planned. Latest discussion reaffirmed delegating implementation by default. |
 | Wiki review | Agent-driven notes and semantic graph refresh documented; incorrect code-only update advice fixed. |
 | OpenCode | Free Muse Spark 1.3 Contributor route used for implementation and review feedback through Stuntman. |
 | Windows/router review | WSL remains unverified; native Windows unsupported end to end. OmniRoute investigated and documented, not installed. |
-| Validation | 46 Python + 22 world + 26 audio checks pass; syntax and HTTP asset checks pass. |
-| Website/repo | `1025c18` pushed to main; GitHub Pages built that revision. Public Floor section and byte-identical JPEG verified. |
+| Validation | 46 Python + 36 world + 26 audio checks pass (108 total); syntax/whitespace pass. Safari verified hide/restore, combined filters, Show all, and former demo URL rendering real agents. |
+| Website/repo | Earlier visual delivery `1025c18` built on GitHub Pages. Follow-up docs describe live-only filtering and label the retained JPEG as an earlier staged preview. |
 | Documentation delivery | Delegation policy and next steps committed and pushed as `16f32f1`; remote SHA verified. README screenshot and public image rechecked. |
 | Personal vault | Stuntman page, index/hot/log, and graph-refresh lesson updated; Markdown-aware helper refreshed graph JSON/HTML/canvas. Existing scheduled graph job reports exit 78 and needs a separate repair. |
 
@@ -26,7 +26,7 @@ OpenCode route. Add the user's video when provided. WSL validation and an isolat
 OmniRoute trial are optional future work. No further Floor redesign is queued. No plugin
 reinstall or version bump is part of this source/site delivery.
 
-Post-push audit: no tracked changes remained. Three preserved, pre-existing
+Earlier post-push audit: no tracked changes remained. Three preserved, pre-existing
 untracked duplicate files cause the Stop hook to repeat its memory warning after
 commits; this does not indicate missing implementation or memory updates.
 
@@ -136,6 +136,11 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-09-14 — Removed Demo World; added independent status visibility toggles and
+Show all reset alongside project filtering. One OpenCode/Muse review round fixed
+project retention during empty snapshots. Host verification: 108 checks and Safari
+interaction review passed. Project docs and screenshot captions reflect the change.
 
 2026-09-14 — Approved Floor, scaffold roster, runtime review, and screenshot
 published to main and the existing website. Delivery validation: 94 checks pass.

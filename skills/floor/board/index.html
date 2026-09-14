@@ -27,12 +27,26 @@
             <option value="ALL">All Projects</option>
           </select>
         </div>
-        <button class="btn-demo" id="btn-demo-toggle">Demo World</button>
         <span class="status-badge live" id="connection-status">Live Floor</span>
         <div class="dubai-clock">DUBAI <b id="dubai-clock-time">--:--:--</b></div>
         <button class="btn-toggle" id="btn-sound-toggle" aria-pressed="false" aria-label="Toggle audio alerts (currently Off)">Sound: Off</button>
         <button class="btn-toggle active" id="btn-motion-toggle" aria-pressed="true" aria-label="Toggle motion animations (currently On)">Motion: On</button>
       </div>
+    </div>
+    <div class="header-filters" id="header-filters">
+      <span class="filter-label" id="status-filter-label">Show:</span>
+      <div class="status-chips" role="group" aria-labelledby="status-filter-label">
+        <button class="chip-toggle active" type="button" data-status-group="working" aria-pressed="true">Working</button>
+        <button class="chip-toggle active" type="button" data-status-group="needs_input" aria-pressed="true">Needs you</button>
+        <button class="chip-toggle active" type="button" data-status-group="done" aria-pressed="true">Done</button>
+        <button class="chip-toggle active" type="button" data-status-group="failed" aria-pressed="true">Failed</button>
+        <button class="chip-toggle active" type="button" data-status-group="idle" aria-pressed="true">Idle</button>
+        <button class="chip-toggle active" type="button" data-status-group="ghost" aria-pressed="true">Silent</button>
+        <button class="chip-toggle active" type="button" data-status-group="ended" aria-pressed="true">Left</button>
+        <button class="chip-toggle active" type="button" data-status-group="other" aria-pressed="true">Other</button>
+      </div>
+      <button class="btn-show-all" type="button" id="btn-show-all" disabled>Show all</button>
+      <span class="filter-count" id="filter-count" role="status" aria-live="polite"></span>
     </div>
   </header>
 
@@ -156,13 +170,6 @@
         <button class="btn-drawer-action" id="dplaycue" title="Test audio cue for this agent">Play cue</button>
         <button class="btn-close" id="dclose" aria-label="Close conversation drawer">✕ Close</button>
       </div>
-    </div>
-
-    <!-- Demo Action Bar (visible in demo mode) -->
-    <div class="drawer-demo-bar" id="drawer-demo-controls" style="display:none;">
-      <span>Demo Actions:</span>
-      <button class="btn-demo-action" id="btn-demo-celebrate">Celebrate (Done)</button>
-      <button class="btn-demo-action" id="btn-demo-help">Needs Help</button>
     </div>
 
     <div id="dlog" role="log" aria-label="Session conversation"></div>

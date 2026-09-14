@@ -28,13 +28,15 @@ and summarize who is working, who needs input, and who finished.
 The board renders a pixel-art Dubai rooftop studio with a panorama skyline
 at sunset and five bundled Vexel skins mapped to hosts: Claude Code (`claude`),
 Codex (`codex`), Antigravity (`gemini`), OpenCode (`deepseek`), and Muse / default
-(`laghari`). Use the header controls to filter by project workstation or toggle
-the in-memory Demo world (also available directly via `?demo=1`). Audio cues for
+(`laghari`). Use the header controls to filter by project workstation and by agent
+status (Working covers running and thinking; plus Needs you, Done, Failed, Idle,
+Silent, Left, Other), with a `Show all` reset and a `Showing N of M agents`
+counter. Click a status to hide it; click again to restore it. Show all clears
+both project and status filters. The board is live-only with no demo mode. Audio cues for
 done, needs-input, and failure events are strictly opt-in via the Sound toggle or
 Sound Desk samples. Motion can be paused with the Motion button or via system
 `prefers-reduced-motion`. Working agents play guitar, thinking/input agents
 headbang with rock horns, failures rage, and completed tasks jump then celebrate.
-Demo drawers include eight-second pose previews that do not change live state.
 
 ## Event setup
 

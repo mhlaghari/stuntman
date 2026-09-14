@@ -37,10 +37,11 @@ revisit before any big direction call._
   declaring Windows support. See `docs/runtime-review.md`.
 
 - Keep `/floor` useful for supervising real work: clear project grouping, visible
-  attention states, expressive Vexels, and optional sound cues. The September 14
-  visual review favored the earlier detailed Dubai skyline and rooftop layout;
-  preserve that choice in future polish. Demo exploration should stay separate
-  from live status and prompt delivery.
+  attention states, expressive Vexels, optional sound cues, and status visibility
+  filters with Show all for hiding/restoring Done, Working, and other groups.
+  The September 14 visual review favored the earlier detailed Dubai skyline and
+  rooftop layout; preserve that choice in future polish. The board is live-only
+  with no demo mode.
 
 - Support Claude Code and Codex through the same eight skills and worker wrapper.
   Host-specific memory files and quota/scheduling capabilities are explicit;
@@ -61,6 +62,7 @@ revisit before any big direction call._
 - Does the doc system want a tiered (minimal / full) mode for tiny repos?
 
 ## Changelog
+- 2026-09-14 — Floor is live-only: demo mode removed, status/project filters with Show all retained alongside sound and animation.
 - 2026-09-14 — Recommended runtime delegation policy as the next development task; direct OpenCode first, OmniRoute conditional on a provider-failover need.
 - 2026-09-14 — Personal-vault sync confirmed that custom mechanical Markdown graph refresh can coexist with semantic extraction; scheduled automation needs separate health verification.
 - 2026-09-14 — Runtime review implemented managed scaffold rosters, exercised a free OpenCode worker, corrected wiki refresh instructions, and documented optional OmniRoute/WSL follow-ups.
