@@ -11,7 +11,7 @@ every session._
 | Branding and controls | One header logo, lagharilabs.com, and project/status filters with Show all and visible/total counts. Five expressive Vexel skins. |
 | Animation/audio | Guitar, rock-sign headbanging, rage, jump/victory; opt-in voices and completion/help/failure cues. Demo world and pose previews removed. |
 | Live interaction | Live-only polling; status filters compose with project selection across bays, manifest, and attention sidebar. Selection survives empty snapshots. Stable DOM/focus, drafts, cancellation, and guarded tmux sending retained. |
-| Scaffold | Managed agent roster, Fable/GPT-Astra planner roles, bounded model discovery, preservation and idempotence tests. |
+| Scaffold | Managed agent roster, Fable/GPT-Astra planner roles, bounded model discovery, preservation and idempotence tests. 2026-09-15: skill drafts a README for README-less projects. |
 | Delegation policy | Role instructions shipped; automatic worker selection, retry/fallback policy, and recorded escalation remain planned. Latest discussion reaffirmed delegating implementation by default. |
 | Wiki review | Agent-driven notes and semantic graph refresh documented; incorrect code-only update advice fixed. |
 | OpenCode | Free Muse Spark 1.3 Contributor route used for implementation and review feedback through Stuntman. |
@@ -138,6 +138,25 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-09-16 — Harness test passed end to end: local `qwen3.8:27b-mlx` (64k
+variant) built "Orbit Lab" through `stunt`→opencode→Ollama at $0, gated by a
+headless render + physics-number + arc-pixel check; one worker feedback round
+fixed 2/3 items and deflected on the third (unit bug), which the lead fixed in
+one line. Route needs no new backend code; the `/harness` engine (gate runner,
+bounded retries, escalation record) is the remaining work. Artifacts committed
+under `experiments/harness/orbit-lab/`. Rebased onto the 09-14 Windows-session
+release (v0.13.1) and bumped both manifests to **v0.13.2** so the scaffold
+skill change reaches installs. Tomorrow: Hugging Face variant survey of the
+candidate workers, worker A/B, more harness tasks. See HANDOFF.
+
+2026-09-15 — Scaffold SKILL.md: infer and draft a README when a project has
+none. Stop hook misfired on four read-only turns (reads whole-tree status, not
+session delta) — detector fix proposed, not built. User set a tiered delegation
+direction (leads plan-only; free workers first; paid Opus/Sol on gated failure)
+and vault-as-#1; see HANDOFF. Re-found the `import fcntl` Windows crash on this
+checkout (already fixed upstream in v0.13.1), weak spawn-time sub-agent events
+(3 starts / 78 stops), and two installed-but-unwired CLIs (`gemini`, `cursor-agent`).
 
 2026-09-14 — v0.13.1: the new Floor never reached installs because the manifest
 version stayed 0.13.0, and today's `main` crashed on Windows (`import fcntl`; the

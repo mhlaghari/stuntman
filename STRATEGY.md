@@ -51,6 +51,13 @@ revisit before any big direction call._
   multi-model agent crew, fcc-independent. The moat shifts from "use a cheap model" to **"a free
   deterministic gate does the iteration; Opus does judgment once"** — and *pick the cheapest worker
   that lands close*, not the cheapest worker. See `../film-crew-bench/RESULTS.md`.
+- **Tier ladder (confirmed 2026-09-16):** Fable/Astra plan, spec, debate,
+  spawn, review; free workers (local models, opencode free routes, gemini,
+  agy, muse, non-Astra codex) implement first; paid second-best (Opus/Sonnet,
+  Sol/Terra/Luna) only after bounded, gated failure with a recorded reason.
+  `/harness` = the same engine with a local worker pinned and full autonomy —
+  a profile, not a new engine. First proof: a local 27B built a gated,
+  physics-correct app for $0 with one lead fix (`experiments/harness/`).
 - Prove the loops on real work before adding a fifth command — depth over breadth.
 - Lean into the "survives every boundary" narrative across the README + site.
 - Add a smoke-test CI before the surface grows further.
@@ -62,6 +69,7 @@ revisit before any big direction call._
 - Does the doc system want a tiered (minimal / full) mode for tiny repos?
 
 ## Changelog
+- 2026-09-16 — Confirmed the tier ladder (leads plan-only, free workers first, paid on gated failure); `/harness` framed as a profile of the delegate engine; first local-27B harness run passed its gate at $0.
 - 2026-09-14 — Floor is live-only: demo mode removed, status/project filters with Show all retained alongside sound and animation.
 - 2026-09-14 — Recommended runtime delegation policy as the next development task; direct OpenCode first, OmniRoute conditional on a provider-failover need.
 - 2026-09-14 — Personal-vault sync confirmed that custom mechanical Markdown graph refresh can coexist with semantic extraction; scheduled automation needs separate health verification.

@@ -58,7 +58,11 @@ Idempotent and non-destructive. It:
      **Gotchas**, dated.
    Write all of them for a reader with **zero memory** of this session, and set
    each doc's date / changelog. `README.md` is maintained too (refresh when the
-   surface changes); scaffold doesn't *create* one — if it's missing, say so.
+   surface changes). Scaffold doesn't *create* one, so if it's missing — a
+   brand-new project — infer what's being built from the code, structure, and any
+   notes, then draft a README that states the purpose, how to run it, and the
+   conventions the project should follow (best practices for its stack). Flag
+   guesses for the user.
 4. **Report**: the system is active. Every future session now reads
    `HANDOFF.md` / `STATUS.md` first (the instruction lives in the host's instruction file, which
    auto-loads) and updates them before stopping. To resume any time, the user

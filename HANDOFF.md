@@ -1,6 +1,205 @@
 # HANDOFF
 
-## Current handoff — 2026-09-14
+## Current handoff — 2026-09-15
+
+Small documentation-only session. No code, no commit.
+
+### What changed
+
+- **`skills/scaffold/SKILL.md` step 3:** when a project has no `README.md`
+  (a brand-new project), the scaffolding agent now infers what is being built
+  from the code/structure/notes and drafts a README (purpose, how to run,
+  stack best-practice conventions), flagging guesses — instead of only saying
+  the file is missing. Considered and rejected: an unconditional "update the
+  wiki every iteration" line in the CLAUDE.md contract (the Stop hook already
+  nudges on >7-day vault drift; per-iteration would nag at real cost).
+- Reviewed scaffold end to end for the user (`bin/scaffold`,
+  `bin/stuntman_roster.py`, the skill) and gave a ranked improvement list;
+  nothing from it is implemented yet.
+
+### Direction stated by the user (2026-09-15, ladder wording not yet confirmed)
+
+Stuntman should be the end-all skill, for other users too. Tier ladder:
+Tier 0 leads Fable (Claude Code) + Astra (Codex) only plan/spec/debate/spawn/
+review; Tier 1 free workers (opencode free models, gemini CLI, agy, muse,
+non-Astra codex) do all implementation first; Tier 2 paid second-best (Opus/
+Sonnet sub-agents, GPT Sol/Terra/Luna) only after bounded, gated Tier-1
+failure with a recorded reason; leads implement only after Tier 2 fails.
+Vault should be the #1 knowledge layer (plugin-native, configurable path,
+graph query as `/delegate` step 0). He plans a live end-to-end demo video.
+The ladder was confirmed 2026-09-16.
+
+**New skill idea `/harness` (2026-09-16):** leads spec, a local 27B
+(`qwen3.8:27b-mlx`, Ollama: tools + thinking, 262k ctx; 128 GB RAM; ollama,
+mlx_lm, LM Studio installed) builds end to end with zero user decisions;
+"invent something" mode where the leads generate the idea. Recommended shape:
+a *profile* of the tiered `/delegate` engine (Tier 1 pinned local, Tier 2
+off, full autonomy), not a separate engine. Prior art to reuse: film-crew's
+`worker-qwen-local`, Ollama route, `tools/render-check.mjs`, `orchestrator/
+run.mjs`. Vault lessons: local models oscillate on subjective feedback and
+converge on mechanical error feedback; one-shot truncates (agentic writes
+required); Ollama tool calls may be narrated, not executed
+(`references/claude-code-local.md`); opencode's Ollama path was broken in
+June and opencode has no local provider configured now. First experiment:
+verify real tool execution through the chosen route before writing skill code.
+
+### Harness test — 2026-09-16 (local 27B, end to end, ~45 min)
+
+- **Route (zero new backend code):** `bin/stunt exec` / `resume` → opencode →
+  project-local `opencode.json` (provider `ollama`, npm
+  `@ai-sdk/openai-compatible`, baseURL `http://127.0.0.1:11434/v1`) → Ollama
+  tag `qwen27-64k` (Modelfile `FROM qwen3.8:27b-mlx`, `num_ctx 65536`; Ollama's
+  default context is too small for an agent's system prompt). Direct API smoke:
+  real structured `tool_calls`, not narrated; 10 s cold incl. load; ~51 tok/s.
+- **Spec:** "Orbit Lab" — single-file solar system (Kepler orbits, log-radial
+  view, time warp, planet panels) + Hohmann mission planner. Build 12m21s,
+  540 lines, 14.2k output tokens, $0. Worker showed on the floor (room `orbit-lab`).
+- **Gate** (`gate.mjs`, film-crew style headless render + hard numbers): ids,
+  canvas painted, zero errors, Δv 5.596 km/s / 258.9 d / phase 44.3° within
+  tolerance, Plan button + Space interaction, and an accent-pixel check that the
+  transfer arc is painted. Round 1 passed the initial gate first try.
+- **Loop:** lead review found 3 spec deviations → one feedback round via
+  `stunt resume` (same session, 6.5 min, 7.5k tokens): fixed 2, and
+  **deflected** on the third ("already correct, no change needed"). The
+  arc-pixel check proved the ellipse was never painted: unit bug (`at` already
+  in km, multiplied by `AU_KM` again → path drawn off-canvas). Lead applied the
+  one-line fix (recorded escalation); final gate passes.
+- **Lessons (bake-off confirmed):** a weak worker's self-verification claim is
+  not evidence — the gate must *measure* what the spec promises (pixels, not
+  "code looks right"); a spec that supplies formulas removes physics errors, so
+  the residual bug class is units/plumbing; one bounded feedback round is
+  worth it, a second on a deflection is not — escalate.
+- Artifacts: `~/.stuntman/harness-test/orbit-lab/` (html, SPEC, gate.mjs,
+  opencode.json, Modelfile, screenshots, stunt JSON). opencode asked for a
+  `/tmp/*` external-directory permission during the run (auto-rejected,
+  harmless). Ollama now carries the extra tag `qwen27-64k` (shares blobs).
+- **Implication for `/harness`:** the route is solved; what is missing is
+  exactly the engine — gate runner, bounded retries, escalation record.
+
+### Qwen3.8-Flash-Next research — 2026-09-16 (candidate main harness worker)
+
+- Model: 125B MoE, 6B active, + 51B n-gram table; 262k ctx (1M YaRN); MTP head;
+  arch `qwen4_exp` (Qwen 4 preview), released 2026-08-28. Official agentic
+  numbers vs the 27B: DeepSWE 58.7 vs 42.2, Toolathlon 73.5 vs 67.1, SWE-bench
+  Pro 62.5 vs 61.7, LiveCodeBench ~tied. Sampling temp 1.0 / top_p 0.95 /
+  top_k 20; thinking on by default, `reasoning_effort` low|medium|xhigh
+  (use medium for agent work; xhigh burns tokens).
+- Size on this Mac (M5 Max, 128 GB, 752 GB free, Ollama 0.34.0 ≥ 0.33.1 MLX
+  runner): Ollama MLX tag `qwen3.8-flash-next:125b-mlx` = 105 GB; GGUF q4_K_M
+  120 GB; MTPLX packs 106/115 GB (n-gram table streamed from SSD → ~80 GB RAM).
+  KV ≈ 25 KB/token (262k ≈ 6.5 GB). 128 GB is borderline: nothing else can be
+  loaded beside it; cap worker context at 64–128k.
+- Reported speed on M5 Max 128 GB: llama.cpp GGUF 30.7 tok/s @4k, 10.9 @262k;
+  oMLX 0.7.0-dev2 58–67; MTPLX 2.11 68 @16k, 61 @100k, 44 @206k, ~76–84 with
+  MTP spec decoding; mlx-serve dyn Q4-Q8 52 tok/s + 1200 tok/s prefill.
+  A6B prefill ≈ 2.5× the 27B's on Macs (matters most for agent loops).
+- Agentic reliability is mixed: one M5 Max 128 GB user had llama-server
+  segfault on tool calls (GGUF UD-IQ4_XS) and went back to the 27B; others
+  run it as their pi/OpenCode/Xcode agent ("3× faster completing apps",
+  "best model for 128 GB"). MLX routes (Ollama MLX tag, MTPLX, oMLX) have
+  the better reports; avoid llama.cpp GGUF for agentic use on this Mac.
+  Day-0 runtime churn; some say the 27B at Q8 still does better on their tasks.
+- Plan: pull the Ollama MLX tag, rerun the Orbit Lab spec + gate unchanged,
+  compare against the 27B run (12m21s, 1 deflection). If Ollama MLX tool
+  calls misbehave or it is slow, `brew install youssofal/mtplx/mtplx` and
+  point opencode at `http://127.0.0.1:8000` (OpenAI + Anthropic APIs;
+  `mtplx connect opencode` prints the config). Not started; user to approve
+  the 105 GB download.
+
+### Worker A/B plan + first real harness project (2026-09-16)
+
+- The 27B test likely ran at Qwen's default `reasoning_effort: xhigh`
+  (14.2k output tokens for 540 lines). A/B on the unchanged Orbit Lab spec +
+  gate, cheapest first: (1) base 27B MLX with `reasoning_effort: medium`
+  (no download); (2) `ukisai/Swift-Qwen3.8-27b` — adapter fine-tune, 58%
+  fewer thinking tokens, <1% loss, LiveCodeBench up, ~1.95× faster; GGUF/BF16
+  only (convert with `mlx_lm` or run on Ollama's llama.cpp engine); license
+  "Swift Open License v1.0" (free under $1M revenue); (3) Flash-Next MLX.
+  Record tok/s, build time, gate rounds, escalations.
+- User idea: **Adversaria mobile app** as the first real `/harness` project.
+  Adversaria is a desktop app today; no mobile plan in its docs. Toolchains on
+  this Mac: Xcode 27.0, Node 26.5, Expo 57. Lean SwiftUI + on-device WhisperKit
+  (strict compiler gate; matches the on-device/local-first principle); build
+  the engine first, then milestones each with `xcodebuild` + XCTest +
+  simulator-screenshot gates. Not decided; awaiting the user.
+
+### Findings this session (verified on this Mac)
+
+- **Windows floor:** this checkout still had the unconditional `import fcntl`
+  (hook dies at import, `floor-hook` swallows it, nothing is logged — which is
+  why sub-agents never appeared on the Windows box). **Already fixed upstream**
+  by the 09-14 Windows session in v0.13.1 (`msvcrt` lock, `process_identity`
+  returns `None` on Windows, rotation failure tolerated, board says view-only);
+  today's work was rebased onto it. The Windows box needs `/plugin` to pick up
+  the new version and a session restart so hooks load from the new cache.
+- **Spawn visibility:** event log has `SubagentStart: 3` vs `SubagentStop: 78`
+  — sub-agents mostly appear on finish, not spawn. Cause unknown; check
+  before filming.
+- **Installed but unwired CLIs:** `gemini` (free tier; `-p`, `-o json`,
+  `--approval-mode yolo`, `-r`, `--include-directories`) and `cursor-agent`
+  (`-p`, `--output-format`, `--resume`, `--model`, `-f`). Both fit the agy
+  pattern in `bin/stunt`.
+- **opencode free roster now (6):** muse-spark-1.3/1.2-contributor-free,
+  mimo-v2.5-free, nemotron-3-ultra-free, nemotron-3.5-lightning-free,
+  ling-3.0-flash-fin-free; plus 4 deepseek (paid). No xai/moonshot/zai keys.
+- macOS has no `timeout` binary — shell discovery must not rely on it
+  (`stuntman_roster.py` uses Python timeouts, so it is unaffected).
+- Vault has no branding-guidelines note; "build X in my branding" from a new
+  folder would not resolve until `wiki/concepts/laghari-labs-brand.md` exists
+  and the graph is rebuilt.
+
+### Next step (for 2026-09-17 — harness day)
+
+Committed and pushed at the end of 2026-09-16 as **v0.13.2** (both manifests
+bumped so the scaffold skill change reaches installs; rebased onto the 09-14
+v0.13.1 Windows-session release): scaffold SKILL.md README bootstrap, these
+docs, and `experiments/harness/orbit-lab/` (spec, gate, local opencode
+provider config, 64k Modelfile, final build + screenshot). Run `/plugin` on
+each machine to update.
+
+1. **Survey Hugging Face variants of the candidate workers** (user request):
+   people have fine-tuned and re-quantized these, and a variant may be better
+   for a specific task. Look for, per base model, and record name / what it
+   changes / formats (MLX, GGUF, safetensors) / size / license / reports:
+   - Qwen3.8-27B: reasoning-efficient tunes (`ukisai/Swift-Qwen3.8-27b`,
+     BottleCap `ThinkingCap-Qwen3.6-27B` lineage), coder/agentic tunes,
+     abliterated builds, MLX conversions incl. dynamic/mixed quants
+     (`ddalcu/Qwen3.8-27B-MLX-Serve-4bit`, oQ builds), NVFP4/Q8.
+   - Qwen3.8-Flash-Next: `mlx-community/*-4bit` and `*-oQ8e-mtp`,
+     `Vontra/*-MLX-{4bit,8bit-MTP,oQ4,oQ4-MTP}`, `pipenetwork/*-MLX-mixed-4_8bit`,
+     `Youssofal/*-MTPLX-{Optimized,Bare}-Speed`, unsloth UD GGUFs, AtomicChat
+     GGUFs (n-gram table in its own shard), abliterated builds.
+   - Alternative free workers worth a row: Gemma 4 31B, GLM 5.3 Flash,
+     DeepSeek V4 Flash, Muse Glimmer 30B (already in Ollama here).
+   Output: a table in `experiments/harness/WORKERS.md` and a shortlist to A/B.
+2. Worker A/B on the unchanged Orbit Lab spec + gate (see the A/B plan
+   above): base 27B at `reasoning_effort: medium` → Swift-Qwen → Flash-Next
+   (105 GB pull needs the user's OK). Record tok/s, build time, gate rounds,
+   escalations.
+3. Run more tasks through the harness loop (user wants several), then build
+   the `/harness` engine from what repeats: gate runner, bounded retries,
+   escalation record, milestone loop. `experiments/harness/orbit-lab/gate.mjs`
+   is the gate template (physics checks are task-specific; render/ids/
+   errors/interaction/pixel checks are reusable).
+4. Then Adversaria mobile milestones (SwiftUI lean; see above).
+
+Still open from earlier: spawn-visibility check on the Mac (3 starts vs 78
+stops); `gemini` as a sixth backend; tiered delegation in `/delegate`; fold
+`/vault` into the plugin; Stop-hook detector fix (snapshot porcelain at
+`SessionStart`, diff at `Stop`). Offer `/vault` capture of today's harness
+lessons.
+
+### Gotchas
+
+- The three untracked ` 2` duplicate files still trip the hook on every
+  stop in a clean session. Preserve them; do not fabricate HANDOFF/STATUS
+  entries to silence it.
+- Claude Code sub-agents spend the Claude subscription — they are Tier 2,
+  not free workers. Consumer subs (SuperGrok, Kimi app) generally do not
+  grant CLI/API tokens; only vendor CLIs that honor a sub are "free at the
+  margin" (codex, agy, muse, gemini).
+
+## Previous handoff — 2026-09-14
 
 **Latest: v0.13.1 plugin release (Windows session).** The Dubai Floor pushed
 earlier today never reached installed copies: `/plugin` reported "already at the
@@ -497,6 +696,14 @@ unknown current capacity.
   exactly how the first MIQ smoke test produced an Adversaria plan in the wrong folder.
 
 ## Last updated
+
+2026-09-16 — Harness test passed end to end on the local 27B (Orbit Lab,
+$0, one lead fix); Flash-Next and Swift-Qwen researched; tier ladder
+confirmed; Adversaria mobile proposed as first real harness project.
+Committed and pushed with `experiments/harness/orbit-lab/`.
+
+2026-09-15 — Scaffold skill now drafts a README for README-less projects.
+Stop-hook false positives on read-only turns documented; detector fix offered.
 
 2026-09-14 — Completed and verified the Floor visual/audio upgrade; restored the
 user-preferred skyline/rooftop layout, retained new branding and rock animations.

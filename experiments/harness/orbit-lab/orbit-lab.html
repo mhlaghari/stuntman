@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit Lab</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #05070d;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    color: #d6e2f0;
+  }
+  #canvas {
+    position: fixed; top: 0; left: 0;
+    background: #05070d;
+    display: block;
+  }
+  .panel {
+    position: fixed;
+    background: rgba(10, 14, 24, 0.85);
+    border: 1px solid #2a3550;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #d6e2f0;
+  }
+  #hud {
+    top: 12px; left: 12px;
+  }
+  #hud .title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #7ec8ff;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  #hud .row {
+    display: flex;
+    gap: 12px;
+  }
+  #info {
+    top: 12px; right: 12px;
+    min-width: 180px;
+    display: none;
+  }
+  #info .pname {
+    font-size: 14px;
+    font-weight: 700;
+    color: #7ec8ff;
+    margin-bottom: 6px;
+  }
+  #info .kv {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  #info .kv .k { color: #8aa0b8; }
+  #planner {
+    bottom: 12px; left: 12px;
+    width: 320px;
+  }
+  #planner select, #planner button {
+    font-family: inherit;
+    font-size: 12px;
+    background: #0d1424;
+    color: #d6e2f0;
+    border: 1px solid #2a3550;
+    border-radius: 3px;
+    padding: 4px 8px;
+  }
+  #planner .selrow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  #planner button {
+    background: #12385c;
+    border-color: #2f6fb0;
+    color: #cfe8ff;
+    cursor: pointer;
+    padding: 5px 12px;
+  }
+  #planner button:hover { background: #1a4d80; }
+  #result {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #2a3550;
+    white-space: pre-line;
+    color: #b8c8dd;
+    min-height: 14px;
+  }
+  #result .rlabel { color: #7ec8ff; font-weight: 700; margin-bottom: 4px; }
+  .help {
+    position: fixed;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #5a6a80;
+    background: rgba(10, 14, 24, 0.6);
+    padding: 3px 12px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="hud" class="panel">
+    <div class="title">Orbit Lab</div>
+    <div class="row"><span id="date">2000-01-01</span></div>
+    <div class="row"><span id="warp">10 days/s</span></div>
+    <div class="row"><span id="fps">0 fps</span></div>
+  </div>
+
+  <div id="info" class="panel"></div>
+
+  <div id="planner" class="panel">
+    <div class="selrow">
+      <label for="origin">from</label>
+      <select id="origin"></select>
+      <label for="dest">to</label>
+      <select id="dest"></select>
+    </div>
+    <button id="plan">Plan transfer</button>
+    <div id="result"></div>
+  </div>
+
+  <div class="help">Space pause · 1/2/3/4 warp · R reset · click a planet</div>
+
+<script>
+'use strict';
+
+// ===================== PHYSICS MODULE =====================
+   const AU_KM = 1.496e8;
+   const GM_SUN = 1.327e11; // km^3/s^2
+   const DAY_S = 86400;
+   const DEG = Math.PI / 180;
+
+   function norm360(deg) {
+     let x = deg % 360;
+     if (x < 0) x += 360;
+     return x;
+   }
+   // normalize an angle (deg) to (-180, 180]
+   function norm180(deg) {
+     let x = ((deg + 180) % 360 + 360) % 360 - 180;
+     if (x === -180) x = 180;
+     return x;
+   }
+
+   const planets = [
+     { id: 'mercury', name: 'Mercury', color: '#b5b5b5', a: 0.387, e: 0.2056, T: 87.97,  L0: 252.25, w: 77.46 },
+     { id: 'venus',   name: 'Venus',   color: '#e6c98a', a: 0.723, e: 0.0068, T: 224.70, L0: 181.98, w: 131.53 },
+     { id: 'earth',   name: 'Earth',   color: '#5aa0ff', a: 1.000, e: 0.0167, T: 365.25, L0: 100.46, w: 102.94 },
+     { id: 'mars',    name: 'Mars',    color: '#ff6a3d', a: 1.524, e: 0.0934, T: 686.98, L0: 355.45, w: 336.04 },
+     { id: 'jupiter', name: 'Jupiter', color: '#e0b07a', a: 5.203, e: 0.0489, T: 4332.6, L0: 34.40,  w: 14.73 },
+     { id: 'saturn',  name: 'Saturn',  color: '#f2d99a', a: 9.537, e: 0.0565, T: 10759,  L0: 49.94,  w: 92.60 },
+     { id: 'uranus',  name: 'Uranus',  color: '#8fe3e8', a: 19.19, e: 0.0457, T: 30687,  L0: 313.23, w: 170.96 },
+     { id: 'neptune', name: 'Neptune', color: '#5f7cff', a: 30.07, e: 0.0113, T: 60190,  L0: 304.88, w: 44.97  }
+   ];
+   const planetById = {};
+   planets.forEach(function (p) { planetById[p.id] = p; });
+
+   // Solve the orbital elements at time t (days) -> heliocentric AU position.
+   // Returns { x, y (AU), lon (rad), r (AU), v (km/s) }.
+   function positionAt(id, tDays) {
+     const p = planetById[id];
+     if (!p) return null;
+     const wRad = p.w * DEG;
+     let M = norm360(p.L0 - p.w + 360 * tDays / p.T) * DEG;
+     // Newton iteration to solve E - e sin E = M
+     let E = M;
+     for (let i = 0; i < 12; i++) {
+       const f = E - p.e * Math.sin(E) - M;
+       const df = 1 - p.e * Math.cos(E);
+       E = E - f / df;
+     }
+     const nu = 2 * Math.atan2(
+       Math.sqrt(1 + p.e) * Math.sin(E / 2),
+       Math.sqrt(1 - p.e) * Math.cos(E / 2)
+     );
+     const r = p.a * (1 - p.e * Math.cos(E)); // AU
+     const lon = nu + wRad;
+     const x = r * Math.cos(lon);
+     const y = r * Math.sin(lon);
+     const v = Math.sqrt(GM_SUN * (2 / (r * AU_KM) - 1 / (p.a * AU_KM)));
+     return { x: x, y: y, lon: lon, r: r, v: v };
+   }
+
+   function hohmann(originId, destId) {
+     const o = planetById[originId];
+     const d = planetById[destId];
+     if (!o || !d) return null;
+     const r1 = o.a * AU_KM;
+     const r2 = d.a * AU_KM;
+     const at = (r1 + r2) / 2;
+     const v1 = Math.sqrt(GM_SUN / r1);
+     const vt1 = Math.sqrt(GM_SUN * (2 / r1 - 1 / at));
+     const dv1 = Math.abs(vt1 - v1);
+     const v2 = Math.sqrt(GM_SUN / r2);
+     const vt2 = Math.sqrt(GM_SUN * (2 / r2 - 1 / at));
+     const dv2 = Math.abs(v2 - vt2);
+     const dv_total = dv1 + dv2;
+     const transfer_days = Math.PI * Math.sqrt(at * at * at / GM_SUN) / DAY_S;
+     const phase_angle_deg = norm180(180 - 360 * transfer_days / d.T);
+
+     // Next launch window: step 1 day at a time, up to 20000 days from sim time.
+     let window_date = null;
+     let window_in_days = null;
+     let found = false;
+     for (let k = 0; k <= 20000; k++) {
+       const t = state.simDays + k;
+       const lonO = positionAt(originId, t).lon;
+       const lonD = positionAt(destId, t).lon;
+       const diff = norm180((lonD - lonO) / DEG);
+       if (Math.abs(diff - phase_angle_deg) <= 1.0) {
+          found = true;
+          window_in_days = k;
+          window_date = dateStr(state.simDays + k);
+          break;
+       }
+     }
+     return {
+       dv1_kms: dv1,
+       dv2_kms: dv2,
+       dv_total_kms: dv_total,
+       transfer_days: transfer_days,
+       phase_angle_deg: phase_angle_deg,
+       window_date: found ? window_date : null,
+       window_in_days: found ? window_in_days : null
+     };
+   }
+
+   const state = { simDays: 0, paused: false, warp: 10 };
+
+   window.OrbitLab = {
+     planets: planets,
+     state: state,
+     positionAt: positionAt,
+     hohmann: hohmann
+    };
+
+// ===================== RENDER + UI MODULE =====================
+   const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+
+   const canvas = document.getElementById('canvas');
+   const ctx = canvas.getContext('2d');
+   const elDate = document.getElementById('date');
+   const elWarp = document.getElementById('warp');
+   const elFps = document.getElementById('fps');
+   const elInfo = document.getElementById('info');
+   const elPlanner = document.getElementById('planner');
+   const elResult = document.getElementById('result');
+   const elOrigin = document.getElementById('origin');
+   const elDest = document.getElementById('dest');
+   const elPlan = document.getElementById('plan');
+
+   let W = 0, H = 0, DPR = 1;
+
+   function resize() {
+     DPR = window.devicePixelRatio || 1;
+     W = window.innerWidth;
+     H = window.innerHeight;
+     canvas.width = Math.round(W * DPR);
+     canvas.height = Math.round(H * DPR);
+     canvas.style.width = W + 'px';
+     canvas.style.height = H + 'px';
+     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+   resize();
+
+    // Screen mapping helpers. origin at center of screen.
+   function cx() { return W / 2; }
+   function cy() { return H / 2; }
+   function currentScale() { return Math.min(W, H) / 900; }
+   function R(d) {
+     const s = currentScale();
+     return (50 + 100 * Math.log(1 + d)) * s;
+    }
+    // Simpler, angle-preserving map using r and lon directly:
+    function toScreenLon(r, lon) {
+     return [cx() + R(r) * Math.cos(lon), cy() - R(r) * Math.sin(lon)];
+    }
+
+   // Fill the planner selects
+   planets.forEach(function (p) {
+     elOrigin.appendChild(new Option(p.name, p.id));
+     elDest.appendChild(new Option(p.name, p.id));
+    });
+    elOrigin.value = 'earth';
+    elDest.value = 'mars';
+
+   let selected = null;        // planet id
+   let transfer = null;        // {originId, destId, info} or null
+
+   // ---------- UI ----------
+   function dateStr(tDays) {
+     const d = new Date(J2000_MS + tDays * 86400000);
+     const y = d.getUTCFullYear();
+     const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+     const day = String(d.getUTCDate()).padStart(2, '0');
+     return y + '-' + m + '-' + day;
+   }
+   function updateWarpLabel() {
+     elWarp.textContent = state.warp + ' days/s' + (state.paused ? ' (paused)' : '');
+    }
+   function showInfo(id) {
+     const p = planetById[id];
+     const pos = positionAt(id, state.simDays);
+     elInfo.style.display = 'block';
+     elInfo.innerHTML =
+       '<div class="pname">' + p.name + '</div>' +
+       kv('a (AU)', p.a.toFixed (3)) +
+       kv('e', p.e.toFixed(4)) +
+       kv('period (d)', p.T.toFixed(2)) +
+       kv('dist Sun (AU)', pos.r.toFixed(3)) +
+       kv('speed (km/s)', pos.v.toFixed(2));
+   }
+   function kv(k, v) {
+     return '<div class="kv"><span class="k">' + k + '</span><span>' + v + '</span></div>';
+   }
+
+   window.addEventListener('keydown', function (e) {
+     if (e.code === 'Space') {
+       state.paused = !state.paused;
+       updateWarpLabel();
+       e.preventDefault();
+      } else if (e.key === '1') { state.warp = 1; updateWarpLabel(); }
+      else if (e.key === '2') { state.warp = 10; updateWarpLabel(); }
+      else if (e.key === '3') { state.warp = 100; updateWarpLabel(); }
+      else if (e.key === '4') { state.warp = 1000; updateWarpLabel(); }
+      else if (e.key === 'r' || e.key === 'R') {
+        state.simDays = 0;
+        transfer = null;
+        renderPlannerResult(null);
+       }
+    });
+
+   function planetRadiusPx(p) {
+     // Jupiter largest -> map by log of a
+     const t = Math.log(p.a + 1) / Math.log(30.07 + 1);
+     return 3 + 3 * t;
+   }
+
+   canvas.addEventListener('mousedown', function (e) {
+     const mx = e.offsetX, my = e.offsetY;
+     let best = null, bestD = 12;
+      planets.forEach(function (p) {
+        const pos = positionAt(p.id, state.simDays);
+        const s = toScreenLon(pos.r, pos.lon);
+        const d = Math.hypot(s[0] - mx, s[1] - my);
+        if (d < bestD) { bestD = d; best = p; }
+      });
+      if (best) {
+        selected = best.id;
+        showInfo(selected);
+       } else {
+        selected = null;
+        elInfo.style.display = 'none';
+       }
+    });
+
+   elPlan.addEventListener('click', function () {
+     const o = elOrigin.value, d = elDest.value;
+     if (o === d) {
+       renderPlannerResult(null, 'origin and destination are the same planet');
+       transfer = null;
+       return;
+      }
+     const info = hohmann(o, d);
+     transfer = { originId: o, destId: d, info: info };
+     renderPlannerResult(info, null);
+    });
+
+   function renderPlannerResult(info, warn) {
+     if (warn) {
+       elResult.innerHTML = '<span class="rlabel">' + warn + '</span>';
+       return;
+      }
+      if (!info) {
+        elResult.innerHTML = '';
+       return;
+      }
+      let s = '';
+      s += '<div class="rlabel">Transfer: ' + planetById[transfer.originId].name + ' → ' + planetById[transfer.destId].name + '</div>';
+      s += 'dv1:      ' + info.dv1_kms.toFixed(3) + ' km/s\n';
+      s += 'dv2:      ' + info.dv2_kms.toFixed(3) + ' km/s\n';
+      s += 'Δv total: ' + info.dv_total_kms.toFixed(3) + ' km/s\n';
+      s += 'Transfer: ' + info.transfer_days.toFixed(1) + ' days\n';
+      s += 'Phase:    ' + info.phase_angle_deg.toFixed(1) + '°\n';
+      if (info.window_in_days === null) {
+        s += 'Window:   none within 20000 days';
+      } else {
+        const winT = state.simDays + info.window_in_days;
+        s += 'Window:   ' + dateStr(winT) + '  (+' + info.window_in_days + ' d)';
+      }
+      elResult.innerHTML = s;
+    }
+
+   // ---------- Drawing ----------
+   function drawOrbit(p) {
+     ctx.beginPath();
+     const N = 360;
+     for (let i = 0; i <= N; i++) {
+       const t = p.T * (i / N);
+       const pos = positionAt(p.id, t);
+       const s = toScreenLon(pos.r, pos.lon);
+       if (i === 0) ctx.moveTo(s[0], s[1]);
+       else ctx.lineTo(s[0], s[1]);
+      }
+      ctx.strokeStyle = p.color;
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+   }
+
+   function drawTransfer() {
+     if (!transfer) return;
+     const o = planetById[transfer.originId];
+     const d = planetById[transfer.destId];
+     const r1 = o.a * AU_KM, r2 = d.a * AU_KM;
+     const at = (r1 + r2) / 2;
+     const eT = Math.abs((r2 - r1) / (r2 + r1)); // transfer ellipse ecc
+      // Perihelion at the origin planet's current azimuth; the half-ellipse
+     // (argument 0..π) sweeps from the origin orbit out to the destination orbit.
+     const lonO = positionAt(transfer.originId, state.simDays).lon;
+     const rp_peric = Math.min(r1, r2) / AU_KM;
+     const rp_apo = Math.max(r1, r2) / AU_KM;
+     const N = 180;
+     ctx.beginPath();
+     for (let i = 0; i <= N; i++) {
+       const nu = Math.PI * (i / N); // 0..PI (180 deg of the transfer arc)
+       const rp = (at * (1 - eT * eT) / (1 + eT * Math.cos(nu))) / AU_KM;
+       const lon = lonO + nu;
+       const s = toScreenLon(rp, lon);
+       if (i === 0) ctx.moveTo(s[0], s[1]); else ctx.lineTo(s[0], s[1]);
+    }
+      ctx.strokeStyle = '#7ec8ff';
+      ctx.globalAlpha = 0.95;
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      // Mark launch at perihelion point and arrival at aphelion point.
+      ctx.fillStyle = '#7ec8ff';
+      ctx.beginPath();
+      ctx.arc(toScreenLon(rp_peric, lonO)[0], toScreenLon(rp_peric, lonO)[1], 4, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = d.color;
+      ctx.beginPath();
+      ctx.arc(toScreenLon(rp_apo, lonO + Math.PI)[0], toScreenLon(rp_apo, lonO + Math.PI)[1], 4, 0, 2 * Math.PI);
+      ctx.fill();
+       }
+
+   function drawPlanet(p) {
+     const pos = positionAt(p.id, state.simDays);
+     const s = toScreenLon(pos.r, pos.lon);
+     const rad = planetRadiusPx(p);
+     ctx.beginPath();
+     ctx.arc(s[0], s[1], rad, 0, 2 * Math.PI);
+     ctx.fillStyle = p.color;
+     ctx.fill();
+     if (p.id === selected) {
+       ctx.beginPath();
+       ctx.arc(s[0], s[1], rad + 4, 0, 2 * Math.PI);
+       ctx.strokeStyle = '#7ec8ff';
+       ctx.lineWidth = 1.5;
+       ctx.stroke();
+      }
+     ctx.fillStyle = '#d6e2f0';
+     ctx.font = '12px monospace';
+     ctx.textBaseline = 'middle';
+     ctx.fillText(p.name, s[0] + rad + 4, s[1]);
+    }
+
+   function drawSun() {
+     const g = ctx.createRadialGradient(cx(), cy(), 0, cx(), cy(), 28 * currentScale() + 12);
+     g.addColorStop(0, 'rgba(255,230,150,0.9)');
+     g.addColorStop(0.5, 'rgba(255,180,60,0.25)');
+     g.addColorStop(1, 'rgba(255,180,60,0)');
+     ctx.fillStyle = g;
+     ctx.beginPath();
+     ctx.arc(cx(), cy(), 28 * currentScale() + 12, 0, 2 * Math.PI);
+     ctx.fill();
+     ctx.fillStyle = '#ffdf7a';
+     ctx.beginPath();
+     ctx.arc(cx(), cy(), 8 * currentScale() + 2, 0, 2 * Math.PI);
+     ctx.fill();
+    }
+
+   function render() {
+     ctx.fillStyle = '#05070d';
+     ctx.fillRect(0, 0, W, H);
+     planets.forEach(drawOrbit);
+     drawTransfer();
+     drawSun();
+     planets.forEach(drawPlanet);
+    }
+
+   // ---------- Loop ----------
+   let last = performance.now();
+   let fpsAcc = 0, fpsCount = 0, fpsLast = last;
+   function loop(now) {
+     const dt = (now - last) / 1000;
+     last = now;
+     if (!state.paused) {
+        state.simDays += state.warp * dt;
+      }
+     render();
+     elDate.textContent = dateStr(state.simDays);
+     elWarp.textContent = state.warp + ' days/s' + (state.paused ? ' (PAUSED)' : '');
+      // fps
+     fpsAcc += dt;
+     fpsCount++;
+     if (now - fpsLast >= 500) {
+       const fps = Math.round(fpsCount / fpsAcc);
+       elFps.textContent = fps + ' fps';
+       fpsAcc = 0; fpsCount = 0; fpsLast = now;
+      }
+      requestAnimationFrame(loop);
+      }
+     requestAnimationFrame(loop);
+
+</script>
+
+</body>
+</html>

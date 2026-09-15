@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": { "baseURL": "http://127.0.0.1:11434/v1" },
+      "models": {
+        "qwen27-64k": { "name": "Qwen 3.8 27B local 64k", "limit": { "context": 65536, "output": 32768 } }
+      }
+    }
+  }
+}

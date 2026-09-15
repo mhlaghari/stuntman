@@ -88,6 +88,7 @@ judgment + a surgical fix; **pick the cheapest worker that lands _close_**; veri
 (never "tags present"); feedback style scales with worker tier; own the cost accounting (provider rates).
 
 ## Changelog
+- 2026-09-16 — Planned execution policy confirmed as a three-tier ladder (leads → free workers → paid second-best); `/harness` planned as a local-worker, full-autonomy profile of the same engine. Scaffold now drafts a README for README-less projects. Harness experiment recorded under `experiments/harness/`.
 - 2026-09-14 — Floor is live-only with status/project filters, Show all, and retained sound/animation; demo mode and pose previews removed.
 - 2026-09-14 — Recorded the user's delegation-by-default direction and marked runtime routing/retry/escalation controls as planned.
 - 2026-09-14 — Clarified custom Markdown-aware vault refresh versus full semantic extraction after syncing the existing personal vault.
