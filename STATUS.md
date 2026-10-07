@@ -7,6 +7,11 @@ every session._
 
 | Area | Status |
 | --- | --- |
+| Delegate skill token discipline (2026-10-08) | **Released in 0.14.0.** `skills/delegate/SKILL.md` now has a read-only scout step, a quota probe, wait-don't-poll, gate-then-look review, a 3-attempt worker loop cap and a 10-line reply cap. New `STUNTMAN_WORKER_ORDER` lists several workers; the skill spreads units across them and tries the next worker before the host takes over. Skill text only; `bin/stunt` is unchanged. Owner's shell now sets `STUNTMAN_WORKER_ORDER="agy=gemini-3.8-flash-high opencode=opencode/big-pickle codex"` (was `STUNTMAN_WORKER=codex`; floor log 10-06 to 10-08: 45 worker starts, 23 opencode, 19 codex, 3 agy). All three answered a one-word probe through `bin/stunt` (5 to 10 s); one agy scout returned a correct answer in 19 s. Not measured: whether a lead follows the spread rules on a real task, and the lead-side token saving. |
+| Scaffold reply style + bounded docs (2026-10-07) | **Released in 0.14.0.** `bin/scaffold` appends a write-once `stuntman:style` block (answer first, five short sentences or fewer, plain words, one next step) and tells new projects to rewrite `HANDOFF.md` / `STATUS.md` instead of appending (80 / 120 lines, older entries to `docs/handoff-archive.md`). New `SPEC.md` stubs carry Commands, Boundaries (always / ask first / never) and Success criteria; new `HANDOFF.md` stubs carry Verified. 36 offline tests pass (4 new). One A/B sample: same vague question, 132 words with the block, 336 without. Existing contract blocks are not migrated. |
+| Delegation economics (2026-09-17) | **Finding, not a feature.** Codex lead hit 100% of its weekly window and drained credits to 0 mid-build. Lead 67.7M input / 327k output over 571 calls; workers 92.1M input / 481k output; day total 159.9M:808k = 198:1. Cost is `turns x context` for leads *and* workers alike — 57 empty "are you done yet?" polls alone cost ~7.5M tokens. Two Codex leads were running on one quota. Fixes listed in HANDOFF. |
+| Adversaria iOS (2026-09-17) | **Stalled at the quota wall, not finished.** Authorized app build in `../adversaria-ios`, NO LLM anywhere in runtime functionality. `opus-app-fix2` and `swift-speech-fix2` both completed after the lead died and self-report build + 19/20 hosted tests; **none of it is host-verified.** Opus reported $59.86 list equivalent across four calls, one of them ($24.72) on an aborted run. `worker-accounting.json` is stale — it predates fix2. Follow that project's HANDOFF/STATUS. |
+| Codex harness trial (2026-09-16) | Verified: local `qwen27-64k` rebuilt Orbit Lab in 16m 34s, then fixed a host-found Retina bug in one 2m 10s review round. Saved gate + 14 DPR 1/2 UI checks pass; no lead implementation edits, $0 reported local inference. Swift remains untested/uninstalled; reusable harness engine remains planned. Report: `experiments/harness/2026-09-16-qwen-medium.md`. |
 | Floor scene | Approved detailed Dubai skyline and project rooftop bays retained. |
 | Branding and controls | One header logo, lagharilabs.com, and project/status filters with Show all and visible/total counts. Five expressive Vexel skins. |
 | Animation/audio | Guitar, rock-sign headbanging, rage, jump/victory; opt-in voices and completion/help/failure cues. Demo world and pose previews removed. |
@@ -138,6 +143,32 @@ four skills + three `bin/` tools. Live on GitHub (`mhlaghari/stuntman`) + Pages.
 - _(none)_
 
 ## Last updated
+
+2026-10-08 — Delegate skill gained the token-discipline rules; owner's default
+workers are now a list (`STUNTMAN_WORKER_ORDER`). Released in 0.14.0.
+
+2026-10-07 — Scaffold now writes a reply-style block and bounded-snapshot
+rules for `HANDOFF.md` / `STATUS.md`. Released in 0.14.0.
+
+2026-09-17 — Diagnostic session, no code changed. Traced why Codex ran out of
+tokens while "only" planning and delegating: it was not the planning. The lead
+emitted 327k output tokens and paid 67.7M input, because every turn resends the
+whole context and orchestration is turn-heavy — 57 of its worker calls were
+empty polls. Workers have the identical cost shape (Opus: 36.9M cache-read for
+58.7k output in one call). Screenshots were ruled out as a cause: ~14k tokens
+total, despite being 79% of the rollout by bytes. Two hand-opened Codex leads
+were sharing one quota. Adversaria workers completed unsupervised and remain
+unverified. Fix order: block instead of poll, gate instead of inspect, cap
+worker turns, one lead per quota. See HANDOFF and STRATEGY.
+
+2026-09-16 — Codex resumed the saved local harness experiment through the
+installed delegate skill. Fresh Qwen run requested medium effort; first pass
+passed the saved gate but failed host Retina checks. One same-session worker
+correction fixed the coordinate bug; host verified both gates and the final
+screenshot, with no implementation takeover. Total worker calls 18m 44s,
+21,844 output tokens, $0 reported local inference. No medium-effort speedup
+demonstrated. Swift model comparison and reusable engine are still pending;
+see the newest HANDOFF entry and experiment report. No commit or release.
 
 2026-09-16 — Harness test passed end to end: local `qwen3.8:27b-mlx` (64k
 variant) built "Orbit Lab" through `stunt`→opencode→Ollama at $0, gated by a

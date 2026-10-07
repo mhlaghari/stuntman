@@ -46,7 +46,7 @@ an already cached version; do not edit the installed cache directly.
 | Skill | Codex behavior |
 |---|---|
 | delegate | Codex plans and verifies; the existing `bin/stunt` wrapper runs and resumes the selected worker. |
-| scaffold | `bin/scaffold --host codex` appends the memory contract to AGENTS.md and creates missing living docs. `--host both` adds both host contracts. |
+| scaffold | `bin/scaffold --host codex` appends the memory contract and the reply-style block to AGENTS.md and creates missing living docs. `--host both` adds both host contracts. |
 | handoff | Reads HANDOFF/STATUS and the AGENTS.md contract, checks the working tree, then resumes the next step. |
 | wiki | `bin/wiki --host codex` writes the vault's AGENTS.md; configure graphify through `codex mcp add`. |
 | launch | Uses available native agents for research, strategy, two critiques, and Markdown/HTML compilation. Falls back to sequential work when agents are unavailable. |

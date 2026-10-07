@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: Delegate implementation to Stuntman's headless workers (Claude via proxy, opencode, Codex, Antigravity, or Muse). The current host plans, reviews the diff, verifies, and iterates. Use when asked to use Stuntman to delegate a task, send work to a stunt double, or run the delegate skill.
+description: Delegate implementation or read-only research to Stuntman's headless workers (Claude via proxy, opencode, Codex, Antigravity, or Muse). The current host plans, reviews the diff, verifies, and iterates. Use when asked to use Stuntman to delegate a task, send work or research to a stunt double, or run the delegate skill.
 ---
 
 # stuntman: plan → execute → review
@@ -25,6 +25,36 @@ call. Otherwise preserve their environment/default. Save the backend and any
 model pin with the session ID so review resumes the same provider. Running in
 Codex does not automatically select Codex as the worker.
 
+### Several workers: `STUNTMAN_WORKER_ORDER`
+
+The user can list more than one worker, most preferred first, each with an
+optional model:
+
+```bash
+STUNTMAN_WORKER_ORDER="agy=gemini-3.8-flash-high opencode=opencode/big-pickle codex"
+```
+
+When it is set and the user named no worker for this task, spread the work
+across the list instead of sending everything to one backend:
+
+- **One unit:** the first listed worker that passes the probe below.
+- **Several units that touch different files:** give each to a different listed
+  worker and run them in parallel.
+- **Scouts (step 0):** prefer a listed worker that is free or flat-rate; keep
+  the strongest model for the hardest unit.
+- **A worker fails its probe, or two feedback rounds:** move the unit to the
+  next listed worker once before you take it over (step 4).
+
+Set `STUNTMAN_WORKER` on each call, plus `STUNTMAN_MODEL` when the entry has
+`=model`; an entry without one uses that backend's own default. Record which
+worker ran each unit.
+
+**Probe before a large delegation.** Subscription workers run out without
+warning. Send a one-line prompt with the same `STUNTMAN_WORKER` /
+`STUNTMAN_MODEL` (`"$STUNT" exec "Reply with the single word ok."`). If it
+returns `is_error` or a quota message, pick another model or backend and tell
+the user which one you used.
+
 ## Preflight
 
 - Backend `claude` (default): check the proxy —
@@ -42,10 +72,25 @@ Codex does not automatically select Codex as the worker.
 - Backend `muse`: check `muse --version`. If missing, tell the user to install
   Meta's Muse Code CLI and run `muse login`, then stop.
 
+## 0. SCOUT (optional — let a worker do the reading)
+
+Your own reading is the largest cost in this loop: every file you open is
+resent on every later turn. When the area is large or unfamiliar, or the
+question needs web research, send a read-only scout before you plan:
+
+- Ask numbered questions, and say what the answers are for.
+- Include: "Do not edit, create or delete any file."
+- Ask for evidence: `path:line` for code, a URL for web claims.
+- Cap the reply: "Reply in at most 30 lines."
+
+Run it like any exec (step 2). Check `git status` afterwards — a scout that
+changed files broke its brief. Verify any number or claim your plan depends
+on: scouts are fast, not authoritative.
+
 ## 1. PLAN
 
-Explore the codebase yourself and write a **self-contained
-spec** to a temp file. The worker has NO access to this conversation, so the
+Explore the codebase yourself (or read the scout's report) and write a
+**self-contained spec** to a temp file. The worker has NO access to this conversation, so the
 spec must include:
 
 - Exact goal and acceptance criteria.
@@ -60,8 +105,11 @@ spec must include:
 - Include: "You are the Stuntman executor. Implement directly; do not delegate
   or launch more Stuntman workers." This avoids recursive delegation when the
   worker also has Stuntman installed.
+- A loop cap: "If verification still fails after 3 attempts, stop and report
+  what fails." A worker that self-tests without limit costs what a lead costs.
 - End with: "When done, run the verification commands and fix failures before
-  finishing. Reply with a summary of changed files."
+  finishing. Reply in at most 10 lines: files changed, verification result,
+  anything unfinished." The reply lands in your context, so keep it short.
 
 Keep task units small. For large work, split into multiple sequential
 delegations, reviewing each before the next.
@@ -78,6 +126,9 @@ From the **project root**:
   Retain the process handle and capture stdout/stderr to task-specific files
   when needed. An output file is not complete until the process exits. Never
   start a replacement worker just because the first poll returned no output.
+- **Wait, don't poll.** Start the worker in the background and wait for it to
+  exit; Claude Code notifies you when a background command finishes. Every "is
+  it done yet?" check resends your whole context and returns nothing.
 - Output is one JSON line:
   `{"backend", "session_id", "result", "is_error", "usage", "cost_usd"}`.
   Capture `session_id` (needed for iteration) and keep `usage`/`cost_usd`
@@ -89,11 +140,13 @@ From the **project root**:
 
 ## 3. REVIEW (you — the second place expensive tokens go)
 
-- `git diff` (against the baseline if the tree was dirty) and read every
-  changed file.
+- **Gate, then look.** Run the verification commands yourself first — never
+  trust the worker's claim. If the gate fails, send the failing output back
+  (step 4); do not read the code to find the bug for the worker.
+- Then read `git diff` (against the baseline if the tree was dirty). Read the
+  diff, not whole files; open a full file only where the diff is unclear.
 - Check against the spec: correctness, edge cases, style match, no scope
   creep, no hallucinated APIs, no files touched beyond the spec.
-- Run the verification commands yourself — never trust the worker's claim.
 
 ## 4. ITERATE or TAKE OVER
 
@@ -103,8 +156,11 @@ If review finds problems, send feedback to the SAME worker session:
 "$STUNT" resume <session_id> "Code review feedback — fix these: ..."
 ```
 
-Maximum 2 feedback rounds. If still broken after that, the task qualifies as
-"heavy": fix the remaining issues yourself directly, and say so in the report.
+Maximum 2 feedback rounds. If still broken after that and
+`STUNTMAN_WORKER_ORDER` lists another worker, hand the unit to the next one
+once: a fresh exec with the same spec plus the failing output. If that also
+fails, or there is no other worker, the task qualifies as "heavy": fix the
+remaining issues yourself directly, and say so in the report.
 
 ## Report to the user
 

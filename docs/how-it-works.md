@@ -188,11 +188,16 @@ one-time setup; `/handoff` is the per-session resume.
 - it inserts a marked contract (`<!-- stuntman:scaffold:start … end -->`) into
   `CLAUDE.md` — created if absent, appended if present, skipped if already there
   (it also recognizes the pre-0.5 `stuntman:handoff` marker);
+- it appends a reply-style block (`<!-- stuntman:style:start … end -->`) once —
+  plain, short answers; edits inside the block persist;
 - it creates the four **living docs** it references, each only if missing:
-  `HANDOFF.md` (the baton — what changed, next step, gotchas), `STATUS.md` (the
-  board — built / in progress / planned), `SPEC.md` (the contract — vision,
-  principles, scope), and `STRATEGY.md` (the honest assessment + direction). Each
-  self-declares as a living doc with a changelog.
+  `HANDOFF.md` (the baton — what changed, how it was verified, next step,
+  gotchas), `STATUS.md` (the board — built / in progress / planned), `SPEC.md`
+  (the contract — vision, principles, scope, commands, boundaries, success
+  criteria), and `STRATEGY.md` (the honest assessment + direction). Each
+  self-declares as a living doc with a changelog. `HANDOFF.md` and `STATUS.md`
+  are rewritten each session, not appended (under 80 and 120 lines); anything
+  older moves to `docs/handoff-archive.md`.
 
 The mechanism is just that `CLAUDE.md` auto-loads into every session. The
 contract says two things: *read `HANDOFF.md` / `STATUS.md` first, assume zero

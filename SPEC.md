@@ -78,6 +78,9 @@ and full WSL validation are outside the current delivery.
 - Whether `/scaffold`'s doc set should be tiered (minimal vs full) by project size
   — currently always the full SPEC / STRATEGY / STATUS / HANDOFF set.
 - Whether to ship the Stop hook for the non-plugin (`install.sh`) route too.
+- Whether scaffold should version its managed blocks and migrate old ones, so
+  already-scaffolded projects receive contract fixes — currently an existing
+  contract block is left untouched forever.
 
 ## v2 direction — "Film Crew" (validated 2026-06-29)
 
@@ -88,6 +91,8 @@ judgment + a surgical fix; **pick the cheapest worker that lands _close_**; veri
 (never "tags present"); feedback style scales with worker tier; own the cost accounting (provider rates).
 
 ## Changelog
+- 2026-10-08 — `/delegate` gains an optional read-only scout step, a quota probe, wait-don't-poll, gate-then-look review, a worker loop cap and a 10-line reply cap. These are the 2026-09-17 delegation-economics fixes, now written into the skill. New `STUNTMAN_WORKER_ORDER` lists several workers so `/delegate` spreads work across them and tries the next worker before the host takes over. It is read by the skill only; no runner code changed.
+- 2026-10-07 — Scaffold adds a write-once reply-style block (plain, short answers) and makes `HANDOFF.md` / `STATUS.md` bounded snapshots (80 / 120 lines, older entries archived). The `SPEC.md` stub gains Commands, Boundaries (always / ask first / never) and Success criteria, and the `HANDOFF.md` stub gains Verified — structure borrowed from `spec-driven-development` and `context-engineering` in addyosmani/agent-skills. Existing contract blocks and docs are not migrated.
 - 2026-09-16 — Planned execution policy confirmed as a three-tier ladder (leads → free workers → paid second-best); `/harness` planned as a local-worker, full-autonomy profile of the same engine. Scaffold now drafts a README for README-less projects. Harness experiment recorded under `experiments/harness/`.
 - 2026-09-14 — Floor is live-only with status/project filters, Show all, and retained sound/animation; demo mode and pose previews removed.
 - 2026-09-14 — Recorded the user's delegation-by-default direction and marked runtime routing/retry/escalation controls as planned.

@@ -1,5 +1,241 @@
 # HANDOFF
 
+## Delegate skill: token discipline + agy default — 2026-10-08
+
+**What changed (released in 0.14.0):**
+
+- `skills/delegate/SKILL.md`: new optional step 0 SCOUT (read-only worker does
+  the reading or web research, replies in at most 30 lines with `path:line` or
+  URL evidence); a one-line quota probe before large delegations; "wait, don't
+  poll"; review is now gate first, then the diff, not whole files; specs carry
+  a 3-attempt loop cap and a 10-line reply cap. These are fixes 1-3 from the
+  2026-09-17 economics entry below. `bin/stunt` is unchanged.
+- New `STUNTMAN_WORKER_ORDER`: a list of workers, most preferred first, each
+  with an optional `=model`. The skill sends one unit to the first worker that
+  answers, parallel units to different workers, scouts to a free or flat-rate
+  worker, and a twice-failed unit to the next worker before the host takes
+  over. Read by the skill only; `bin/stunt` still runs one backend per call.
+- Owner's machine only: `~/.zshrc` and `~/.bash_profile` now set
+  `STUNTMAN_WORKER_ORDER="agy=gemini-3.8-flash-high opencode=opencode/big-pickle codex"`
+  and `STUNTMAN_WORKER=agy` (was `STUNTMAN_WORKER=codex`). The owner wants no
+  single default: agy, codex and free opencode models used a lot, Claude least.
+  New shells pick it up.
+
+**Verified:** 36 offline tests pass. One scout through
+`STUNTMAN_WORKER=agy STUNTMAN_MODEL=gemini-3.8-flash-high bin/stunt exec`
+returned the right answer in 19 s (30,042 in / 997 out, no file changes).
+A one-word probe through `bin/stunt` succeeded on all three listed workers:
+opencode `opencode/big-pickle` 5 s, codex default 8 s, agy
+`gemini-3.8-flash-high` 10 s. Not verified: that a lead follows the spread
+rules on a real task, the lead-side saving, and the scout brief on codex /
+opencode / muse.
+
+**Why:** floor log 2026-10-06 07:02 to 10-08 00:28 shows 45 worker starts:
+23 opencode, 19 codex, 3 agy. The owner pays for Antigravity and wants it used
+first. The default sent everything unnamed to Codex.
+
+**Next step:** run one real task through the new flow (scout, spec, worker,
+gate) and record lead and worker tokens, to see whether the skill text changes
+behaviour.
+
+**Gotchas:**
+
+- agy with no model pin uses its own default, `Gemini 3.7 Flash (High)`
+  (`~/.gemini/antigravity-cli/settings.json`). Pin `STUNTMAN_MODEL` per call
+  for anything harder.
+- agy's Claude models ran out of quota on 2026-10-05 while Gemini kept working.
+  Probe first.
+- Read-only is an instruction, not a sandbox. `agy --mode plan` and
+  `codex -s read-only` exist but `stunt` does not use them yet.
+
+## Scaffold: reply style + bounded docs — 2026-10-07
+
+**What changed (released in 0.14.0):**
+
+- `bin/scaffold` appends a write-once `<!-- stuntman:style:start … end -->`
+  block to every selected instruction file: answer first, five short sentences
+  or fewer, plain words, one next step, one question at most. Rerunning scaffold
+  in an already-scaffolded project adds it. An edited or emptied block is kept.
+- New contract and stubs say `HANDOFF.md` / `STATUS.md` are rewritten, not
+  appended (80 / 120 lines), with older entries in `docs/handoff-archive.md`.
+- New `SPEC.md` stub sections: Commands, Boundaries (always / ask first /
+  never), Success criteria. New `HANDOFF.md` stub section: Verified. Structure
+  borrowed from `spec-driven-development` and `context-engineering` in
+  addyosmani/agent-skills. Not adopted: ADR files and a separate plan / task
+  folder — they add docs, and the measured problem was too much text.
+- 4 new tests in `tests/test_compatibility.py`; 36 offline tests pass.
+- Docs updated: `skills/scaffold/SKILL.md`, `README.md`,
+  `docs/how-it-works.md`, `docs/codex.md`, `SPEC.md`.
+
+**Why:** measured 15 scaffolded projects. Seven have a `HANDOFF.md` over 2,000
+lines and a `STATUS.md` over 1,900, and the contract makes every session read
+both. Nothing told sessions to replace instead of append. Astra (Codex) gave an
+independent review and reached the same fix.
+
+**Next step:** decide whether to migrate existing projects. The new contract
+text reaches new projects only, because an existing contract block is never
+rewritten (open decision in `SPEC.md`). This file itself is 900+ lines and
+needs the same trim.
+
+**Gotchas:**
+
+- Released as 0.14.0. An installed plugin keeps its old copy until it is
+  updated and the session is restarted. To use it sooner, run
+  `bin/scaffold <project>` from this checkout.
+- The owner's global `~/.claude/CLAUDE.md` still says "If uncertain, ask" and
+  "present multiple interpretations". It pulls against the "ask one question"
+  rule in the style block.
+
+## Delegation economics — lead and worker both ran out — 2026-09-17
+
+Diagnostic session. No code changed; this entry is the finding.
+
+Codex hit 100% of its weekly window and drained its credit balance to 0 at
+23:47 UTC (03:47 local) mid-flight on the Adversaria iOS build. Measured from
+`~/.codex/sessions/2026/09/16/`:
+
+| | model calls | input tokens | output tokens | avg input/call |
+| --- | --- | --- | --- | --- |
+| Codex lead A `01a0aac7` | 384 | 47,159,514 | 210,269 | 132,059 |
+| Codex lead B `01a0abc6` | 187 | 20,545,267 | 117,117 | 115,289 |
+| Workers (Opus/Gemini/Swift-Qwen) | — | 92,147,338 | 480,842 | — |
+| **Day total** | | **159,852,119** | **808,228** | **198:1** |
+
+**Two Codex leads were running at once.** Both `originator: codex-tui`, same
+cwd, CLI 0.154.0 — two terminals opened by hand, not spawned by Stuntman. A
+spawned worker reports a different originator. Neither session could see the
+other, and both drew on the same balance: it fell 142.14 -> 0.00 in four
+minutes because two spenders were each watching only their own half.
+
+### What actually costs the tokens
+
+Not spec writing, and not delegation. Classified by tool call, lead session A:
+
+| Lead activity | calls | |
+| --- | --- | --- |
+| Spawn / drive workers | 117 | of which **57 were empty `write_stdin` polls** |
+| Read source + logs to verify | 76 | |
+| Build / test / simulator | 45 | |
+| Write spec | 1 | |
+
+The cost is `turns x context`, and nothing else. 384 calls x 132k average
+context = 47.2M. The lead *emitted* 210k tokens all day; it paid 47M to
+re-read its own transcript once per turn. The 57 empty polls — literally
+"are you done yet?" — each resent ~132k of context for zero information:
+about 7.5M tokens, 16% of the session.
+
+**This applies to workers identically.** `opus-app-fix2` spent 36,874,013
+cache-read input against 58,701 output across 84 turns. Delegation moves the
+writing, not the arithmetic. Opus reported $59.86 list-price-equivalent across
+four calls (`opus-app` $10.10, `opus-app-fix1` $24.72 on a run that was
+aborted, `opus-app-fix2` $24.86, `opus-architecture` $0.20). Local Swift-Qwen
+and Gemini reported $0.
+
+`worker-accounting.json` in the run directory says $35.01 and is **stale** —
+written 03:44, before `opus-app-fix2` finished at 04:12. Regenerate it.
+
+Screenshots are a red herring. They are 79% of the rollout file by bytes and
+~0.03% of the bill: measured token deltas put a 3.11 MB base64 PNG at +2,856
+tokens, and all seven images together at roughly 14k of 47.2M. Base64 length
+is not token cost. Do not optimise here.
+
+### Contrast that proves the architecture
+
+Same system, one day earlier: `experiments/harness/2026-09-16-qwen-medium.md`.
+Local Qwen built Orbit Lab in 16m 34s for 19,852 output tokens at $0, and the
+lead barely spent anything. The difference is a **deterministic gate returning
+a verdict** instead of a lead reading evidence. Adversaria had no gate for UI
+correctness, so the lead read everything — and Opus self-tested in a loop for
+84 turns.
+
+### Fixes, in payoff order
+
+1. **Block on workers; never poll.** Wait on the PID, read the result once.
+   57 turns -> 1. Recovers ~16% of lead spend immediately.
+2. **Gate, then look.** Gate emits pass/fail plus numbers; the lead opens
+   artifacts only on failure. `review-ui.mjs` already does this for Retina.
+3. **Cap worker turns and context.** A worker that self-tests 84 times costs
+   what a lead costs. Bound the iteration count and make the gate external.
+4. **One lead per quota.** Two leads cannot see each other's spend.
+
+### Corrections to earlier notes
+
+- Opus `correction2` (PID 19715) was **not** cut off. It completed at 04:12
+  local — `terminal_reason: completed`, `subtype: success`, 84 turns — 25
+  minutes *after* the lead died. `swift-speech-fix2` also completed. Workers
+  are independent processes and outlive the host; that is working as designed.
+- What is missing is **host verification**, not worker output. Nothing the
+  workers produced after 03:47 has been independently checked.
+
+## Adversaria iOS delegation — 2026-09-17 (stalled at the quota wall)
+
+**Status as of 03:47 local:** the Codex lead is out of quota, both remaining
+workers completed on their own, and nothing they produced is host-verified.
+See the delegation-economics entry above. Resume by verifying worker output,
+not by re-running workers.
+
+The user authorized a real iOS build using downloaded Swift-Qwen/OpenCode,
+Opus, GPT-5.6 and Gemini, and clarified **no LLM anywhere in app functionality,
+local or cloud**. Development models stay on this Mac. New project:
+`../adversaria-ios/`; its SPEC, shared API contract, HANDOFF and STATUS own
+current implementation state. Desktop `../meeting-note-taker` is read-only.
+This supersedes the earlier proposed mobile inference/WhisperKit direction.
+
+Swift-Qwen Q4_K_M (18 GB) is downloaded, SHA256-verified, and installed as
+local Ollama `swift-qwen27-64k`. OpenCode implementation started 21:36 UTC.
+GPT-5.6 Sol owns core/tests,
+Opus owns SwiftUI/project/UI tests, and Gemini via `stunt`'s Antigravity backend
+owns audio. Direct Gemini CLI returned UNSUPPORTED_CLIENT; Antigravity works.
+The user accepted Xcode 27 setup; command tools now work, XcodeGen is installed,
+and the iOS 27 simulator runtime is installed. Core tests (15), hosted app tests
+(11), and the unsigned build pass; first broad UI runs exposed defects and
+are being corrected. Host visual review also caught covered navigation headings.
+Worker evidence lives
+at `~/.stuntman/adversaria-ios-build/`. Next: review/build/test and let
+Swift-Qwen implement its bounded service after download. No new generic harness
+engine, plugin release, commit, signing, or publishing has been performed.
+
+**Update — both workers finished after the lead died.** `opus-app-fix2`
+completed 04:12 local (`terminal_reason: completed`, 84 turns, $24.86 list
+equivalent) reporting `xcodegen generate`, `build` and `build-for-testing` at
+exit 0 and hosted tests 19/20 — the one failure is
+`SpeechInputValidationTests`, GPT-5.6's lane, not Opus's. Before/after heading
+screenshots are in `opus-round2-evidence/`. `swift-speech-fix2` also completed.
+All of that is **worker self-report and has not been independently verified by
+a host.** Treat it as unreviewed until someone re-runs the build and tests.
+
+## Codex harness trial — 2026-09-16 (complete)
+
+The user asked to try the harness from Codex and recalled Qwen 27B / Swift.
+There is still no shipped `harness` skill; this runs the existing delegate
+workflow with the saved Orbit Lab spec and deterministic gate. Installed local
+worker: `ollama/qwen27-64k` through OpenCode 1.18.3, with model option
+`reasoningEffort: medium`. Swift-Qwen is not installed.
+
+- Fresh run: `~/.stuntman/harness-test/orbit-lab-qwen-medium-20260916T151555Z/`.
+- OpenCode session: `ses_f5535b8b1ffeufLP2P5ZrfNICM`.
+- First pass: 16m 34s, 19,852 output tokens; unchanged saved gate passed.
+  Host review caught a Retina/DPR coordinate bug that gate did not cover.
+- One same-session worker correction: 2m 10s, 1,992 output tokens. Qwen fixed
+  center coordinates in `toScreen()` and `drawSun()`; no lead implementation
+  edits. Host independently passed the saved gate plus 14 UI checks across
+  DPR 1/2, viewed the screenshot, and matched the verified file's final hash.
+- Total worker calls: 18m 44s; 62,792 input + 21,844 output + 440,620 cache-read
+  tokens; $0 reported local inference. Codex host usage was not measured.
+- `run-metadata.json` is `verified_pass`; both worker calls have exited.
+  The final app is `orbit-lab.html`; screenshot `final.png`. Previous artifacts
+  are preserved. Full report: `experiments/harness/2026-09-16-qwen-medium.md`.
+- This does not demonstrate a medium-effort speedup. The resolved config
+  requests medium and pins main/small models to local Ollama, but effective
+  runtime effort was not instrumented. The old run's effort was not recorded;
+  this prompt explicitly included gate execution and the run compacted context.
+- Next: choose/install a compatible local Swift-Qwen quantization and repeat
+  with the same prompt plus both gates in a fresh directory. The variant
+  survey and reusable harness engine remain pending. Preserve `review-ui.mjs`
+  as the Retina regression check; current gates use this Mac's Film Crew
+  Playwright module and cached Chromium. No plugin release or model download
+  was performed, and no commit was made.
+
 ## Current handoff — 2026-09-15
 
 Small documentation-only session. No code, no commit.

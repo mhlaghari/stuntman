@@ -24,9 +24,15 @@ Idempotent and non-destructive. It:
   the host's instruction file (`AGENTS.md`, `CLAUDE.md`, or both) — created if absent, appended if present, skipped if already there
   (recognizes the pre-0.5 `stuntman:handoff` marker too). Never rewrites
   existing memory or user-owned content.
+- appends a reply-style block (`<!-- stuntman:style:start … end -->`) to the
+  same instruction file(s) — plain, short answers: answer first, five short
+  sentences or fewer, one next step. Written once, so edits inside the block
+  persist. To opt out, empty the block but keep its markers.
 - creates the living docs it references — `HANDOFF.md` (the session baton),
   `STATUS.md` (the board), `SPEC.md` (the contract), `STRATEGY.md` (the honest
-  why) — each only if missing. Each self-declares as a living doc.
+  why) — each only if missing. Each self-declares as a living doc. `HANDOFF.md`
+  and `STATUS.md` are snapshots, not logs: each session rewrites them (under 80
+  and 120 lines) and moves anything older to `docs/handoff-archive.md`.
 - appends or refreshes a managed agent roster block
   (`<!-- stuntman:agents:start … end -->`) in the same instruction file(s) —
   one full inventory snapshot shared by every selected host. Rerunning
@@ -48,14 +54,18 @@ Idempotent and non-destructive. It:
    them in now so the system is useful immediately, by examining the project (its
    `README.md`, structure, recent `git log`):
    - **`SPEC.md`** — the contract: a one-paragraph **Vision**, the load-bearing
-     **Principles**, **Scope** (in / out), **Open decisions**. Draft from what the
+     **Principles**, **Scope** (in / out), **Commands** (exact build / test / run
+     commands — run them or read them from the project's scripts, never guess),
+     **Boundaries** (always / ask first / never), **Success criteria** (conditions
+     a command or a person can check), **Open decisions**. Draft from what the
      project clearly is; flag guesses for the user.
    - **`STRATEGY.md`** — the honest **Bottom line**, **Assessment**, **Direction**.
      The critical version, not a pitch. If you can't assess honestly yet, say what
      you'd need to.
    - **`STATUS.md`** — the board: **Built** / **In progress** / **Planned** / **Blockers**.
-   - **`HANDOFF.md`** — the baton: **What changed this session**, the **Next step**,
-     **Gotchas**, dated.
+   - **`HANDOFF.md`** — the baton: **What changed this session**, **Verified**
+     (commands run and their results, what is unverified, committed or not), the
+     **Next step**, **Gotchas**, dated.
    Write all of them for a reader with **zero memory** of this session, and set
    each doc's date / changelog. `README.md` is maintained too (refresh when the
    surface changes). Scaffold doesn't *create* one, so if it's missing — a

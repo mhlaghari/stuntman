@@ -3,6 +3,7 @@
 #
 # Idempotently, and without clobbering anything, it:
 #   - writes a contract into CLAUDE.md (a read-first list + before-you-stop rules),
+#   - writes a reply-style block into CLAUDE.md (plain, short answers), once,
 #   - creates the living docs it references, each only if it doesn't exist:
 #       HANDOFF.md    the session baton  (what changed, next step, gotchas)
 #       STATUS.md     the board          (built / in progress / planned)
@@ -32,6 +33,7 @@ DIR="${1:-$PWD}"
 command -v python3 >/dev/null 2>&1 || { echo "error: python3 is required for the agent roster step but was not found on PATH" >&2; exit 1; }
 START="<!-- stuntman:scaffold:start -->"
 OLD_START="<!-- stuntman:handoff:start -->"   # pre-0.5 marker
+STYLE_START="<!-- stuntman:style:start -->"
 
 # CLAUDE.md contract — quoted heredoc so backticks in the body stay literal.
 emit_block() {
@@ -49,12 +51,33 @@ These are **living documents** — read them first, keep them current.
 5. `README.md` — what the project is and how to run it.
 
 **Before you stop — end of every session:**
-- Always update `HANDOFF.md` (what changed, next step, gotchas) and `STATUS.md` (refresh the board).
+- Always update `HANDOFF.md` (what changed, how it was verified, next step, gotchas) and `STATUS.md` (refresh the board).
+- Rewrite them, don't append. `HANDOFF.md` holds the latest session only, under 80 lines; `STATUS.md` stays under 120. Move anything older to `docs/handoff-archive.md`, which is never read at session start.
 - Update `SPEC.md`, `STRATEGY.md`, or `README.md` whenever the change touched what they cover — and add a dated changelog line.
 - Never commit without explicit user authorization.
 
 A task isn't "done" until the docs its change touched reflect it.
 <!-- stuntman:scaffold:end -->
+EOF
+}
+
+# Reply style — plain, short answers. Written once; edits inside the block persist.
+emit_style() {
+cat <<'EOF'
+<!-- stuntman:style:start -->
+## How to reply
+
+Plain and short. This covers chat replies, not code, commits, or docs.
+
+- Answer first. No intro, no recap, no closing offer.
+- Five short sentences or fewer by default. Go longer only when asked, or when a risk needs it.
+- Plain words. If a technical term is needed, explain it in a few words.
+- Number the steps. Stop lists at five items.
+- When action is needed, end with one next step. Do not offer a menu of options.
+- Small unclear point: pick the sensible option, say what you picked, and continue.
+- Ask only when a wrong guess would be costly. Ask one question.
+- Keep code, commands, paths, errors, and numbers exact.
+<!-- stuntman:style:end -->
 EOF
 }
 
@@ -82,6 +105,12 @@ else
   { printf '# %s\n\n' "$CONTRACT"; emit_block; } > "$CONTRACT_PATH"
   echo "• created $CONTRACT with the scaffold contract"
 fi
+if grep -qF "$STYLE_START" "$CONTRACT_PATH"; then
+  echo "• $CONTRACT already has the reply-style block — left as-is"
+else
+  { printf '\n'; emit_style; } >> "$CONTRACT_PATH"
+  echo "• appended reply-style block to $CONTRACT"
+fi
 done
 
 # 2. Agent roster — one inventory snapshot shared by every selected contract.
@@ -104,8 +133,15 @@ _The session baton — a **living doc**. The current agent updates it before
 stopping; the next reads it first. Write for a reader with zero memory of this
 session._
 
+_Rewrite it each session — latest state only, under 80 lines. Anything older
+goes to `docs/handoff-archive.md`._
+
 ## What changed this session
 _What you did, concretely._
+
+## Verified
+_The commands you ran and what they returned. Say what is still unverified, and
+whether the work is committed._
 
 ## Next step
 _The single most important next action, then the rest in priority order._
@@ -122,7 +158,7 @@ make "$DIR/STATUS.md" "STATUS.md" <<'EOF'
 # STATUS
 
 _The board — a **living doc**. Where the project stands right now; refresh it
-every session._
+every session. Replace, don't append — keep it under 120 lines._
 
 ## Built
 _Shipped and working._
@@ -157,6 +193,18 @@ _The non-negotiables, numbered — the rules a session must never break._
 ## Scope
 - **In:** _what this is._
 - **Out (for now):** _what's deliberately deferred._
+
+## Commands
+_Exact commands with flags — build, test, run, lint. Only ones that were run and
+worked._
+
+## Boundaries
+- **Always:** _what every change must do — e.g. run the tests._
+- **Ask first:** _changes that need the user's yes — e.g. new dependencies, schema changes, deleting data._
+- **Never:** _hard limits — e.g. commit secrets, delete a failing test to get green._
+
+## Success criteria
+_How we know it works — conditions a command or a person can check._
 
 ## Open decisions
 _Unresolved choices — each with the options and the current lean._

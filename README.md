@@ -30,7 +30,7 @@ this task to opencode").
 
 | Command | What it does | Spans |
 |---|---|---|
-| **`/delegate <task>`** | The host plans + reviews; a near-free worker executes the spec — five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), Codex, Antigravity (`agy`), Muse. | cost |
+| **`/delegate <task>`** | The host plans + reviews; a near-free worker executes the spec, and can scout code or the web read-only first — five backends: Claude-via-proxy, opencode (DeepSeek/Groq/Ollama/Grok/Kimi), Codex, Antigravity (`agy`), Muse. | cost |
 | **`/relay <task>`** | Preserves progress across usage caps with independent workers and available scheduling. | the rate limit |
 | **`/scaffold`** | Stands up a project's self-resuming memory — an `AGENTS.md` or `CLAUDE.md` contract + four living docs (HANDOFF · STATUS · SPEC · STRATEGY). | the context boundary |
 | **`/handoff`** | Reads those docs and continues exactly where the last session stopped. | new sessions / `/clear` |
@@ -328,6 +328,18 @@ export STUNTMAN_MODEL="gemini-3.8-flash-high"   # optional — any id from `agy 
 export STUNTMAN_WORKER=muse                     # STUNTMAN_MODEL optional
 ```
 
+Want several workers instead of one? List them, most preferred first, each with
+an optional model. `/delegate` then spreads the work: one unit goes to the first
+worker that answers, parallel units go to different workers, and a unit that
+fails on one worker moves to the next before the host takes it over.
+
+```bash
+export STUNTMAN_WORKER_ORDER="agy=gemini-3.8-flash-high opencode=opencode/big-pickle codex"
+```
+
+The list is read by the `/delegate` skill, not by `bin/stunt`; each call still
+runs one backend.
+
 Route A's worker is a full headless Claude Code (same tools and agentic loop
 as the orchestrator). Route B trades that harness fidelity for zero proxy
 setup — opencode authenticates to providers directly. Route C is OpenAI's own
@@ -385,14 +397,21 @@ context, or starting fresh tomorrow.
 this first" list + a "before you stop" process contract) and creates the docs it
 references — four **living documents** — then fills them in from your project:
 
-- **`HANDOFF.md`** — the session baton: what changed, the next step, the gotchas.
+- **`HANDOFF.md`** — the session baton: what changed, how it was verified, the next step, the gotchas.
 - **`STATUS.md`** — the board: built / in progress / planned.
-- **`SPEC.md`** — the contract: what this is, the load-bearing principles, where it's going.
+- **`SPEC.md`** — the contract: what this is, the load-bearing principles, the exact commands, the boundaries (always / ask first / never), the success criteria, where it's going.
 - **`STRATEGY.md`** — the honest why / direction.
 
 Each self-declares as a living doc with a changelog. Existing memory and user rules
 are preserved. The contract then keeps them current — each session
 refreshes the docs (and `README.md`, when the surface changes) before stopping.
+`HANDOFF.md` and `STATUS.md` are snapshots, not logs: each session rewrites them
+(under 80 and 120 lines) and moves anything older to `docs/handoff-archive.md`,
+which is never read at session start.
+
+Scaffolding also adds a **reply-style block** (`stuntman:style` markers): answer
+first, five short sentences or fewer, plain words, one next step. It is written
+once, so your edits persist. To opt out, empty the block but keep its markers.
 
 Scaffolding also adds a managed **agent roster**: all five worker backends with
 installed/missing status, discovered OpenCode and Antigravity model IDs, and

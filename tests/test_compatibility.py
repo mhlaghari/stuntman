@@ -104,6 +104,40 @@ class CompatibilityTests(unittest.TestCase):
         self.assertEqual(text.count('<!-- stuntman:agents:start -->'), 1)
         self.assertEqual(text.count('<!-- stuntman:agents:end -->'), 1)
 
+    def test_reply_style_block_is_written_once_per_contract(self):
+        self.scaffold('--host', 'both')
+        self.scaffold('--host', 'both')
+        for name in ('AGENTS.md', 'CLAUDE.md'):
+            text = (self.project / name).read_text()
+            self.assertEqual(text.count('<!-- stuntman:style:start -->'), 1)
+            self.assertEqual(text.count('<!-- stuntman:style:end -->'), 1)
+
+    def test_already_scaffolded_project_gains_reply_style(self):
+        original = ('<!-- stuntman:scaffold:start -->\nExisting contract\n'
+                    '<!-- stuntman:scaffold:end -->\n')
+        (self.project / 'CLAUDE.md').write_text(original)
+        self.scaffold()
+        text = (self.project / 'CLAUDE.md').read_text()
+        self.assertTrue(text.startswith(original))
+        self.assertIn('## How to reply', text)
+
+    def test_edited_reply_style_block_is_preserved(self):
+        emptied = '<!-- stuntman:style:start -->\n<!-- stuntman:style:end -->\n'
+        (self.project / 'CLAUDE.md').write_text(emptied)
+        self.scaffold()
+        text = (self.project / 'CLAUDE.md').read_text()
+        self.assertTrue(text.startswith(emptied))
+        self.assertNotIn('## How to reply', text)
+
+    def test_new_stubs_carry_commands_boundaries_and_verification(self):
+        self.scaffold()
+        spec = (self.project / 'SPEC.md').read_text()
+        for heading in ('## Commands', '## Boundaries', '## Success criteria'):
+            self.assertIn(heading, spec)
+        for tier in ('**Always:**', '**Ask first:**', '**Never:**'):
+            self.assertIn(tier, spec)
+        self.assertIn('## Verified', (self.project / 'HANDOFF.md').read_text())
+
     def test_wiki_supports_both_hosts_and_is_idempotent(self):
         for host, names in [('codex', ['AGENTS.md']), ('claude', ['CLAUDE.md']),
                             ('both', ['AGENTS.md', 'CLAUDE.md'])]:
