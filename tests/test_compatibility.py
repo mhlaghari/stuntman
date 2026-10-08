@@ -201,6 +201,30 @@ class CompatibilityTests(unittest.TestCase):
         self.assertTrue(result['blocked'])
         self.assertIsNone(result['windows'][0]['resets_at'])
 
+    def test_usages_reports_codex_plan_without_weekly_window(self):
+        home = self.project / 'home'
+        sessions = home / '.codex/sessions/2026/10/08'
+        sessions.mkdir(parents=True)
+        snapshot = {'timestamp': datetime.now(timezone.utc).isoformat(),
+                    'payload': {'rate_limits': {'plan_type': 'prolite', 'secondary': None,
+                                                'primary': {'used_percent': 12.0,
+                                                            'resets_at': int(time.time()) + 3600}}}}
+        (sessions / 'rollout-test.jsonl').write_text(json.dumps(snapshot) + '\n')
+        # A copy beside a fake `window`, so no live Claude probe runs.
+        tools = self.project / 'tools'
+        tools.mkdir()
+        (tools / 'usages').write_bytes((ROOT / 'bin/usages').read_bytes())
+        (tools / 'usages').chmod(0o755)
+        (tools / 'window').write_text('#!/bin/sh\necho "{}"\n')
+        (tools / 'window').chmod(0o755)
+        env = self.env | {'HOME': str(home)}
+        board = run(tools / 'usages', env=env)
+        self.assertNotIn('Traceback', board.stdout + board.stderr)
+        self.assertIn('wk n/a', board.stdout)
+        self.assertIn('muse      n/a', board.stdout)
+        line = run(tools / 'usages', '--statusline', env=env)
+        self.assertEqual(line.stdout.strip(), 'CX 12%/5h')
+
     def test_codex_installer_uses_plugin_cli_and_propagates_failure(self):
         fakebin = self.project / 'bin'
         fakebin.mkdir()

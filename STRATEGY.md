@@ -12,6 +12,16 @@ revisit before any big direction call._
   trust-nothing review, zero-token metering, idempotent never-clobber setup.
 - Biggest risk: **scope sprawl** — four commands + a hook + a doc system is a lot
   of surface for a plugin. Each addition must earn the boundary it removes.
+- **Corrected 2026-09-17 — the tier ladder priced the wrong thing.** It optimises
+  *which* model does the work. The bill is set by `turns x context`, which the
+  ladder does not touch and delegation actively worsens: waiting and verifying
+  both generate turns, and worker evidence inflates the lead's context. Measured
+  on the Adversaria build: 159.9M input tokens against 808k output across lead
+  and workers, a 198:1 ratio, with the Codex lead's *own writing* accounting for
+  327k of it. A free worker on a 36.9M-token self-testing loop is not free —
+  Opus reported $59.86 doing exactly that. **Cheapest-worker-that-lands-close is
+  necessary but not sufficient; fewest-turns-smallest-context is the other half,
+  and it is the half that ran out.**
 
 ## Honest assessment
 
@@ -51,7 +61,14 @@ revisit before any big direction call._
   multi-model agent crew, fcc-independent. The moat shifts from "use a cheap model" to **"a free
   deterministic gate does the iteration; Opus does judgment once"** — and *pick the cheapest worker
   that lands close*, not the cheapest worker. See `../film-crew-bench/RESULTS.md`.
-- **Tier ladder (confirmed 2026-09-16):** Fable/Astra plan, spec, debate,
+- **Turn discipline is now a first-class harness rule (2026-09-17).** Leads block
+  on worker PIDs instead of polling; gates return a verdict plus numbers and the
+  lead opens artifacts only on failure; worker iteration counts are bounded and
+  verification is external to the worker; one lead per quota. The Orbit Lab run
+  ($0, gate-verified) and the Adversaria build (quota exhaustion, no UI gate) are
+  the same engine differing only on this — it is the variable that decides
+  whether delegation pays for itself.
+- **Tier ladder (confirmed 2026-09-16, amended 2026-09-17):** Fable/Astra plan, spec, debate,
   spawn, review; free workers (local models, opencode free routes, gemini,
   agy, muse, non-Astra codex) implement first; paid second-best (Opus/Sonnet,
   Sol/Terra/Luna) only after bounded, gated failure with a recorded reason.
@@ -69,6 +86,7 @@ revisit before any big direction call._
 - Does the doc system want a tiered (minimal / full) mode for tiny repos?
 
 ## Changelog
+- 2026-09-17 — Amended the tier ladder: model choice is only half the cost model. `turns x context` governs leads and workers alike, and delegation raises it. Added turn discipline (block don't poll, gate don't inspect, cap worker turns, one lead per quota) as a direction item after Codex exhausted its weekly quota mid-build.
 - 2026-09-16 — Confirmed the tier ladder (leads plan-only, free workers first, paid on gated failure); `/harness` framed as a profile of the delegate engine; first local-27B harness run passed its gate at $0.
 - 2026-09-14 — Floor is live-only: demo mode removed, status/project filters with Show all retained alongside sound and animation.
 - 2026-09-14 — Recommended runtime delegation policy as the next development task; direct OpenCode first, OmniRoute conditional on a provider-failover need.

@@ -47,6 +47,15 @@ behaviour.
   Probe first.
 - Read-only is an instruction, not a sandbox. `agy --mode plan` and
   `codex -s read-only` exist but `stunt` does not use them yet.
+- Release state: 0.14.0 pushed as `7082940`. On the Mac the Claude Code plugin
+  went 0.13.0 -> 0.14.0 and the Codex plugin to `0.14.0+codex.20261008004655`;
+  open sessions need a restart, and other machines still need a plugin update.
+  The vault page `wiki/projects/stuntman.md` was refreshed the same day.
+- Not in 0.14.0, still in the working tree: an uncommitted 2026-09-17 edit to
+  `STRATEGY.md`, and four untracked files (`bin/floor 2`, `bin/floor-hook 2`,
+  `skills/floor/SKILL 2.md`, `experiments/harness/2026-09-16-qwen-medium.md`).
+  The Stop hook counts the untracked files as code changes, so it reports
+  "HANDOFF.md / STATUS.md were not updated" even on a freshly released tree.
 
 ## Scaffold: reply style + bounded docs — 2026-10-07
 

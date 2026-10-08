@@ -140,8 +140,11 @@ if mode == "--statusline":
     cx = board["codex"]
     if cx.get("available"):
         fh = "~0%/5h" if cx.get("five_hour_expired") else f"{cx['five_hour_pct']:.0f}%/5h"
-        wk = "~0%/wk" if cx.get("weekly_expired") else f"{cx['weekly_pct']:.0f}%/wk"
-        seg = f"CX {fh} {wk}"
+        # some codex plans have no weekly window: the snapshot's secondary is null
+        if cx.get("weekly_expired"): wk = " ~0%/wk"
+        elif cx.get("weekly_pct") is None: wk = ""
+        else: wk = f" {cx['weekly_pct']:.0f}%/wk"
+        seg = f"CX {fh}{wk}"
         if cx.get("snapshot_age_s") and cx["snapshot_age_s"] > 86400:
             seg += "*"  # stale: snapshot older than a day
         parts.append(seg)
@@ -171,7 +174,9 @@ if cx["available"]:
         line = f"codex     5h  ~0% {bar(0)}  (window reset since snapshot)"
     else:
         line = f"codex     5h {cx['five_hour_pct']:>3.0f}% {bar(cx['five_hour_pct'])}  resets {fmt_ts(cx['five_hour_resets'])}"
-    line += "   wk ~0%" if cx.get("weekly_expired") else f"   wk {cx['weekly_pct']:>3.0f}%"
+    if cx.get("weekly_expired"): line += "   wk ~0%"
+    elif cx.get("weekly_pct") is None: line += "   wk n/a"
+    else: line += f"   wk {cx['weekly_pct']:>3.0f}%"
     tail = f"plan {cx['plan']}" if cx.get("plan") else ""
     if cx.get("snapshot_age_s") is not None:
         tail += f", snapshot {age_str(cx['snapshot_age_s'])}"
