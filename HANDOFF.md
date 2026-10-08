@@ -1,5 +1,22 @@
 # HANDOFF
 
+## usages fix: Codex plan with no weekly window — 2026-10-08
+
+**What changed (pushed as `dddc52b`):** `bin/usages` crashed on a Codex plan
+(prolite) whose snapshot has no weekly window (`weekly_pct` is `None`). It now
+prints `wk n/a`. New test in `tests/test_compatibility.py`. The live board shows
+the row correctly.
+
+**Open:** the `worker-meter` mod (a quota row above the prompt) is written in a
+session-only dev folder, `~/.claude/dev-mods/6c6f9444-.../worker-meter`, and is
+not installed. It only loads in that old session.
+
+**Next step:** move `worker-meter` into this repo as a plugin, list it in
+`marketplace.json`, run `claude plugin validate` and `claude plugin test`, then
+install with `/plugin install`. Four untracked duplicates (`bin/floor 2`,
+`bin/floor-hook 2`, `skills/floor/SKILL 2.md`, the qwen experiment note) are
+still not committed.
+
 ## Delegate skill: token discipline + agy default — 2026-10-08
 
 **What changed (released in 0.14.0):**
