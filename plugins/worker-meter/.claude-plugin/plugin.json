@@ -1,0 +1,7 @@
+{
+  "name": "worker-meter",
+  "version": "0.1.0",
+  "author": { "name": "mhlaghari" },
+  "description": "A row above the prompt with the quota of every Stuntman worker (Claude, Codex, DeepSeek).",
+  "types": "./types/index.d.ts"
+}

@@ -9,6 +9,11 @@
       "name": "stuntman",
       "source": "./",
       "description": "Claude Code or Codex plans and reviews. Eight commands: /delegate work to five cheap worker backends (proxy, opencode, Codex, Antigravity, Muse), /relay across the 5-hour limit, /scaffold + /handoff self-resuming project memory, /wiki a cross-project second brain, /launch a go-to-market plan, /usages one board for subscription limits, /floor a live agent board across projects."
+    },
+    {
+      "name": "worker-meter",
+      "source": "./plugins/worker-meter",
+      "description": "A row above the prompt with the quota of every Stuntman worker (Claude, Codex, DeepSeek)."
     }
   ]
 }

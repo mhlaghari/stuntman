@@ -7,13 +7,13 @@
 prints `wk n/a`. New test in `tests/test_compatibility.py`. The live board shows
 the row correctly.
 
-**Open:** the `worker-meter` mod (a quota row above the prompt) is written in a
-session-only dev folder, `~/.claude/dev-mods/6c6f9444-.../worker-meter`, and is
-not installed. It only loads in that old session.
+**worker-meter mod:** moved from the session-only dev folder into
+`plugins/worker-meter` and listed in `marketplace.json`. `claude plugin validate`
+passes and its 6 tests pass. Not yet installed on the owner's machine.
 
-**Next step:** move `worker-meter` into this repo as a plugin, list it in
-`marketplace.json`, run `claude plugin validate` and `claude plugin test`, then
-install with `/plugin install`. Four untracked duplicates (`bin/floor 2`,
+**Next step:** `/plugin marketplace update stuntman`, then
+`/plugin install worker-meter@stuntman`, restart, and check the quota row shows
+above the prompt. It runs `usages` from PATH. Four untracked duplicates (`bin/floor 2`,
 `bin/floor-hook 2`, `skills/floor/SKILL 2.md`, the qwen experiment note) are
 still not committed.
 
