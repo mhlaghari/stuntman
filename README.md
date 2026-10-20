@@ -37,6 +37,7 @@ this task to opencode").
 | **`/wiki`** | Builds a "second brain" across a folder of projects — an Obsidian vault + a graphify knowledge graph + a live MCP for cross-project recall. | every project |
 | **`/launch`** | Fans out a multi-agent workflow — cited competitor research, market sizing, channel ranking, then pricing + positioning + a week-by-week launch playbook, pressure-tested by adversarial critics — into one Product Success Overview (markdown + HTML). | the blank-page launch |
 | **`/usages`** | One board for every stunt double's usage + limits — Claude 5h/7d (live), Codex 5h/weekly (last snapshot), DeepSeek balance (live) — plus a cached `--statusline` segment. | all the subscription dashboards |
+| **`/dispatch`** | One window that prompts every project's agent: reads the floor, picks the project, sends the prompt into that agent's tmux pane, waits for the reply. The `dispatch-band` mod adds a Vexel crew above the prompt and `@project` routing with no model call. | agents across projects |
 
 | **`/floor`** | Live Vexel board for Claude Code, Codex, and Stuntman workers: status, conversations, and prompting ready tmux sessions. | agents across projects |
 
@@ -284,6 +285,33 @@ run `floor --wire-hooks --host claude` (or `codex` / `both`) once. The bundled
 `stunt` helper emits worker start/finish/failure events without host hooks.
 Monitoring makes no model calls. A silent avatar means no recent event, not
 proof that the process stopped.
+
+### Dispatch: one window for every project
+
+Run one Claude Code session (the dispatcher) in tmux and talk to it. `/dispatch`
+reads the floor, picks the project, and types your prompt into that project's
+agent. The floor gains four verbs the skill uses:
+
+```bash
+floor who                                   # projects, agents, states, last replies
+floor send [--wait] -- <project> "<prompt>"  # into that project's idle tmux session
+floor wait <agent-id> --since <sent_at>     # block until done / needs input / failed
+floor spawn <project|folder> [--host codex] [--prompt "..."]   # new tmux window
+```
+
+Projects match by name, ignoring case and punctuation (`tatweer-os` finds
+"Tatweer OS"), or by a unique prefix. Sending keeps the floor's rules: only an
+idle or finished interactive session inside tmux, process identity checked
+before Enter. Workers stay view-only. Native Windows is view-only (no tmux).
+
+The optional **`dispatch-band`** mod (`/plugin install dispatch-band@stuntman`)
+draws your Vexel crew above the prompt: one Vexel per project in its state's
+pose, its subagents and workers counted, and a `/crew` pane with every agent.
+A prompt that starts with `@<project>` goes straight to that project through
+`floor send` and never reaches the dispatcher's model. Only an exact project
+name routes (case and punctuation aside; no prefixes). `@src/a.ts`, a name that
+is also a file or folder here, and names no project matches stay ordinary
+prompts. A refused send says why and puts your words back in the prompt box.
 
 ## Usage
 
@@ -623,5 +651,6 @@ MIT
 
 ## Changelog
 
+- 2026-10-20 — `/dispatch`: floor `who` / `send` / `wait` / `spawn` verbs and the `dispatch-band` mod (Vexel crew band, `/crew` pane, `@project` routing).
 - 2026-09-14 — Floor is live-only: removed Demo World, added status visibility filters with Show all and Showing N of M counter.
 - 2026-09-05 — Added Codex plugin packaging, shared host-aware skills, AGENTS.md memory, native launch phases, and a local Codex quota probe.

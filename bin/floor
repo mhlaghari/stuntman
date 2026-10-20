@@ -18,6 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from stuntman_floor import IS_WINDOWS, process_identity
+import stuntman_dispatch
 
 FLOOR_DIR = Path(os.environ.get('STUNTMAN_FLOOR_DIR', str(Path.home() / '.stuntman/floor')))
 EVENTS = FLOOR_DIR / 'events.jsonl'
@@ -138,7 +139,7 @@ def reduce_sessions():
                 state = sessions.setdefault(key, {'id': key, 'sid': sid, 'host': host, 'cwd': None,
                     'state': 'idle', 'tool': None, 'msg': None, 'say': None, 'last_ts': 0,
                     'children': OrderedDict(), 'tp': None, 'ppid': None, 'process_identity': None,
-                    'worker': False, 'calls': {}})
+                    'worker': False, 'calls': {}, 'prompt_ts': 0})
                 if ts < state['last_ts']:
                     continue
                 for field in ('cwd', 'tp', 'process_identity', 'say'):
@@ -152,7 +153,7 @@ def reduce_sessions():
                 if evt in ('SessionStart', 'WorkerStart'):
                     state.update(state='running' if evt == 'WorkerStart' else 'idle', tool=None, msg=None)
                 elif evt == 'UserPromptSubmit':
-                    state.update(state='thinking', tool=None, msg=None)
+                    state.update(state='thinking', tool=None, msg=None, prompt_ts=ts)
                 elif evt == 'PreToolUse':
                     state['calls'][call or 'legacy'] = tool
                     needs_input = isinstance(tool, str) and any(t in tool.lower() for t in ('askuserquestion', 'request_user_input'))
@@ -481,7 +482,9 @@ def wire_hooks(host='claude', settings=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    if len(sys.argv) > 1 and sys.argv[1] in stuntman_dispatch.VERBS:
+        sys.exit(stuntman_dispatch.main(sys.argv[1:], sys.modules[__name__]))
+    parser = argparse.ArgumentParser(description=__doc__, epilog='Dispatch verbs: floor who | send | wait | spawn (floor send -h).')
     parser.add_argument('--json', action='store_true')
     parser.add_argument('--no-open', action='store_true')
     parser.add_argument('--port', type=int, default=int(os.environ.get('STUNTMAN_FLOOR_PORT', '4517')))

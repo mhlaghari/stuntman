@@ -1,5 +1,39 @@
 # HANDOFF
 
+## Dispatch: one window prompts every project — 2026-10-20
+
+**What changed (0.15.0):**
+
+- `bin/stuntman_dispatch.py`: `floor who | send | wait | spawn`. `send`
+  resolves a project (agent id, exact slug, unique prefix), picks its
+  interactive session (reachable idle first, never a worker) and calls the
+  floor's existing `send_to_session`. `wait` blocks until the agent settles
+  after `--since`. `spawn` opens a tmux window (current session, else session
+  `stuntman`) running `claude` or `codex` with an optional prompt.
+- `skills/dispatch/SKILL.md`: the dispatcher loop and refusal table.
+- `plugins/dispatch-band`: mod with the Vexel band (half-block frames made by
+  `scripts/build-vexels.py` from `skills/floor/board/assets`), a `/crew` pane,
+  and `@project` routing via `prompt.submit` → `floor send` → `{ drop }`. It finds
+  the floor at `STUNTMAN_FLOOR_BIN`, else the newest plugin cache, else
+  `~/.local/bin/floor`, and runs it with `python3`.
+
+**Review fixes (code-reviewer pass):** `--` before targets and a refusal of
+spawn prompts starting with `-` (no flag injection into claude/codex); spawn
+runs one `shlex.join` command string (safe on tmux < 3.0); `@` routes on exact
+names only and skips names that exist as files here; the mod sends by folder
+with `--not <own session id>`; two ready sessions in one project are ambiguous;
+`wait` needs a `UserPromptSubmit` after `--since` (new `prompt_ts` in the floor
+reducer); a refused `@` send refills the prompt box.
+
+**Verified:** 16 Python tests (`tests/test_dispatch.py`), 7 mod tests,
+`claude plugin validate`, `tsc` clean. Built on Windows: the 26 pre-existing
+shebang/symlink test failures are unchanged.
+
+**Not verified:** a real send into a tmux pane, `spawn`, and how the band looks
+in a real terminal. **Next step (on the Mac):** `/plugin marketplace update
+stuntman`, update stuntman, `/plugin install dispatch-band@stuntman`, start a
+dispatcher in tmux, then `@<project> hello` and `/stuntman:dispatch`.
+
 ## usages fix: Codex plan with no weekly window — 2026-10-08
 
 **What changed (pushed as `dddc52b`):** `bin/usages` crashed on a Codex plan
