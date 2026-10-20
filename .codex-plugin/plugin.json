@@ -1,7 +1,7 @@
 {
   "name": "stuntman",
   "description": "Plan and review in Claude Code or Codex, delegate to five worker backends, keep project memory, and watch agents on the live floor.",
-  "version": "0.15.0+codex.20261020120000",
+  "version": "0.15.1+codex.20261020150000",
   "author": {
     "name": "mhlaghari",
     "email": "mhlaghari@gmail.com"

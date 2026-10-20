@@ -27,6 +27,8 @@ const isPaneOpen = atom({ plugin: 'dispatch-band', key: 'isPaneOpen' } as const,
 
 let floorBin: string[] | undefined
 let readAt = -Infinity
+// This session's id: its own crab says so, and `@` never sends to it.
+let selfId = ''
 
 const byVersion = (a: string, b: string) => {
   const pa = a.split('.').map(Number)
@@ -118,6 +120,7 @@ const openPane = async ($: EngineInterface) => {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'crew', description: 'Open the crew pane: every project agent on the floor' })
+    selfId = await $.session.id().catch(() => '')
     void refresh($, true)
     $.clock.every(REFRESH_MS, () => void refresh($))
     return next(e)
@@ -198,7 +201,9 @@ export const register: Register = on => {
             {room.name}
           </Text>
           <Text color={look.color}>{`${look.mark} ${look.word}`}</Text>
-          <Text dimColor>{helpers > 0 ? `+${helpers} working` : lead.host}</Text>
+          <Text dimColor>
+            {helpers > 0 ? `+${helpers} working` : selfId && lead.id.endsWith(`:${selfId}`) ? 'this session' : lead.host}
+          </Text>
         </Box>
       )
     }
@@ -206,7 +211,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column">
         <Box columnGap={2}>
-          <Text bold>{`${counts.agents} agents`}</Text>
+          <Text bold>{`${counts.agents} agent${counts.agents === 1 ? '' : 's'}`}</Text>
           <Text color="#5BB8FF">{`● ${counts.working} working`}</Text>
           <Text color="#FFB547">{`▲ ${counts.needs} needs you`}</Text>
           <Text color="#3DDC97">{`✓ ${counts.done} done`}</Text>

@@ -653,6 +653,7 @@ MIT
 
 ## Changelog
 
+- 2026-10-20 — Floor keeps background subagents after the parent's turn ends (0.15.1).
 - 2026-10-20 — `/dispatch`: floor `who` / `send` / `wait` / `spawn` verbs and the `dispatch-band` mod (crab crew band, `/crew` pane, `@project` routing).
 - 2026-09-14 — Floor is live-only: removed Demo World, added status visibility filters with Show all and Showing N of M counter.
 - 2026-09-05 — Added Codex plugin packaging, shared host-aware skills, AGENTS.md memory, native launch phases, and a local Codex quota probe.

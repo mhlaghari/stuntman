@@ -38,14 +38,14 @@ const FLOOR = {
 const SENT = { ok: true, project: 'spark', agent: 'claude:s1', sent_at: 1 }
 const REFUSED = { ok: false, reason: 'unreachable', detail: 'Wait for this turn to finish.' }
 
-const start = async ($: Engine, on: On) => {
+const start = async ($: Engine, on: On, floor: object = FLOOR) => {
   const clock = mock.clock(on)
   const calls: (readonly string[])[] = []
   const filled: string[] = []
   mock.env(on, { HOME: '/home/me', STUNTMAN_FLOOR_BIN: '/opt/floor' })
   on('process.run', (_, e) => {
     calls.push(e.argv)
-    const stdout = JSON.stringify(e.argv.includes('send') ? (e.argv.includes('/p/tatweer') ? REFUSED : SENT) : FLOOR)
+    const stdout = JSON.stringify(e.argv.includes('send') ? (e.argv.includes('/p/tatweer') ? REFUSED : SENT) : floor)
     return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -147,4 +147,13 @@ test('a crab wears its host: Claude bare, Codex a cap, workers a helmet', () => 
   expect(pixels('agy', 'failed')).not.toMatch(/[23]/)
   expect(crabFrame('#D97757', 'claude', 'idle').palette[0]).not.toBe('#D97757')
   expect(crabFrame('#D97757', 'claude', 'done').rows).toHaveLength(10)
+})
+
+test('one agent reads singular, and this session is labelled as itself', async ($, on) => {
+  const home = { rooms: [{ name: 'mlaghari', cwd: '/home/me', agents: [agent('claude:me', 'claude', 'thinking')] }] }
+  await start($, on, home)
+  const ui = await $.ui.mount(band(20))
+
+  expect((await ui.find({ type: 'Text', text: 'agent' }))?.text).toBe('1 agent')
+  expect((await ui.find({ type: 'Text', text: 'this session' }))?.text).toBe('this session')
 })

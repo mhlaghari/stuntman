@@ -1,6 +1,6 @@
 {
   "name": "dispatch-band",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": { "name": "mhlaghari" },
   "description": "A pixel crab crew above the prompt: every project agent on the Stuntman floor, and @project sends a prompt straight to it.",
   "types": "./types/index.d.ts"

@@ -23,6 +23,7 @@ import stuntman_dispatch
 FLOOR_DIR = Path(os.environ.get('STUNTMAN_FLOOR_DIR', str(Path.home() / '.stuntman/floor')))
 EVENTS = FLOOR_DIR / 'events.jsonl'
 STALE_S, DONE_TTL_S, ENDED_TTL_S = 300, 6 * 3600, 120
+CHILD_STALE_S = 600  # A subagent silent this long is gone, even if its stop never arrived.
 TOKEN = secrets.token_hex(24)
 HOSTS = {'claude', 'codex', 'opencode', 'agy', 'muse'}
 ALLOWED_ASSETS = {
@@ -142,6 +143,14 @@ def reduce_sessions():
                     'worker': False, 'calls': {}, 'prompt_ts': 0})
                 if ts < state['last_ts']:
                     continue
+                agent = event.get('agent_id')
+                if isinstance(agent, str) and agent and event.get('evt') not in ('SubagentStart', 'SubagentStop'):
+                    # A subagent's own event: it is alive. Its tool calls leave the parent's state
+                    # alone; its permission prompts still make the parent need the person.
+                    child = state['children'].setdefault(agent, {'id': agent, 'desc': event.get('desc') or 'subagent'})
+                    child['ts'] = ts
+                    if event.get('evt') in ('PreToolUse', 'PostToolUse', 'PostToolUseFailure'):
+                        continue
                 for field in ('cwd', 'tp', 'process_identity', 'say'):
                     if isinstance(event.get(field), str) and event[field]:
                         state[field] = event[field]
@@ -176,7 +185,8 @@ def reduce_sessions():
                               'SessionEnd': 'ended', 'Interrupt': 'idle'}[evt]
                     state.update(state=status, tool=None, msg=None)
                     state['calls'].clear()
-                    state['children'].clear()
+                    if evt in ('SessionEnd', 'Interrupt'):  # Background subagents outlive a Stop.
+                        state['children'].clear()
             except (ValueError, TypeError, AttributeError):
                 continue
     return sessions
@@ -298,7 +308,8 @@ def reduce_state():
         if state in ('thinking', 'running') and age > STALE_S:
             state = 'ghost'
         output = {k: session[k] for k in ('id', 'sid', 'host', 'worker', 'tool', 'msg')}
-        output.update(state=state, age_s=age, children=list(session['children'].values())[-4:],
+        children = [c for c in session['children'].values() if now - c['ts'] < CHILD_STALE_S]
+        output.update(state=state, age_s=age, children=children[-4:],
                       say=last_assistant_text(session['tp']) or session['say'],
                       reach='tmux' if find_pane(session) else 'none', has_transcript=bool(session['tp']))
         counter = 'working' if state in ('thinking', 'running') else state

@@ -38,7 +38,7 @@ class FloorTests(unittest.TestCase):
         floor._reach_cache.clear()
 
     def write(self, rows):
-        floor.EVENTS.write_text(''.join(json.dumps(dict(ts=time.time(), **row)) + '\n' for row in rows))
+        floor.EVENTS.write_text(''.join(json.dumps({'ts': time.time(), **row}) + '\n' for row in rows))
 
     def test_hook_detects_codex_and_retains_child_identity(self):
         payload = {'session_id':'parent', 'turn_id':'turn', 'hook_event_name':'SubagentStart',
@@ -112,6 +112,33 @@ class FloorTests(unittest.TestCase):
                 events.emit({'sid':'last','host':'codex','evt':'Stop'})
             self.assertEqual(json.loads(floor.EVENTS.read_text().splitlines()[-1])['sid'],'last')
             self.assertLess(floor.EVENTS.stat().st_size,500)
+
+    def test_background_subagents_outlive_the_parent_turn_and_leave_its_state_alone(self):
+        now = time.time()
+        self.write([{'sid':'p','evt':'UserPromptSubmit','ts':now-50},
+                    {'sid':'p','evt':'SubagentStart','agent_id':'a','desc':'Explore','ts':now-40},
+                    {'sid':'p','evt':'SubagentStart','agent_id':'b','desc':'Explore','ts':now-39},
+                    {'sid':'p','evt':'Stop','ts':now-30},
+                    {'sid':'p','evt':'PreToolUse','tool':'Read','agent_id':'a','desc':'Explore','ts':now-20},
+                    {'sid':'p','evt':'SubagentStop','agent_id':'b','ts':now-10}])
+        parent = floor.session_by_sid('p')
+        self.assertEqual(parent['state'],'done')
+        self.assertEqual(list(parent['children']),['a'])
+        room = floor.reduce_state()['rooms'][0]
+        self.assertEqual([c['id'] for c in room['agents'][0]['children']],['a'])
+        self.write([{'sid':'p','evt':'Stop','ts':now-30},
+                    {'sid':'p','evt':'PermissionRequest','tool':'Bash','agent_id':'a','ts':now-5}])
+        self.assertEqual(floor.session_by_sid('p')['state'],'needs_input')
+
+    def test_silent_subagent_drops_off_and_interrupt_clears_them(self):
+        now = time.time()
+        self.write([{'sid':'p','evt':'SubagentStart','agent_id':'old','ts':now-900},
+                    {'sid':'p','evt':'SubagentStart','agent_id':'new','ts':now-5}])
+        room = floor.reduce_state()['rooms'][0]
+        self.assertEqual([c['id'] for c in room['agents'][0]['children']],['new'])
+        self.write([{'sid':'p','evt':'SubagentStart','agent_id':'a','ts':now-5},
+                    {'sid':'p','host':'claude','evt':'Interrupt','ts':now-1}])
+        self.assertEqual(list(floor.session_by_sid('p')['children']),[])
 
     def session(self, **extra):
         return dict({'id':'codex:one','sid':'one','host':'codex','worker':False,

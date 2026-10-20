@@ -29,6 +29,14 @@ reducer); a refused `@` send refills the prompt box.
 `claude plugin validate`, `tsc` clean. Built on Windows: the 26 pre-existing
 shebang/symlink test failures are unchanged.
 
+**Floor fix (0.15.1, from the owner's screenshot):** background subagents
+vanished from the floor when the parent's turn ended (`Stop` cleared
+`children`), and a subagent's tool calls flipped the parent to running. Now a
+subagent's events refresh only the subagent (its permission prompts still mark
+the parent `needs_input`); children clear on their own `SubagentStop`, on
+`SessionEnd` or `Interrupt`, and drop off after 10 silent minutes. The band
+says "1 agent" and labels its own session "this session". 3 new floor tests.
+
 **Owner call (2026-10-20):** the auto-shrunk Vexel looked bad in the terminal
 (the painted 192 px sprite has no pixel grid). The band uses crabs instead;
 the floor web board keeps the full Vexel art.
