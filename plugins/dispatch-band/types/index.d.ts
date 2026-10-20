@@ -1,4 +1,4 @@
-// One Vexel frame: up to 15 colours and rows of one hex digit per pixel, `.` transparent.
+// One crab frame: up to 15 colours and rows of one hex digit per pixel, `.` transparent.
 export type Frame = { palette: string[]; rows: string[] }
 
 // The parts of `floor --json` this mod reads.

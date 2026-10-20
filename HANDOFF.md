@@ -11,8 +11,8 @@
   after `--since`. `spawn` opens a tmux window (current session, else session
   `stuntman`) running `claude` or `codex` with an optional prompt.
 - `skills/dispatch/SKILL.md`: the dispatcher loop and refusal table.
-- `plugins/dispatch-band`: mod with the Vexel band (half-block frames made by
-  `scripts/build-vexels.py` from `skills/floor/board/assets`), a `/crew` pane,
+- `plugins/dispatch-band` (mod 0.2.0): a band of pixel crabs (`hooks/crab.ts`:
+  colour = project, hat = host, pose = state, drawn with half blocks), a `/crew` pane,
   and `@project` routing via `prompt.submit` → `floor send` → `{ drop }`. It finds
   the floor at `STUNTMAN_FLOOR_BIN`, else the newest plugin cache, else
   `~/.local/bin/floor`, and runs it with `python3`.
@@ -29,8 +29,15 @@ reducer); a refused `@` send refills the prompt box.
 `claude plugin validate`, `tsc` clean. Built on Windows: the 26 pre-existing
 shebang/symlink test failures are unchanged.
 
-**Not verified:** a real send into a tmux pane, `spawn`, and how the band looks
-in a real terminal. **Next step (on the Mac):** `/plugin marketplace update
+**Owner call (2026-10-20):** the auto-shrunk Vexel looked bad in the terminal
+(the painted 192 px sprite has no pixel grid). The band uses crabs instead;
+the floor web board keeps the full Vexel art.
+
+**WSL verified:** in Ubuntu WSL with tmux 3.4, `floor send` typed into a real
+pane and `floor spawn` opened a window; hostile text stayed literal. A fake
+`claude` stood in for the agent.
+
+**Not verified:** a real Claude Code session in tmux, and the band in a real terminal. **Next step (on the Mac):** `/plugin marketplace update
 stuntman`, update stuntman, `/plugin install dispatch-band@stuntman`, start a
 dispatcher in tmux, then `@<project> hello` and `/stuntman:dispatch`.
 

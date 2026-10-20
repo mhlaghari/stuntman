@@ -1,7 +1,7 @@
 {
   "name": "dispatch-band",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": { "name": "mhlaghari" },
-  "description": "Your Vexel crew above the prompt: every project agent on the Stuntman floor, and @project sends a prompt straight to it.",
+  "description": "A pixel crab crew above the prompt: every project agent on the Stuntman floor, and @project sends a prompt straight to it.",
   "types": "./types/index.d.ts"
 }

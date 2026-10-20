@@ -2,6 +2,7 @@ import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
+import { crabFrame } from '../hooks/crab'
 import { halfBlocks, matchProject, parseRoute } from '../hooks/floor'
 
 const SITE = { scroll: { offset: 0, bodyRows: 20 }, view: {} }
@@ -83,7 +84,7 @@ test('the band counts every agent and draws one column per project', async ($, o
   expect((await ui.findAll({ type: 'Text', text: '▀' })).length).toBeGreaterThan(20)
 })
 
-test('a short band drops the Vexels and keeps the words', async ($, on) => {
+test('a short band drops the crabs and keeps the words', async ($, on) => {
   await start($, on)
   const ui = await $.ui.mount(band(6))
 
@@ -135,4 +136,15 @@ test('half blocks pair two pixel rows into one terminal row', () => {
       { char: '▀', color: '#00ff00', backgroundColor: '#ff0000' },
     ],
   ])
+})
+
+test('a crab wears its host: Claude bare, Codex a cap, workers a helmet', () => {
+  const pixels = (host: string, state: string) => crabFrame('#D97757', host, state).rows.slice(0, 3).join('')
+
+  expect(pixels('claude', 'running')).not.toMatch(/[23]/)
+  expect(pixels('codex', 'done')).toMatch(/2/)
+  expect(pixels('opencode', 'running')).toMatch(/3/)
+  expect(pixels('agy', 'failed')).not.toMatch(/[23]/)
+  expect(crabFrame('#D97757', 'claude', 'idle').palette[0]).not.toBe('#D97757')
+  expect(crabFrame('#D97757', 'claude', 'done').rows).toHaveLength(10)
 })

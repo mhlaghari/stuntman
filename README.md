@@ -37,7 +37,7 @@ this task to opencode").
 | **`/wiki`** | Builds a "second brain" across a folder of projects — an Obsidian vault + a graphify knowledge graph + a live MCP for cross-project recall. | every project |
 | **`/launch`** | Fans out a multi-agent workflow — cited competitor research, market sizing, channel ranking, then pricing + positioning + a week-by-week launch playbook, pressure-tested by adversarial critics — into one Product Success Overview (markdown + HTML). | the blank-page launch |
 | **`/usages`** | One board for every stunt double's usage + limits — Claude 5h/7d (live), Codex 5h/weekly (last snapshot), DeepSeek balance (live) — plus a cached `--statusline` segment. | all the subscription dashboards |
-| **`/dispatch`** | One window that prompts every project's agent: reads the floor, picks the project, sends the prompt into that agent's tmux pane, waits for the reply. The `dispatch-band` mod adds a Vexel crew above the prompt and `@project` routing with no model call. | agents across projects |
+| **`/dispatch`** | One window that prompts every project's agent: reads the floor, picks the project, sends the prompt into that agent's tmux pane, waits for the reply. The `dispatch-band` mod adds a pixel crab crew above the prompt and `@project` routing with no model call. | agents across projects |
 
 | **`/floor`** | Live Vexel board for Claude Code, Codex, and Stuntman workers: status, conversations, and prompting ready tmux sessions. | agents across projects |
 
@@ -305,8 +305,10 @@ idle or finished interactive session inside tmux, process identity checked
 before Enter. Workers stay view-only. Native Windows is view-only (no tmux).
 
 The optional **`dispatch-band`** mod (`/plugin install dispatch-band@stuntman`)
-draws your Vexel crew above the prompt: one Vexel per project in its state's
-pose, its subagents and workers counted, and a `/crew` pane with every agent.
+draws a pixel crab crew above the prompt: one crab per project in the
+project's colour, a hat for its host (none for Claude, a cap for Codex, a
+stunt helmet for workers), a pose and a word for its state, its subagents and
+workers counted, and a `/crew` pane with every agent.
 A prompt that starts with `@<project>` goes straight to that project through
 `floor send` and never reaches the dispatcher's model. Only an exact project
 name routes (case and punctuation aside; no prefixes). `@src/a.ts`, a name that
@@ -651,6 +653,6 @@ MIT
 
 ## Changelog
 
-- 2026-10-20 — `/dispatch`: floor `who` / `send` / `wait` / `spawn` verbs and the `dispatch-band` mod (Vexel crew band, `/crew` pane, `@project` routing).
+- 2026-10-20 — `/dispatch`: floor `who` / `send` / `wait` / `spawn` verbs and the `dispatch-band` mod (crab crew band, `/crew` pane, `@project` routing).
 - 2026-09-14 — Floor is live-only: removed Demo World, added status visibility filters with Show all and Showing N of M counter.
 - 2026-09-05 — Added Codex plugin packaging, shared host-aware skills, AGENTS.md memory, native launch phases, and a local Codex quota probe.

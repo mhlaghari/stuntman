@@ -18,7 +18,7 @@
     {
       "name": "dispatch-band",
       "source": "./plugins/dispatch-band",
-      "description": "Your Vexel crew above the prompt: every project agent on the Stuntman floor, and @project sends a prompt straight to it."
+      "description": "A pixel crab crew above the prompt: every project agent on the Stuntman floor, and @project sends a prompt straight to it."
     }
   ]
 }

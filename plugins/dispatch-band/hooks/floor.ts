@@ -1,28 +1,29 @@
 import type { Agent, Floor, Frame, Room } from '../types'
 
-import { VEXELS } from './vexels'
-
 // Project tag colours, picked in order; each pairs with the project's name.
 export const PROJECT_COLORS = ['#D97757', '#5BB8FF', '#F2C14E', '#3DDC97', '#E58BE6', '#FF9F6B', '#9FA8FF']
 
-export type Look = { word: string; mark: string; color: string; pose: string }
+export type Look = { word: string; mark: string; color: string }
 
 const LOOKS: Record<string, Look> = {
-  running: { word: 'working', mark: '●', color: '#5BB8FF', pose: 'working' },
-  thinking: { word: 'thinking', mark: '◐', color: '#C3A3FF', pose: 'thinking' },
-  needs_input: { word: 'needs you', mark: '▲', color: '#FFB547', pose: 'needs' },
-  done: { word: 'done', mark: '✓', color: '#3DDC97', pose: 'done' },
-  failed: { word: 'failed', mark: '✕', color: '#FF7A7A', pose: 'failed' },
+  running: { word: 'working', mark: '●', color: '#5BB8FF' },
+  thinking: { word: 'thinking', mark: '◐', color: '#C3A3FF' },
+  needs_input: { word: 'needs you', mark: '▲', color: '#FFB547' },
+  done: { word: 'done', mark: '✓', color: '#3DDC97' },
+  failed: { word: 'failed', mark: '✕', color: '#FF7A7A' },
 }
-const RESTING: Look = { word: 'idle', mark: '–', color: '#A3ABB5', pose: 'idle' }
-
-// Floor hosts to Vexel skins; Muse and anything unknown wear Laghari.
-const SKINS: Record<string, string> = { claude: 'claude', codex: 'codex', opencode: 'opencode', agy: 'agy' }
+const RESTING: Look = { word: 'idle', mark: '–', color: '#A3ABB5' }
 
 export const lookOf = (state: string): Look => LOOKS[state] ?? RESTING
 
-export const frameOf = (host: string, state: string, size: 'band' | 'pane'): Frame | undefined =>
-  (VEXELS[SKINS[host] ?? 'laghari'] ?? VEXELS['laghari'])?.[lookOf(state).pose]?.[size]
+// A stable colour per project name, whatever order the floor lists them in.
+export const colorOf = (name: string) => {
+  let hash = 0
+  for (const ch of name) {
+    hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
+  }
+  return PROJECT_COLORS[hash % PROJECT_COLORS.length] ?? '#D97757'
+}
 
 const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '')
 

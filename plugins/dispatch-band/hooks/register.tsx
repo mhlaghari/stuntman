@@ -3,9 +3,9 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Floor, Room } from '../types'
 
+import { crabFrame } from './crab'
 import {
-  PROJECT_COLORS,
-  frameOf,
+  colorOf,
   halfBlocks,
   helpersOf,
   isBusy,
@@ -19,8 +19,8 @@ import {
 const PANE = 'crew'
 const REFRESH_MS = 5_000
 const COLUMN = 14
-// Vexel rows plus name, state and helpers lines: the band draws Vexels only when they fit.
-const TALL_ROWS = 12
+// Crab rows plus name, state and helpers lines: the band draws crabs only when they fit.
+const TALL_ROWS = 9
 
 const floorAtom = atom({ plugin: 'dispatch-band', key: 'floor' } as const, null)
 const isPaneOpen = atom({ plugin: 'dispatch-band', key: 'isPaneOpen' } as const, false)
@@ -81,15 +81,6 @@ const refresh = async ($: EngineInterface, isForced = false) => {
   } catch (error) {
     $.ui.log(`dispatch-band: floor read failed: ${String(error)}`, { to: 'debug' })
   }
-}
-
-// A stable colour per project name, whatever order the floor lists them in.
-const colorOf = (name: string) => {
-  let hash = 0
-  for (const ch of name) {
-    hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
-  }
-  return PROJECT_COLORS[hash % PROJECT_COLORS.length]
 }
 
 const countsOf = (floor: Floor) => {
@@ -182,8 +173,8 @@ export const register: Register = on => {
     const fit = Math.max(1, Math.floor(e.props.bodyColumns / COLUMN))
     const shown = floor.rooms.slice(0, fit)
 
-    const vexel = (host: string, state: string, size: 'band' | 'pane') =>
-      halfBlocks(frameOf(host, state, size)).map((cells, y) => (
+    const crab = (room: Room, host: string, state: string) =>
+      halfBlocks(crabFrame(colorOf(room.name), host, state)).map((cells, y) => (
         <Box key={`v${y}`}>
           {cells.map((c, x) => (
             <Text key={`c${x}`} color={c.color} backgroundColor={c.backgroundColor}>
@@ -202,7 +193,7 @@ export const register: Register = on => {
       const helpers = helpersOf(room, lead).filter(h => isBusy(h.state)).length
       return (
         <Box key={room.cwd} flexDirection="column" width={COLUMN}>
-          {isTall && vexel(lead.host, lead.state, 'band')}
+          {isTall && crab(room, lead.host, lead.state)}
           <Text color={colorOf(room.name)} wrap="truncate">
             {room.name}
           </Text>
@@ -244,7 +235,7 @@ export const register: Register = on => {
       return (
         <Box key={room.cwd} columnGap={1} marginBottom={1}>
           <Box flexDirection="column">
-            {halfBlocks(frameOf(lead.host, lead.state, 'band')).map((cells, y) => (
+            {halfBlocks(crabFrame(colorOf(room.name), lead.host, lead.state)).map((cells, y) => (
               <Box key={`v${y}`}>
                 {cells.map((c, x) => (
                   <Text key={`c${x}`} color={c.color} backgroundColor={c.backgroundColor}>
